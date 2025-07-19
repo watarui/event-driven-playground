@@ -19,12 +19,12 @@ NEXT_PUBLIC_WS_ENDPOINT=wss://client-service-prod-581148615576.asia-northeast1.r
 これらは公開可能な設定値です：
 
 ```
-NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyB2tcXCHffMcLReMtFl3PLTARRawlyQys4
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=elixir-cqrs-es.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=elixir-cqrs-es
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=elixir-cqrs-es.firebasestorage.app
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=581148615576
-NEXT_PUBLIC_FIREBASE_APP_ID=1:581148615576:web:0af8c9eab9e6f652b741ed
+NEXT_PUBLIC_FIREBASE_API_KEY=[Firebase Console から取得]
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=[プロジェクトID].firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=[プロジェクトID]
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=[プロジェクトID].firebasestorage.app
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=[送信者ID]
+NEXT_PUBLIC_FIREBASE_APP_ID=[アプリID]
 ```
 
 ### 3. Firebase Admin SDK (Secret)
@@ -32,9 +32,9 @@ NEXT_PUBLIC_FIREBASE_APP_ID=1:581148615576:web:0af8c9eab9e6f652b741ed
 これらは秘密情報として設定する必要があります：
 
 ```
-FIREBASE_PROJECT_ID=elixir-cqrs-es
-FIREBASE_CLIENT_EMAIL=firebase-adminsdk-fbsvc@elixir-cqrs-es.iam.gserviceaccount.com
-FIREBASE_PRIVATE_KEY=<.env.production ファイルから取得>
+FIREBASE_PROJECT_ID=[プロジェクトID]
+FIREBASE_CLIENT_EMAIL=[サービスアカウントメール]
+FIREBASE_PRIVATE_KEY=[秘密鍵]
 ```
 
 **重要**: `FIREBASE_PRIVATE_KEY` は改行を含む複数行の値です。Vercel の環境変数設定時は、値全体をコピーして貼り付けてください。
