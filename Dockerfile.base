@@ -64,8 +64,6 @@ FROM deps AS build
 # Copy all application files
 COPY --chown=elixir:elixir config ./config
 COPY --chown=elixir:elixir apps ./apps
-COPY --chown=elixir:elixir mix.exs ./
-COPY --chown=elixir:elixir mix.lock ./
 
 # Compile the application
 RUN mix compile
