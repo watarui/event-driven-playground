@@ -2,6 +2,11 @@
 # Uses multi-stage builds and caching for faster builds
 
 steps:
+  # Step 0: Debug - List files and check Docker
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['version']
+    id: 'docker-version'
+  
   # Step 1: Build the shared base image with dependencies
   - name: 'gcr.io/cloud-builders/docker'
     args:
@@ -12,6 +17,7 @@ steps:
       - '--file=Dockerfile.base'
       - '.'
     id: 'build-base'
+    waitFor: ['docker-version']
 
   # Step 2: Build the runtime base image
   - name: 'gcr.io/cloud-builders/docker'
@@ -76,7 +82,7 @@ images:
   - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/client-service:latest'
 
 options:
-  logging: CLOUD_LOGGING_ONLY
+  logging: GCS_ONLY
   machineType: 'E2_HIGHCPU_8'
   substitution_option: 'ALLOW_LOOSE'
 
