@@ -9,8 +9,6 @@ steps:
       - '--target=build'
       - '--tag=event-driven-playground-base:latest'
       - '--tag=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/event-driven-playground-base:latest'
-      - '--cache-from=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/event-driven-playground-base:latest'
-      - '--build-arg=BUILDKIT_INLINE_CACHE=1'
       - '--file=Dockerfile.base'
       - '.'
     id: 'build-base'
@@ -22,8 +20,6 @@ steps:
       - '--target=runtime'
       - '--tag=event-driven-playground-runtime:latest'
       - '--tag=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/event-driven-playground-runtime:latest'
-      - '--cache-from=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/event-driven-playground-runtime:latest'
-      - '--build-arg=BUILDKIT_INLINE_CACHE=1'
       - '--file=Dockerfile.base'
       - '.'
     id: 'build-runtime'
@@ -36,9 +32,7 @@ steps:
       - 'build'
       - '--tag=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/command-service:$SHORT_SHA'
       - '--tag=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/command-service:latest'
-      - '--cache-from=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/command-service:latest'
       - '--build-arg=SERVICE_NAME=command_service'
-      - '--build-arg=BUILDKIT_INLINE_CACHE=1'
       - '--file=apps/command_service/Dockerfile.optimized'
       - '.'
     id: 'build-command-service'
@@ -50,9 +44,7 @@ steps:
       - 'build'
       - '--tag=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/query-service:$SHORT_SHA'
       - '--tag=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/query-service:latest'
-      - '--cache-from=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/query-service:latest'
       - '--build-arg=SERVICE_NAME=query_service'
-      - '--build-arg=BUILDKIT_INLINE_CACHE=1'
       - '--file=apps/query_service/Dockerfile.optimized'
       - '.'
     id: 'build-query-service'
@@ -64,9 +56,7 @@ steps:
       - 'build'
       - '--tag=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/client-service:$SHORT_SHA'
       - '--tag=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/client-service:latest'
-      - '--cache-from=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/client-service:latest'
       - '--build-arg=SERVICE_NAME=client_service'
-      - '--build-arg=BUILDKIT_INLINE_CACHE=1'
       - '--file=apps/client_service/Dockerfile.optimized'
       - '.'
     id: 'build-client-service'
@@ -88,10 +78,6 @@ images:
 options:
   logging: CLOUD_LOGGING_ONLY
   machineType: 'E2_HIGHCPU_8'
-  # Enable Docker BuildKit for better caching
-  env:
-    - 'DOCKER_BUILDKIT=1'
-  # Use kaniko for better layer caching (optional)
   substitution_option: 'ALLOW_LOOSE'
 
 # Shorter timeout since builds should be faster with caching
