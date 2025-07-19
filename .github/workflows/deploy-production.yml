@@ -167,17 +167,3 @@ jobs:
             --project=${PROJECT_ID} \
             --format="table(SERVICE:label='Service',URL:label='URL')"
 
-      # Slack 通知（オプション）
-      - name: Notify Slack
-        if: always()
-        uses: 8398a7/action-slack@v3
-        with:
-          status: ${{ job.status }}
-          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-          text: |
-            Deployment to Production: ${{ job.status }}
-            Commit: ${{ github.sha }}
-            Author: ${{ github.actor }}
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-        continue-on-error: true
