@@ -35,7 +35,7 @@ RUN addgroup -g 1000 -S elixir && \
     adduser -u 1000 -S elixir -G elixir
 
 # Create directories
-RUN mkdir -p ${BUILD_PATH} ${APP_PATH} && \
+RUN mkdir -p ${BUILD_PATH} ${APP_PATH} ${MIX_HOME} ${HEX_HOME} && \
     chown -R elixir:elixir ${BUILD_PATH} ${APP_PATH} ${MIX_HOME} ${HEX_HOME}
 
 WORKDIR ${BUILD_PATH}
