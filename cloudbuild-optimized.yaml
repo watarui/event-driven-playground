@@ -7,72 +7,56 @@ steps:
     args: ['version']
     id: 'docker-version'
   
-  # Step 1: Build the shared base image with dependencies
+  # Step 1: Build all services with the main Dockerfile
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
-      - '--target=build'
-      - '--tag=event-driven-playground-base:latest'
-      - '--tag=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/event-driven-playground-base:latest'
-      - '--file=Dockerfile.base'
+      - '--target=builder'
+      - '--tag=event-driven-playground-builder:latest'
+      - '--file=Dockerfile'
       - '.'
-    id: 'build-base'
+    id: 'build-all'
     waitFor: ['docker-version']
 
-  # Step 2: Build the runtime base image
+  # Step 2: Extract and push Client Service
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
-      - '--target=runtime'
-      - '--tag=event-driven-playground-runtime:latest'
-      - '--tag=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/event-driven-playground-runtime:latest'
-      - '--file=Dockerfile.base'
-      - '.'
-    id: 'build-runtime'
-    waitFor: ['build-base']
-
-  # Step 3: Build services in parallel using the base image
-  # Command Service
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'build'
-      - '--tag=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/command-service:$SHORT_SHA'
-      - '--tag=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/command-service:latest'
-      - '--build-arg=SERVICE_NAME=command_service'
-      - '--file=apps/command_service/Dockerfile.optimized'
-      - '.'
-    id: 'build-command-service'
-    waitFor: ['build-runtime']
-
-  # Query Service
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'build'
-      - '--tag=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/query-service:$SHORT_SHA'
-      - '--tag=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/query-service:latest'
-      - '--build-arg=SERVICE_NAME=query_service'
-      - '--file=apps/query_service/Dockerfile.optimized'
-      - '.'
-    id: 'build-query-service'
-    waitFor: ['build-runtime']
-
-  # Client Service
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'build'
+      - '--target=client_service'
       - '--tag=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/client-service:$SHORT_SHA'
       - '--tag=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/client-service:latest'
-      - '--build-arg=SERVICE_NAME=client_service'
-      - '--file=apps/client_service/Dockerfile.optimized'
+      - '--file=Dockerfile'
       - '.'
     id: 'build-client-service'
-    waitFor: ['build-runtime']
+    waitFor: ['build-all']
+
+  # Step 3: Extract and push Command Service
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--target=command_service'
+      - '--tag=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/command-service:$SHORT_SHA'
+      - '--tag=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/command-service:latest'
+      - '--file=Dockerfile'
+      - '.'
+    id: 'build-command-service'
+    waitFor: ['build-all']
+
+  # Step 4: Extract and push Query Service
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--target=query_service'
+      - '--tag=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/query-service:$SHORT_SHA'
+      - '--tag=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/query-service:latest'
+      - '--file=Dockerfile'
+      - '.'
+    id: 'build-query-service'
+    waitFor: ['build-all']
+
 
 # Images to push to the registry
 images:
-  # Base images
-  - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/event-driven-playground-base:latest'
-  - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/event-driven-playground-runtime:latest'
   # Service images with SHA tags
   - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/command-service:$SHORT_SHA'
   - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/command-service:latest'
