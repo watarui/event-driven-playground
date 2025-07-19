@@ -1,0 +1,54 @@
+# Git
+.git
+.gitignore
+
+# Dependencies
+deps/
+_build/
+.elixir_ls/
+.fetch
+
+# Static artifacts
+apps/*/priv/static/
+
+# Test coverage
+cover/
+
+# Secrets
+.env
+.env.*
+
+# IDEs
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+doc/
+docs/
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/
+
+# CI/CD
+.github/
+k8s/
+scripts/
+
+# Development files
+docker-compose.yml
+docker-compose.*.yml
+Makefile
+
+# Old code
+old/

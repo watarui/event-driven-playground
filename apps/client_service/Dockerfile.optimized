@@ -1,0 +1,35 @@
+# Optimized Dockerfile for Client Service
+# Uses the shared base image and multi-stage build
+
+# Build from the shared base
+FROM event-driven-playground-base:latest AS release
+
+# Build the Client Service release
+ARG SERVICE_NAME=client_service
+ENV SERVICE_NAME=${SERVICE_NAME}
+
+# The base image already has dependencies compiled
+# Just need to create the release
+RUN mix release ${SERVICE_NAME}
+
+# ========================================
+# Final runtime image
+# ========================================
+FROM event-driven-playground-runtime:latest
+
+ARG SERVICE_NAME=client_service
+ENV SERVICE_NAME=${SERVICE_NAME}
+
+# Service-specific environment
+ENV PORT=8080 \
+    RELEASE_NAME=client_service
+
+# Copy only the release
+COPY --from=release --chown=elixir:elixir /opt/build/_build/prod/rel/${SERVICE_NAME} /app/
+
+# Client Service specific health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:${PORT}/health/ready || exit 1
+
+# Override CMD to use the specific service
+CMD ["/app/bin/client_service", "start"]

@@ -1,0 +1,9 @@
+# Terraform files
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# 機密情報を含むファイル
+terraform.tfvars
+!terraform.tfvars.example

@@ -1,0 +1,173 @@
+name: CI
+
+# PR やプッシュ時にテストを実行
+on:
+  push:
+    branches:
+      - '**'
+      - '!main' # main ブランチは除外（deploy-production.yml で処理）
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+env:
+  MIX_ENV: test
+  ELIXIR_VERSION: 1.17.3
+  OTP_VERSION: 27.2
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: event_driven_playground_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+          otp-version: ${{ env.OTP_VERSION }}
+
+      - name: Restore dependencies cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-
+
+      - name: Install dependencies
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+          mix deps.get
+
+      - name: Setup test database
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost/event_driven_playground_test
+        run: |
+          mix ecto.setup
+
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost/event_driven_playground_test
+        run: |
+          mix test
+
+      - name: Check formatting
+        run: |
+          mix format --check-formatted
+
+      - name: Run Credo
+        run: |
+          mix credo --strict
+        continue-on-error: true # Credo エラーは警告として扱う
+
+      - name: Check for security vulnerabilities
+        run: |
+          mix deps.audit
+        continue-on-error: true
+
+  build:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build base image
+        run: |
+          docker build \
+            --target build \
+            --tag event-driven-playground-base:test \
+            --file Dockerfile.base \
+            .
+
+      - name: Build service images
+        run: |
+          # Client Service
+          docker build \
+            --tag client-service:test \
+            --file apps/client_service/Dockerfile.optimized \
+            --build-arg SERVICE_NAME=client_service \
+            .
+          
+          # Command Service
+          docker build \
+            --tag command-service:test \
+            --file apps/command_service/Dockerfile.optimized \
+            --build-arg SERVICE_NAME=command_service \
+            .
+          
+          # Query Service
+          docker build \
+            --tag query-service:test \
+            --file apps/query_service/Dockerfile.optimized \
+            --build-arg SERVICE_NAME=query_service \
+            .
+
+      - name: Test image sizes
+        run: |
+          echo "📦 Docker image sizes:"
+          docker images | grep -E "(client|command|query)-service|event-driven-playground-base" | head -10
+
+  frontend-test:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Run lint
+        working-directory: ./frontend
+        run: npm run lint
+
+      - name: Run type check
+        working-directory: ./frontend
+        run: npm run type-check
+        continue-on-error: true
+
+      - name: Run tests
+        working-directory: ./frontend
+        run: npm test
+        continue-on-error: true # テストがない場合のため
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+        env:
+          NEXT_PUBLIC_GRAPHQL_URL: http://localhost:8080/graphql

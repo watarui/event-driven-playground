@@ -1,0 +1,126 @@
+services:
+  # PostgreSQL - Event Store
+  postgres-event-store:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: event_driven_playground_event_store_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-event-store-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - event-driven-playground-network
+
+  # PostgreSQL - Command Service
+  postgres-command:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: event_driven_playground_command_dev
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-command-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - event-driven-playground-network
+
+  # PostgreSQL - Query Service
+  postgres-query:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: event_driven_playground_query_dev
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres-query-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - event-driven-playground-network
+
+  # Jaeger - 分散トレーシング
+  jaeger:
+    image: jaegertracing/all-in-one:1.53
+    environment:
+      COLLECTOR_ZIPKIN_HOST_PORT: ":9411"
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "5775:5775/udp"
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "5778:5778"
+      - "16686:16686"  # Jaeger UI
+      - "14268:14268"
+      - "14250:14250"
+      - "9411:9411"
+      - "4317:4317"   # OTLP
+      - "4318:4318"   # OTLP HTTP
+    networks:
+      - event-driven-playground-network
+
+
+  # pgweb - Event Store DB用
+  pgweb-event-store:
+    image: sosedoff/pgweb:latest
+    environment:
+      PGWEB_DATABASE_URL: postgresql://postgres:postgres@postgres-event-store:5432/event_driven_playground_event_store_dev?sslmode=disable
+    ports:
+      - "5050:8081"
+    depends_on:
+      - postgres-event-store
+    networks:
+      - event-driven-playground-network
+    command: pgweb --bind=0.0.0.0 --listen=8081
+
+  # pgweb - Command DB用
+  pgweb-command:
+    image: sosedoff/pgweb:latest
+    environment:
+      PGWEB_DATABASE_URL: postgresql://postgres:postgres@postgres-command:5432/event_driven_playground_command_dev?sslmode=disable
+    ports:
+      - "5051:8081"
+    depends_on:
+      - postgres-command
+    networks:
+      - event-driven-playground-network
+    command: pgweb --bind=0.0.0.0 --listen=8081
+
+  # pgweb - Query DB用
+  pgweb-query:
+    image: sosedoff/pgweb:latest
+    environment:
+      PGWEB_DATABASE_URL: postgresql://postgres:postgres@postgres-query:5432/event_driven_playground_query_dev?sslmode=disable
+    ports:
+      - "5052:8081"
+    depends_on:
+      - postgres-query
+    networks:
+      - event-driven-playground-network
+    command: pgweb --bind=0.0.0.0 --listen=8081
+
+volumes:
+  postgres-event-store-data:
+  postgres-command-data:
+  postgres-query-data:
+
+networks:
+  event-driven-playground-network:
+    driver: bridge

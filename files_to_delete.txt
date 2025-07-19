@@ -1,0 +1,33 @@
+# event-driven-playground プロジェクトで削除すべきファイル
+
+## ログファイル
+- /Users/w/w/event-driven-playground/logs/client_service.log
+- /Users/w/w/event-driven-playground/logs/command_service.log
+- /Users/w/w/event-driven-playground/logs/query_service.log
+- /Users/w/w/event-driven-playground/logs/reset_20250719_194933.log
+- /Users/w/w/event-driven-playground/logs/setup_20250719_195052.log
+- /Users/w/w/event-driven-playground/logs/start_20250719_194946.log
+- /Users/w/w/event-driven-playground/logs/start_20250719_195131.log
+- /Users/w/w/event-driven-playground/logs/start_20250719_195458.log
+- /Users/w/w/event-driven-playground/apps/client_service/client_service.log
+
+## Terraform 状態ファイル
+- /Users/w/w/event-driven-playground/terraform/terraform.tfstate
+- /Users/w/w/event-driven-playground/terraform/terraform.tfstate.backup
+- /Users/w/w/event-driven-playground/terraform/terraform.tfstate.1752516074.backup
+- /Users/w/w/event-driven-playground/terraform/environments/local/terraform.tfstate
+- /Users/w/w/event-driven-playground/terraform/environments/local/terraform.tfstate.backup
+- /Users/w/w/event-driven-playground/terraform/environments/prod/terraform.tfstate
+- /Users/w/w/event-driven-playground/terraform/environments/prod/terraform.tfstate.backup
+- /Users/w/w/event-driven-playground/terraform/environments/prod/terraform.tfstate.1752585307.backup
+- /Users/w/w/event-driven-playground/terraform/environments/prod/terraform.tfstate.1752592133.backup
+- /Users/w/w/event-driven-playground/terraform/environments/prod/terraform.tfstate.old-project-backup
+
+## Elixir クラッシュダンプ
+- /Users/w/w/event-driven-playground/erl_crash.dump
+- /Users/w/w/event-driven-playground/apps/client_service/erl_crash.dump
+
+## 古いプロジェクト関連ファイル
+- /Users/w/w/event-driven-playground/MIGRATION_COMPLETE.md
+
+これらのファイルはすべて .gitignore に含まれているため、Git リポジトリに含まれるべきではありません。

@@ -1,0 +1,183 @@
+name: Deploy to Production
+
+# main ブランチへのプッシュまたはマージで自動デプロイ
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # 手動実行も可能
+
+env:
+  PROJECT_ID: event-driven-playground-prod
+  REGION: asia-northeast1
+  ARTIFACT_REGISTRY: asia-northeast1-docker.pkg.dev/event-driven-playground-prod/event-driven-playground
+
+jobs:
+  deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Workload Identity Federation に必要
+
+    steps:
+      # リポジトリのチェックアウト
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Google Cloud 認証（Workload Identity Federation を使用）
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      # Cloud SDK のセットアップ
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      # Docker 認証設定
+      - name: Configure Docker
+        run: |
+          gcloud auth configure-docker ${REGION}-docker.pkg.dev
+
+      # ビルドとプッシュ（Cloud Build を使用）
+      - name: Build and Push Images
+        run: |
+          gcloud builds submit \
+            --config=cloudbuild-optimized.yaml \
+            --substitutions=SHORT_SHA=${GITHUB_SHA::7} \
+            --project=${PROJECT_ID}
+
+      # マイグレーションの実行
+      - name: Run Database Migrations
+        run: |
+          # Query Service のマイグレーション
+          gcloud run jobs execute query-service-migrate \
+            --region=${REGION} \
+            --project=${PROJECT_ID} \
+            --wait
+
+      # サービスのデプロイ
+      - name: Deploy Services
+        run: |
+          # イメージタグ
+          IMAGE_TAG=${GITHUB_SHA::7}
+          
+          # Command Service
+          gcloud run deploy command-service \
+            --image=${ARTIFACT_REGISTRY}/command-service:${IMAGE_TAG} \
+            --region=${REGION} \
+            --project=${PROJECT_ID} \
+            --platform=managed \
+            --no-traffic
+          
+          # Query Service
+          gcloud run deploy query-service \
+            --image=${ARTIFACT_REGISTRY}/query-service:${IMAGE_TAG} \
+            --region=${REGION} \
+            --project=${PROJECT_ID} \
+            --platform=managed \
+            --no-traffic
+          
+          # Client Service
+          gcloud run deploy client-service \
+            --image=${ARTIFACT_REGISTRY}/client-service:${IMAGE_TAG} \
+            --region=${REGION} \
+            --project=${PROJECT_ID} \
+            --platform=managed \
+            --no-traffic
+
+      # ヘルスチェック
+      - name: Health Check New Versions
+        run: |
+          echo "🏥 Checking health of new deployments..."
+          
+          # 各サービスの新しいリビジョンの URL を取得
+          SERVICES=("command-service" "query-service" "client-service")
+          
+          for SERVICE in "${SERVICES[@]}"; do
+            echo "Checking ${SERVICE}..."
+            
+            # 最新リビジョンの URL を取得
+            REVISION_URL=$(gcloud run services describe ${SERVICE} \
+              --region=${REGION} \
+              --project=${PROJECT_ID} \
+              --format="value(status.latestCreatedRevisionName)")
+            
+            SERVICE_URL=$(gcloud run services describe ${SERVICE} \
+              --region=${REGION} \
+              --project=${PROJECT_ID} \
+              --format="value(status.url)")
+            
+            # ヘルスチェック（リトライ付き）
+            for i in {1..5}; do
+              if curl -f "${SERVICE_URL}/health/ready" \
+                -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
+                -m 10; then
+                echo "✅ ${SERVICE} is healthy"
+                break
+              else
+                echo "⏳ Waiting for ${SERVICE} to be ready (attempt $i/5)..."
+                sleep 10
+              fi
+            done
+          done
+
+      # トラフィックの切り替え
+      - name: Switch Traffic
+        run: |
+          IMAGE_TAG=${GITHUB_SHA::7}
+          
+          # 全サービスのトラフィックを新バージョンに切り替え
+          gcloud run services update-traffic command-service \
+            --to-latest \
+            --region=${REGION} \
+            --project=${PROJECT_ID}
+          
+          gcloud run services update-traffic query-service \
+            --to-latest \
+            --region=${REGION} \
+            --project=${PROJECT_ID}
+          
+          gcloud run services update-traffic client-service \
+            --to-latest \
+            --region=${REGION} \
+            --project=${PROJECT_ID}
+          
+          echo "✅ Traffic switched to new version"
+
+      # デプロイ結果の通知
+      - name: Deployment Summary
+        if: always()
+        run: |
+          echo "🚀 Deployment Summary"
+          echo "==================="
+          echo "Git SHA: ${GITHUB_SHA}"
+          echo "Image Tag: ${GITHUB_SHA::7}"
+          echo "Region: ${REGION}"
+          echo "Project: ${PROJECT_ID}"
+          
+          # サービス URL の表示
+          echo ""
+          echo "Service URLs:"
+          gcloud run services list \
+            --platform=managed \
+            --region=${REGION} \
+            --project=${PROJECT_ID} \
+            --format="table(SERVICE:label='Service',URL:label='URL')"
+
+      # Slack 通知（オプション）
+      - name: Notify Slack
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+          text: |
+            Deployment to Production: ${{ job.status }}
+            Commit: ${{ github.sha }}
+            Author: ${{ github.actor }}
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        continue-on-error: true

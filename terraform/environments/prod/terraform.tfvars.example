@@ -1,0 +1,42 @@
+project_id  = "your-gcp-project-id"
+region      = "asia-northeast1"
+environment = "prod"
+
+# Supabase configuration
+supabase_url         = "https://your-project.supabase.co"
+supabase_service_key = "your-supabase-service-key"
+
+# Firebase configuration
+firebase_config = {
+  api_key     = "your-firebase-api-key"
+  auth_domain = "your-project.firebaseapp.com"
+  project_id  = "your-firebase-project-id"
+}
+
+# Service configuration for production
+services = {
+  command-service = {
+    memory    = "1Gi"
+    cpu       = "2"
+    min_scale = 1
+    max_scale = 50
+    port      = 8080
+  }
+  query-service = {
+    memory    = "1Gi"
+    cpu       = "2"
+    min_scale = 1
+    max_scale = 50
+    port      = 8080
+  }
+  client-service = {
+    memory    = "2Gi"
+    cpu       = "4"
+    min_scale = 2
+    max_scale = 100
+    port      = 4000
+  }
+}
+
+enable_monitoring = true
+domain           = "api.your-domain.com"

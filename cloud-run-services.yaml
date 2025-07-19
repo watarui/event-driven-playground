@@ -1,0 +1,149 @@
+# Cloud Run サービス定義
+# 各マイクロサービスの構成を定義
+
+# Command Service
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: command-service
+  labels:
+    app: event-driven-playground
+    service: command
+spec:
+  template:
+    metadata:
+      annotations:
+        # 自動スケーリング設定
+        autoscaling.knative.dev/minScale: "0"
+        autoscaling.knative.dev/maxScale: "10"
+        # Cloud SQL 接続
+        run.googleapis.com/cloudsql-instances: PROJECT_ID:REGION:event-driven-playground-db
+        # CPU アロケーション
+        run.googleapis.com/cpu-throttling: "false"
+        # 実行環境
+        run.googleapis.com/execution-environment: "gen2"
+    spec:
+      containers:
+        - image: asia-northeast1-docker.pkg.dev/PROJECT_ID/event-driven-playground/command-service:latest
+          ports:
+            - containerPort: 4000
+          env:
+            - name: MIX_ENV
+              value: "prod"
+            - name: PORT
+              value: "4000"
+            - name: GOOGLE_CLOUD_PROJECT
+              value: PROJECT_ID
+          resources:
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 4000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 4000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+# Query Service
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: query-service
+  labels:
+    app: event-driven-playground
+    service: query
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "0"
+        autoscaling.knative.dev/maxScale: "10"
+        run.googleapis.com/cloudsql-instances: PROJECT_ID:REGION:event-driven-playground-db
+        run.googleapis.com/cpu-throttling: "false"
+        run.googleapis.com/execution-environment: "gen2"
+    spec:
+      containers:
+        - image: asia-northeast1-docker.pkg.dev/PROJECT_ID/event-driven-playground/query-service:latest
+          ports:
+            - containerPort: 4001
+          env:
+            - name: MIX_ENV
+              value: "prod"
+            - name: PORT
+              value: "4001"
+            - name: GOOGLE_CLOUD_PROJECT
+              value: PROJECT_ID
+          resources:
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 4001
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 4001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+# Client Service (GraphQL API)
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: client-service
+  labels:
+    app: event-driven-playground
+    service: client
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "0"
+        autoscaling.knative.dev/maxScale: "20"
+        run.googleapis.com/cloudsql-instances: PROJECT_ID:REGION:event-driven-playground-db
+        run.googleapis.com/cpu-throttling: "false"
+        run.googleapis.com/execution-environment: "gen2"
+    spec:
+      containers:
+        - image: asia-northeast1-docker.pkg.dev/PROJECT_ID/event-driven-playground/client-service:latest
+          ports:
+            - containerPort: 4000
+          env:
+            - name: MIX_ENV
+              value: "prod"
+            - name: PORT
+              value: "4000"
+            - name: PHX_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: client-service-config
+                  key: host
+            - name: GOOGLE_CLOUD_PROJECT
+              value: PROJECT_ID
+          resources:
+            limits:
+              cpu: "2"
+              memory: "1Gi"
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 4000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 4000
+            initialDelaySeconds: 10
+            periodSeconds: 10

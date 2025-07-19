@@ -1,0 +1,137 @@
+# Base Dockerfile for all services
+# This creates a shared base image with common dependencies
+
+ARG ELIXIR_VERSION=1.17.3
+ARG ERLANG_VERSION=27.2
+ARG ALPINE_VERSION=3.21.0
+
+FROM hexpm/elixir:${ELIXIR_VERSION}-erlang-${ERLANG_VERSION}-alpine-${ALPINE_VERSION} AS base
+
+# Install common build dependencies
+RUN apk add --no-cache \
+    build-base \
+    git \
+    curl \
+    nodejs \
+    npm \
+    python3 \
+    ca-certificates \
+    openssl \
+    ncurses-libs
+
+# Set common environment variables
+ENV MIX_ENV=prod \
+    MIX_HOME=/opt/mix \
+    HEX_HOME=/opt/hex \
+    BUILD_PATH=/opt/build \
+    APP_PATH=/opt/app
+
+# Install Hex and Rebar
+RUN mix local.hex --force && \
+    mix local.rebar --force
+
+# Create build user
+RUN addgroup -g 1000 -S elixir && \
+    adduser -u 1000 -S elixir -G elixir
+
+# Create directories
+RUN mkdir -p ${BUILD_PATH} ${APP_PATH} && \
+    chown -R elixir:elixir ${BUILD_PATH} ${APP_PATH} ${MIX_HOME} ${HEX_HOME}
+
+WORKDIR ${BUILD_PATH}
+
+# ========================================
+# Dependencies stage - for caching deps
+# ========================================
+FROM base AS deps
+
+# Copy mix files
+COPY --chown=elixir:elixir mix.exs mix.lock ./
+COPY --chown=elixir:elixir apps/*/mix.exs ./apps/
+
+# Switch to build user
+USER elixir
+
+# Get and compile dependencies
+RUN mix deps.get --only prod && \
+    mix deps.compile
+
+# ========================================
+# Build stage - compile the application
+# ========================================
+FROM deps AS build
+
+# Copy all application files
+COPY --chown=elixir:elixir config ./config
+COPY --chown=elixir:elixir apps ./apps
+COPY --chown=elixir:elixir rel ./rel
+COPY --chown=elixir:elixir lib ./lib
+COPY --chown=elixir:elixir priv ./priv
+
+# Compile the application
+RUN mix compile
+
+# ========================================
+# Release stage - create the release
+# ========================================
+FROM build AS release
+
+# Build arguments for service-specific builds
+ARG SERVICE_NAME
+ENV SERVICE_NAME=${SERVICE_NAME}
+
+# Create release
+RUN mix release ${SERVICE_NAME}
+
+# ========================================
+# Runtime base - minimal runtime image
+# ========================================
+FROM alpine:${ALPINE_VERSION} AS runtime-base
+
+# Install runtime dependencies only
+RUN apk add --no-cache \
+    libstdc++ \
+    openssl \
+    ncurses-libs \
+    ca-certificates \
+    curl
+
+# Create runtime user
+RUN addgroup -g 1000 -S elixir && \
+    adduser -u 1000 -S elixir -G elixir
+
+# ========================================
+# Final runtime stage
+# ========================================
+FROM runtime-base AS runtime
+
+ARG SERVICE_NAME
+ENV SERVICE_NAME=${SERVICE_NAME}
+
+# Set runtime environment
+ENV LANG=C.UTF-8 \
+    HOME=/home/elixir \
+    TERM=xterm \
+    RELEASE_TMP=/tmp
+
+# Create necessary directories
+RUN mkdir -p /app /tmp && \
+    chown -R elixir:elixir /app /tmp
+
+WORKDIR /app
+
+# Copy release from build stage
+COPY --from=release --chown=elixir:elixir /opt/build/_build/prod/rel/${SERVICE_NAME} ./
+
+# Switch to runtime user
+USER elixir
+
+# Expose default port
+EXPOSE 8080
+
+# Health check with configurable timeout and interval
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-8080}/health/live || exit 1
+
+# Default command
+CMD ["bin/${SERVICE_NAME}", "start"]

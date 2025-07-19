@@ -1,0 +1,34 @@
+# ローカル開発環境用の設定
+
+# Google Cloud プロジェクト ID
+project_id = "your-gcp-project-id"
+
+# リージョン（東京）
+region = "asia-northeast1"
+
+# Firebase 設定
+# Firebase Console から取得:
+# 1. https://console.firebase.google.com にアクセス
+# 2. プロジェクトを選択
+# 3. プロジェクト設定（歯車アイコン）
+# 4. 「全般」タブの下部「マイアプリ」セクション
+# 5. ウェブアプリを選択（なければ作成）
+firebase_config = {
+  api_key     = "AIzaSy..."  # Firebase API キー
+  auth_domain = "your-project-id.firebaseapp.com"
+  project_id  = "your-project-id"
+}
+
+# Google OAuth 設定
+# 取得方法:
+# 1. Google Cloud Console (https://console.cloud.google.com) にアクセス
+# 2. メニュー → APIとサービス → 認証情報
+# 3. 「認証情報を作成」→「OAuth クライアント ID」
+# 4. アプリケーションの種類: ウェブアプリケーション
+# 5. 承認済みのJavaScript生成元に以下を追加:
+#    - http://localhost:3000
+#    - http://localhost:4000
+# 6. 承認済みのリダイレクト URI に以下を追加:
+#    - http://localhost:3000/api/auth/callback/google
+google_oauth_client_id     = "your-oauth-client-id.apps.googleusercontent.com"
+google_oauth_client_secret = "GOCSPX-your-oauth-client-secret"

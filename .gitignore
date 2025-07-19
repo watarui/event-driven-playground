@@ -1,0 +1,202 @@
+# Elixir Umbrella Project .gitignore
+
+# Elixir builds and artifacts
+/_build/
+/deps/
+/*.ez
+*.beam
+*.app
+*.plt
+
+# Elixir Language Server
+/.elixir_ls/
+
+# Erlang crash dumps
+erl_crash.dump
+*.dump
+
+# Environment variables
+.env
+.env.local
+.env.production
+.env.development
+.env.test
+!.env.example
+
+# Database
+*.db
+*.sqlite3
+
+# Logs
+*.log
+/logs/
+
+# Test artifacts
+/cover/
+/doc/
+
+# Phoenix assets
+/apps/*/priv/static/
+/apps/*/assets/node_modules/
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Protocol Buffers generated files (optional)
+# apps/shared/lib/proto/*.pb.ex
+
+# Mix lock file (keep this for reproducible builds)
+# mix.lock
+
+# Release builds
+/_build/prod/
+/rel/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.#*
+\#*#
+
+# Test/temporary Dockerfiles
+Dockerfile.tmp
+Dockerfile.temp
+Dockerfile.test
+Dockerfile.simple
+
+.claude/
+
+/old/
+
+# Kubernetes secrets
+k8s-secret-*.yaml
+sealed-secret.yaml
+
+# Local kubeconfig
+kubeconfig
+*.kubeconfig
+
+# Generated files
+k8s/generated/
+
+# Coverage reports
+excoveralls.json
+
+# Package tarballs
+shared-*.tar
+command_service-*.tar
+query_service-*.tar
+client_service-*.tar
+
+# Frontend (Next.js/React)
+# ========================
+
+# Next.js
+/frontend/.next/
+/frontend/out/
+/frontend/.vercel/
+
+# Environment variables
+/frontend/.env*
+!/frontend/.env.example
+!/frontend/.env*.example
+
+# Production builds
+/frontend/build/
+/frontend/dist/
+
+# Dependencies
+/frontend/node_modules/
+/frontend/.pnp
+/frontend/.pnp.js
+
+# Bun
+/frontend/bun.lockb
+
+# Package manager logs
+/frontend/npm-debug.log*
+/frontend/yarn-debug.log*
+/frontend/yarn-error.log*
+/frontend/pnpm-debug.log*
+/frontend/.npm/
+
+# TypeScript
+/frontend/*.tsbuildinfo
+/frontend/next-env.d.ts
+
+# Biome
+/frontend/.biome/
+
+# Testing
+/frontend/coverage/
+/frontend/.nyc_output/
+
+# Debug
+/frontend/.debug/
+
+# Misc
+/frontend/.cache/
+/frontend/.turbo/
+
+# PWA files
+/frontend/public/sw.js
+/frontend/public/workbox-*.js
+
+# Terraform
+terraform/**/.terraform/
+terraform/**/*.tfstate
+terraform/**/*.tfstate.*
+terraform/**/*.tfvars
+!terraform/**/*.tfvars.example
+terraform/**/.terraform.lock.hcl
+terraform/**/crash.log
+terraform/**/crash.*.log
+terraform/**/override.tf
+terraform/**/override.tf.json
+terraform/**/*_override.tf
+terraform/**/*_override.tf.json
+terraform/**/.terraformrc
+terraform/**/terraform.rc
+
+# Terraform env-specific state files
+terraform/environments/*/*.tfstate
+terraform/environments/*/*.tfstate.*
+terraform/environments/*/.terraform/
+terraform/environments/*/.terraform.lock.hcl
+
+# Google Cloud
+gcp-credentials.json
+service-account-key.json
+*-sa-key.json
+
+# Security - Private keys and credentials
+*.pem
+*.p12
+*.pfx
+*.key
+*.cert
+*.crt
+*private-key*
+*secret-key*
+*credential*
+*token.json
+*token.txt
+
+# Scripts with secrets
+scripts/set-firebase-key.sh
+scripts/*-secret*.sh
+
+# Vercel
+.vercel/
+*.vercel
+.env.vercel
+.vercel
