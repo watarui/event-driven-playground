@@ -53,7 +53,7 @@ COPY --chown=elixir:elixir apps/*/mix.exs ./apps/
 USER elixir
 
 # Get and compile dependencies
-RUN mix deps.get --only prod && \
+RUN mix deps.get && \
     mix deps.compile
 
 # ========================================
