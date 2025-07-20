@@ -41,9 +41,10 @@ jobs:
         run: |
           gcloud auth configure-docker ${REGION}-docker.pkg.dev
 
-      # ビルドとプッシュ（Cloud Build を使用）
-      - name: Build and Push Images
+      # ビルドとプッシュ（Cloud Build を使用 - マイグレーションイメージも同時ビルド）
+      - name: Build and Push All Images
         run: |
+          echo "🔨 Building all images including migration..."
           # Cloud Build を実行（ログのストリーミングエラーは無視）
           gcloud builds submit \
             --config=cloudbuild-optimized.yaml \
@@ -55,7 +56,9 @@ jobs:
           echo "Waiting for build ${BUILD_ID} to complete..."
           
           # ビルドステータスを確認
-          while true; do
+          MAX_WAIT=300  # 5分
+          ELAPSED=0
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
             STATUS=$(gcloud builds describe ${BUILD_ID} --project=${PROJECT_ID} --format="value(status)")
             if [[ "${STATUS}" == "SUCCESS" ]]; then
               echo "✅ Build completed successfully"
@@ -64,38 +67,12 @@ jobs:
               echo "❌ Build failed with status: ${STATUS}"
               exit 1
             else
-              echo "⏳ Build status: ${STATUS}. Waiting..."
-              sleep 10
+              echo "⏳ Build status: ${STATUS}. Elapsed: ${ELAPSED}s/${MAX_WAIT}s"
+              sleep 5
+              ELAPSED=$((ELAPSED + 5))
             fi
           done
       
-      # マイグレーションイメージのビルド
-      - name: Build Migration Image
-        run: |
-          echo "🔨 Building migration image..."
-          gcloud builds submit \
-            --config=cloudbuild-migrate.yaml \
-            --project=${PROJECT_ID} || true
-          
-          # ビルドの完了を待つ
-          sleep 5
-          BUILD_ID=$(gcloud builds list --limit=1 --format="value(id)" --project=${PROJECT_ID})
-          echo "Waiting for migration build ${BUILD_ID} to complete..."
-          
-          # ビルドステータスを確認
-          while true; do
-            STATUS=$(gcloud builds describe ${BUILD_ID} --project=${PROJECT_ID} --format="value(status)")
-            if [[ "${STATUS}" == "SUCCESS" ]]; then
-              echo "✅ Migration build completed successfully"
-              break
-            elif [[ "${STATUS}" == "FAILURE" || "${STATUS}" == "TIMEOUT" || "${STATUS}" == "CANCELLED" ]]; then
-              echo "❌ Migration build failed with status: ${STATUS}"
-              exit 1
-            else
-              echo "⏳ Build status: ${STATUS}. Waiting..."
-              sleep 10
-            fi
-          done
 
       # マイグレーションの実行
       - name: Run Database Migrations
@@ -118,39 +95,51 @@ jobs:
             --wait
           echo "✅ Migrations completed"
 
-      # サービスのデプロイ
-      - name: Deploy Services
+      # サービスのデプロイ（並列実行）
+      - name: Deploy Services in Parallel
         run: |
           # イメージタグ
           IMAGE_TAG=${GITHUB_SHA::7}
           REVISION_TAG="sha-${IMAGE_TAG}"
           
-          # Command Service
+          echo "🚀 Deploying all services in parallel..."
+          
+          # 各サービスをバックグラウンドでデプロイ
           gcloud run deploy command-service \
             --image=${ARTIFACT_REGISTRY}/command-service:${IMAGE_TAG} \
             --region=${REGION} \
             --project=${PROJECT_ID} \
             --platform=managed \
             --tag=${REVISION_TAG} \
-            --no-traffic
+            --no-traffic \
+            --async &
+          PID_COMMAND=$!
           
-          # Query Service
           gcloud run deploy query-service \
             --image=${ARTIFACT_REGISTRY}/query-service:${IMAGE_TAG} \
             --region=${REGION} \
             --project=${PROJECT_ID} \
             --platform=managed \
             --tag=${REVISION_TAG} \
-            --no-traffic
+            --no-traffic \
+            --async &
+          PID_QUERY=$!
           
-          # Client Service
           gcloud run deploy client-service \
             --image=${ARTIFACT_REGISTRY}/client-service:${IMAGE_TAG} \
             --region=${REGION} \
             --project=${PROJECT_ID} \
             --platform=managed \
             --tag=${REVISION_TAG} \
-            --no-traffic
+            --no-traffic \
+            --async &
+          PID_CLIENT=$!
+          
+          # 全デプロイの完了を待つ
+          echo "⏳ Waiting for all deployments to complete..."
+          wait $PID_COMMAND $PID_QUERY $PID_CLIENT
+          
+          echo "✅ All services deployed successfully"
 
       # ヘルスチェック
       - name: Health Check New Versions
@@ -172,6 +161,9 @@ jobs:
             
             # ヘルスチェック（リトライ付き）
             HEALTHY=false
+            # 初回の待機（サービス起動待ち）
+            sleep 15
+            
             for i in {1..5}; do
               # 公開エンドポイントにアクセス（認証なし）
               if curl -f -s -o /dev/null -w "%{http_code}" "${SERVICE_URL}/health" | grep -q "200"; then
@@ -181,7 +173,7 @@ jobs:
               else
                 echo "⏳ Waiting for ${SERVICE} to be ready (attempt $i/5)..."
                 if [ $i -lt 5 ]; then
-                  sleep 10
+                  sleep 5  # 10秒から5秒に短縮
                 fi
               fi
             done
@@ -200,27 +192,35 @@ jobs:
           
           echo "✅ All services are healthy"
 
-      # トラフィックの切り替え
-      - name: Switch Traffic
+      # トラフィックの切り替え（並列実行）
+      - name: Switch Traffic in Parallel
         run: |
           IMAGE_TAG=${GITHUB_SHA::7}
           REVISION_TAG="sha-${IMAGE_TAG}"
           
-          # 全サービスのトラフィックを新バージョンに切り替え
+          echo "🔄 Switching traffic to new version..."
+          
+          # 全サービスのトラフィックを並列で切り替え
           gcloud run services update-traffic command-service \
             --to-tags=${REVISION_TAG}=100 \
             --region=${REGION} \
-            --project=${PROJECT_ID}
+            --project=${PROJECT_ID} &
+          PID_COMMAND=$!
           
           gcloud run services update-traffic query-service \
             --to-tags=${REVISION_TAG}=100 \
             --region=${REGION} \
-            --project=${PROJECT_ID}
+            --project=${PROJECT_ID} &
+          PID_QUERY=$!
           
           gcloud run services update-traffic client-service \
             --to-tags=${REVISION_TAG}=100 \
             --region=${REGION} \
-            --project=${PROJECT_ID}
+            --project=${PROJECT_ID} &
+          PID_CLIENT=$!
+          
+          # 全てのトラフィック切り替えの完了を待つ
+          wait $PID_COMMAND $PID_QUERY $PID_CLIENT
           
           echo "✅ Traffic switched to new version (${REVISION_TAG})"
 
