@@ -74,7 +74,14 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost/event_driven_playground_test
           MIX_ENV: test
         run: |
+          # 既存のデータベースを削除（エラーは無視）
+          echo "Dropping existing databases..."
+          mix ecto.drop -r Shared.Infrastructure.EventStore.Repo || true
+          mix ecto.drop -r CommandService.Repo || true
+          mix ecto.drop -r QueryService.Repo || true
+          
           # データベースを作成
+          echo ""
           echo "Creating databases..."
           mix ecto.create -r Shared.Infrastructure.EventStore.Repo
           mix ecto.create -r CommandService.Repo
