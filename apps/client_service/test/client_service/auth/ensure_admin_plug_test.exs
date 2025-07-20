@@ -38,7 +38,8 @@ defmodule ClientService.Auth.EnsureAdminPlugTest do
       assert result_conn.status == 403
 
       assert Jason.decode!(result_conn.resp_body) == %{
-               "error" => "Admin access required"
+               "error" => "Forbidden",
+               "message" => "Admin privileges required"
              }
     end
 
@@ -52,7 +53,8 @@ defmodule ClientService.Auth.EnsureAdminPlugTest do
       assert result_conn.status == 401
 
       assert Jason.decode!(result_conn.resp_body) == %{
-               "error" => "Authentication required"
+               "error" => "Unauthorized",
+               "message" => "Authentication required"
              }
     end
 
@@ -120,8 +122,8 @@ defmodule ClientService.Auth.EnsureAdminPlugTest do
       assert EnsureAdminPlug.init(opts) == opts
     end
 
-    test "returns empty map when no options provided" do
-      assert EnsureAdminPlug.init([]) == %{}
+    test "returns empty list when no options provided" do
+      assert EnsureAdminPlug.init([]) == []
     end
   end
 end

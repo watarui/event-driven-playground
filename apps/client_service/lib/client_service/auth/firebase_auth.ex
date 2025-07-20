@@ -182,6 +182,13 @@ defmodule ClientService.Auth.FirebaseAuth do
     |> Map.get(key, default)
   end
 
+  @doc """
+  ユーザーのロールを取得
+  """
+  def get_user_role(claims) do
+    Shared.Auth.Permissions.determine_role(claims)
+  end
+
   # Firebase プロジェクト ID の取得
   defp get_firebase_project_id do
     project_id =

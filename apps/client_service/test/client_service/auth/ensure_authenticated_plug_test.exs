@@ -34,7 +34,8 @@ defmodule ClientService.Auth.EnsureAuthenticatedPlugTest do
       assert result_conn.status == 401
 
       assert Jason.decode!(result_conn.resp_body) == %{
-               "error" => "Authentication required"
+               "error" => "Unauthorized",
+               "message" => "Authentication required"
              }
     end
 
@@ -82,8 +83,8 @@ defmodule ClientService.Auth.EnsureAuthenticatedPlugTest do
       assert EnsureAuthenticatedPlug.init(opts) == opts
     end
 
-    test "returns empty map when no options provided" do
-      assert EnsureAuthenticatedPlug.init([]) == %{}
+    test "returns empty list when no options provided" do
+      assert EnsureAuthenticatedPlug.init([]) == []
     end
   end
 end

@@ -13,8 +13,16 @@ defmodule ClientService.Auth.Guardian do
   """
   @impl Guardian
   def subject_for_token(resource, _claims) do
-    sub = to_string(resource.user_id || resource.id)
-    {:ok, sub}
+    case resource do
+      %{user_id: user_id} when not is_nil(user_id) ->
+        {:ok, to_string(user_id)}
+      
+      %{id: id} when not is_nil(id) ->
+        {:ok, to_string(id)}
+      
+      _ ->
+        {:error, :invalid_resource}
+    end
   end
 
   @doc """

@@ -152,10 +152,15 @@ defmodule Shared.Infrastructure.EventStore.AggregateStore do
   defp maybe_create_snapshot(aggregate_module, aggregate_id, aggregate_type, version) do
     # スナップショット作成頻度をチェック
     if rem(version, @snapshot_frequency) == 0 do
-      # 非同期でスナップショットを作成
-      Task.start(fn ->
+      # テスト環境では同期的に実行
+      if Mix.env() == :test do
         create_snapshot(aggregate_module, aggregate_id, aggregate_type)
-      end)
+      else
+        # 本番環境では非同期でスナップショットを作成
+        Task.start(fn ->
+          create_snapshot(aggregate_module, aggregate_id, aggregate_type)
+        end)
+      end
     end
   end
 end

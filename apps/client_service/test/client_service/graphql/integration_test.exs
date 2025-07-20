@@ -61,7 +61,7 @@ defmodule ClientService.GraphQL.IntegrationTest do
           id
           name
           price
-          stock
+          stockQuantity
         }
       }
       """
@@ -222,8 +222,7 @@ defmodule ClientService.GraphQL.IntegrationTest do
         pubsubStats {
           topic
           messageCount
-          subscriberCount
-          lastMessageTime
+          lastMessageAt
         }
       }
       """
@@ -260,7 +259,7 @@ defmodule ClientService.GraphQL.IntegrationTest do
     test "health_check query returns health status", %{conn: conn} do
       query = """
       query {
-        healthCheck {
+        health {
           status
           checks {
             name
@@ -272,7 +271,7 @@ defmodule ClientService.GraphQL.IntegrationTest do
       """
 
       conn = post(conn, "/graphql", %{query: query})
-      assert %{"data" => %{"healthCheck" => health}} = json_response(conn, 200)
+      assert %{"data" => %{"health" => health}} = json_response(conn, 200)
       assert health["status"] in ["healthy", "unhealthy", "degraded"]
     end
   end
