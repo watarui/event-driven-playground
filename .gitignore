@@ -1,5 +1,10 @@
 # Elixir Umbrella Project .gitignore
 
+# Node.js (root level - not supposed to be here)
+/node_modules/
+/package.json
+/package-lock.json
+
 # Elixir builds and artifacts
 /_build/
 /deps/
