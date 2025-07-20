@@ -70,6 +70,13 @@ jobs:
           mix ecto.drop -r CommandService.Repo || true
           mix ecto.drop -r QueryService.Repo || true
           
+          # 念のため、psql で直接データベースを削除
+          echo ""
+          echo "Force dropping databases via psql..."
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "DROP DATABASE IF EXISTS event_driven_playground_event_store_test;" || true
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "DROP DATABASE IF EXISTS event_driven_playground_command_test;" || true
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "DROP DATABASE IF EXISTS event_driven_playground_query_test;" || true
+          
           # データベースを作成
           echo ""
           echo "Creating databases..."
