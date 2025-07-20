@@ -68,11 +68,11 @@ defmodule EventDrivenPlayground.MixProject do
       ],
       # Setup all databases
       "ecto.setup": [
-        "ecto.create --all",
-        "ecto.migrate --all"
+        "ecto.create",
+        "ecto.migrate"
       ],
-      "ecto.reset": ["ecto.drop --all", "ecto.setup"],
-      "ecto.migrate": ["ecto.migrate --all"]
+      "ecto.reset": ["ecto.drop", "ecto.setup"],
+      "ecto.migrate": ["ecto.migrate"]
     ]
   end
 end

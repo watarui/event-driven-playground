@@ -10,7 +10,7 @@ on:
 
 env:
   MIX_ENV: test
-  ELIXIR_VERSION: 1.17.3
+  ELIXIR_VERSION: 1.18.1
   OTP_VERSION: 27.2
 
 jobs:
@@ -19,13 +19,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        elixir: ['1.17.3', '1.16.3']
+        elixir: ['1.18.1', '1.17.3']
         otp: ['27.2', '26.2']
         partition: [1, 2, 3, 4]
         exclude:
-          - elixir: '1.16.3'
-            otp: '27.2'
           - elixir: '1.17.3'
+            otp: '27.2'
+          - elixir: '1.18.1'
             otp: '26.2'
     
     services:
