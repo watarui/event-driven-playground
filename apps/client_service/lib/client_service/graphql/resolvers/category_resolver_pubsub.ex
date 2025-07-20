@@ -31,16 +31,11 @@ defmodule ClientService.GraphQL.Resolvers.CategoryResolverPubsub do
   カテゴリ一覧を取得
   """
   def list_categories(_parent, args, _resolution) do
-    # ページ番号から offset を計算
-    page = Map.get(args, :page, 1)
-    page_size = Map.get(args, :page_size, 20)
-    offset = (page - 1) * page_size
-
     query = %{
       __struct__: "QueryService.Application.Queries.CategoryQueries.ListCategories",
       query_type: "category.list",
-      limit: page_size,
-      offset: offset,
+      limit: Map.get(args, :limit, 20),
+      offset: Map.get(args, :offset, 0),
       metadata: nil
     }
 
@@ -52,16 +47,12 @@ defmodule ClientService.GraphQL.Resolvers.CategoryResolverPubsub do
   カテゴリを検索
   """
   def search_categories(_parent, %{search_term: search_term} = args, _resolution) do
-    page = Map.get(args, :page, 1)
-    page_size = Map.get(args, :page_size, 20)
-    offset = (page - 1) * page_size
-
     query = %{
       __struct__: "QueryService.Application.Queries.CategoryQueries.SearchCategories",
       query_type: "category.search",
       search_term: search_term,
-      limit: page_size,
-      offset: offset,
+      limit: Map.get(args, :limit, 20),
+      offset: Map.get(args, :offset, 0),
       metadata: nil
     }
 

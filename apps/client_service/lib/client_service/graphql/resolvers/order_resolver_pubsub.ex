@@ -94,16 +94,11 @@ defmodule ClientService.GraphQL.Resolvers.OrderResolverPubsub do
   注文一覧を取得
   """
   def list_orders(_parent, args, _resolution) do
-    # ページ番号から offset を計算
-    page = Map.get(args, :page, 1)
-    page_size = Map.get(args, :page_size, 20)
-    offset = (page - 1) * page_size
-
     query = %{
       __struct__: "QueryService.Application.Queries.OrderQueries.ListOrders",
       query_type: "order.list",
-      limit: page_size,
-      offset: offset,
+      limit: Map.get(args, :limit, 20),
+      offset: Map.get(args, :offset, 0),
       user_id: Map.get(args, :user_id),
       status: Map.get(args, :status),
       metadata: nil
@@ -117,16 +112,12 @@ defmodule ClientService.GraphQL.Resolvers.OrderResolverPubsub do
   ユーザーの注文一覧を取得
   """
   def list_user_orders(_parent, %{user_id: user_id} = args, _resolution) do
-    page = Map.get(args, :page, 1)
-    page_size = Map.get(args, :page_size, 20)
-    offset = (page - 1) * page_size
-
     query = %{
       __struct__: "QueryService.Application.Queries.OrderQueries.ListUserOrders",
       query_type: "order.list_by_user",
       user_id: user_id,
-      limit: page_size,
-      offset: offset,
+      limit: Map.get(args, :limit, 20),
+      offset: Map.get(args, :offset, 0),
       metadata: nil
     }
 

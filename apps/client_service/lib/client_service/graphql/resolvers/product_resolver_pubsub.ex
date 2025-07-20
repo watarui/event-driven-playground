@@ -27,16 +27,11 @@ defmodule ClientService.GraphQL.Resolvers.ProductResolverPubsub do
   商品一覧を取得
   """
   def list_products(_parent, args, _resolution) do
-    # ページ番号から offset を計算
-    page = Map.get(args, :page, 1)
-    page_size = Map.get(args, :page_size, 20)
-    offset = (page - 1) * page_size
-
     query = %{
       __struct__: "QueryService.Application.Queries.ProductQueries.ListProducts",
       query_type: "product.list",
-      limit: page_size,
-      offset: offset,
+      limit: Map.get(args, :limit, 20),
+      offset: Map.get(args, :offset, 0),
       metadata: nil
     }
 
@@ -48,16 +43,12 @@ defmodule ClientService.GraphQL.Resolvers.ProductResolverPubsub do
   カテゴリ別に商品を取得
   """
   def list_products_by_category(_parent, %{category_id: category_id} = args, _resolution) do
-    page = Map.get(args, :page, 1)
-    page_size = Map.get(args, :page_size, 20)
-    offset = (page - 1) * page_size
-
     query = %{
       __struct__: "QueryService.Application.Queries.ProductQueries.ListProducts",
       query_type: "product.list",
       category_id: category_id,
-      limit: page_size,
-      offset: offset,
+      limit: Map.get(args, :limit, 20),
+      offset: Map.get(args, :offset, 0),
       metadata: nil
     }
 
@@ -69,16 +60,13 @@ defmodule ClientService.GraphQL.Resolvers.ProductResolverPubsub do
   商品を検索
   """
   def search_products(_parent, %{search_term: search_term} = args, _resolution) do
-    page = Map.get(args, :page, 1)
-    page_size = Map.get(args, :page_size, 20)
-    offset = (page - 1) * page_size
 
     query = %{
       __struct__: "QueryService.Application.Queries.ProductQueries.SearchProducts",
       query_type: "product.search",
       search_term: search_term,
-      limit: page_size,
-      offset: offset,
+      limit: Map.get(args, :limit, 20),
+      offset: Map.get(args, :offset, 0),
       metadata: nil
     }
 
