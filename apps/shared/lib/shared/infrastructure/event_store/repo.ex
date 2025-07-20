@@ -8,8 +8,11 @@ defmodule Shared.Infrastructure.EventStore.Repo do
     adapter: Ecto.Adapters.Postgres
 
   # SQL クエリのログ出力
+  @impl true
   def init(_, config) do
-    config = Keyword.put(config, :log, :debug)
+    config = config
+      |> Keyword.put(:log, :debug)
+      |> Keyword.put(:migration_default_prefix, "event_store")
     {:ok, config}
   end
 end
