@@ -100,3 +100,8 @@ variable "secret_key_base" {
   type        = string
   sensitive   = true
 }
+
+variable "alert_email_address" {
+  description = "Email address for receiving monitoring alerts"
+  type        = string
+}

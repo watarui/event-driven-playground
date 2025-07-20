@@ -91,6 +91,25 @@
 - 実行コマンド: `gcloud run jobs execute database-migrate`
 - 全スキーマのマイグレーションを自動実行
 
+### 10. GitHub Actions の更新完了
+- デプロイワークフローにマイグレーション実行ステップを追加
+- マイグレーションイメージのビルドステップを追加
+- `database-migrate` ジョブを実行するように修正
+
+### 11. Frontend の Vercel デプロイ準備完了
+- `vercel.json` を作成（bun 対応）
+- TypeScript エラーを修正
+- Firebase 依存関係の問題を解決
+- Vercel デプロイガイドを更新
+
+### 12. 監視とアラートの設定完了
+- Google Cloud Monitoring の設定を追加
+- メール通知チャンネルを設定
+- カスタムアラートを追加：
+  - データベース接続エラーアラート
+  - 高メモリ使用率アラート
+- 監視ダッシュボードを自動生成
+
 ## 現在の状況
 
 ### デプロイ完了
@@ -102,13 +121,14 @@
 ## 今後のタスク
 
 ### 1. GitHub Actions の更新
-- [ ] デプロイワークフローにマイグレーション実行ステップを追加
-- [ ] `gcloud run jobs execute database-migrate` をデプロイ前に実行
+- [x] デプロイワークフローにマイグレーション実行ステップを追加
+- [x] `gcloud run jobs execute database-migrate` をデプロイ前に実行
 
 ### 2. Frontend のデプロイ
-- [ ] Vercel へのデプロイ設定
-- [ ] 環境変数の設定
+- [x] Vercel へのデプロイ設定
+- [x] 環境変数の設定（VERCEL_ENV_SETUP.md を参照）
 - [ ] Firebase Authentication の接続確認
+- [ ] 実際に Vercel へデプロイ
 
 ### 3. 動作確認
 - [ ] GraphQL エンドポイントのテスト
@@ -117,9 +137,10 @@
 - [ ] Saga パターンの動作確認
 
 ### 4. 監視とログの設定
-- [ ] Cloud Monitoring ダッシュボードの確認
-- [ ] ログの収集確認
-- [ ] アラートの設定
+- [x] Cloud Monitoring ダッシュボードの設定
+- [x] ログの収集設定
+- [x] アラートの設定
+- [ ] アラートメールアドレスを実際のアドレスに変更（現在は alerts@example.com）
 
 ## 重要な注意点
 

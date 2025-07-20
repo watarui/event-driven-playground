@@ -157,5 +157,7 @@ module "monitoring" {
   environment  = var.environment
   services     = keys(var.services)
   
+  notification_channels = var.enable_monitoring ? [google_monitoring_notification_channel.email[0].name] : []
+  
   depends_on = [module.cloud_run]
 }

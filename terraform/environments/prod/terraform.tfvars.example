@@ -40,3 +40,6 @@ services = {
 
 enable_monitoring = true
 domain           = "api.your-domain.com"
+
+# Monitoring alert email
+alert_email_address = "alerts@example.com"

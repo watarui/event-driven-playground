@@ -73,22 +73,6 @@ export function AdminSetupButton() {
     return null
   }
 
-  // 管理者が既に存在する場合のメッセージ（通常は上の条件で表示されないが、念のため）
-  // この条件は実際には到達しないが、型安全のために残す
-  if (adminExists === true) {
-    return (
-      <div className="p-4 bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-800 rounded-lg">
-        <div className="flex items-start gap-3">
-          <Shield className="w-5 h-5 text-gray-600 dark:text-gray-400 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-sm text-gray-700 dark:text-gray-300">
-              管理者権限が必要な場合は、既存の管理者にお問い合わせください。
-            </p>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">

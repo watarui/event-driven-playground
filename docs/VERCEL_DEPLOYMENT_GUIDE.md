@@ -12,9 +12,9 @@
 
 以下のサービスが Google Cloud Run にデプロイされています：
 
-- **Client Service**: https://client-service-prod-581148615576.asia-northeast1.run.app
-- **Query Service**: https://query-service-prod-581148615576.asia-northeast1.run.app
-- **Command Service**: https://command-service-prod-581148615576.asia-northeast1.run.app
+- **Client Service**: https://client-service-741925348867.asia-northeast1.run.app
+- **Query Service**: https://query-service-741925348867.asia-northeast1.run.app
+- **Command Service**: https://command-service-741925348867.asia-northeast1.run.app
 
 ## 環境変数の設定
 
@@ -23,7 +23,7 @@ Vercel ダッシュボードで以下の環境変数を設定してください�
 ### 1. WebSocket エンドポイント
 
 ```
-NEXT_PUBLIC_WS_ENDPOINT=wss://client-service-prod-581148615576.asia-northeast1.run.app/socket/websocket
+NEXT_PUBLIC_WS_ENDPOINT=wss://client-service-741925348867.asia-northeast1.run.app/socket/websocket
 ```
 
 ### 2. Firebase Configuration (Public)
