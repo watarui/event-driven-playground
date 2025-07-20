@@ -14,6 +14,9 @@ defmodule Shared.Release do
     # Load the application
     load_app()
 
+    # スキーマを作成（マイグレーションとは別のトランザクションで実行）
+    ensure_schemas_exist()
+
     # Run migrations for each repo
     for repo <- repos() do
       app = Keyword.get(repo.config(), :otp_app)
@@ -122,5 +125,28 @@ defmodule Shared.Release do
         # In release, use the priv directory
         Path.join([priv_dir, "repo", filename])
     end
+  end
+
+  defp ensure_schemas_exist do
+    # Event Store スキーマを作成
+    {:ok, _, _} =
+      Ecto.Migrator.with_repo(Shared.Infrastructure.EventStore.Repo, fn repo ->
+        Ecto.Adapters.SQL.query!(repo, "CREATE SCHEMA IF NOT EXISTS event_store", [])
+        {:ok, :schema_created, []}
+      end)
+
+    # Command Service スキーマを作成
+    {:ok, _, _} =
+      Ecto.Migrator.with_repo(CommandService.Repo, fn repo ->
+        Ecto.Adapters.SQL.query!(repo, "CREATE SCHEMA IF NOT EXISTS command", [])
+        {:ok, :schema_created, []}
+      end)
+
+    # Query Service スキーマを作成
+    {:ok, _, _} =
+      Ecto.Migrator.with_repo(QueryService.Repo, fn repo ->
+        Ecto.Adapters.SQL.query!(repo, "CREATE SCHEMA IF NOT EXISTS query", [])
+        {:ok, :schema_created, []}
+      end)
   end
 end

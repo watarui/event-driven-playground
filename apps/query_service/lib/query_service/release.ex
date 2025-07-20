@@ -8,6 +8,9 @@ defmodule QueryService.Release do
   def migrate do
     load_app()
 
+    # スキーマを作成（マイグレーションとは別のトランザクションで実行）
+    ensure_schema_exists()
+
     for repo <- repos() do
       {:ok, _, _} = Ecto.Migrator.with_repo(repo, &Ecto.Migrator.run(&1, :up, all: true))
     end
@@ -24,5 +27,15 @@ defmodule QueryService.Release do
 
   defp load_app do
     Application.load(@app)
+  end
+
+  defp ensure_schema_exists do
+    # リポジトリを使用してスキーマを作成
+    {:ok, _, _} =
+      Ecto.Migrator.with_repo(QueryService.Repo, fn repo ->
+        # スキーマ作成はトランザクション外で実行
+        Ecto.Adapters.SQL.query!(repo, "CREATE SCHEMA IF NOT EXISTS query", [])
+        {:ok, :schema_created, []}
+      end)
   end
 end
