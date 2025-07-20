@@ -15,6 +15,11 @@ PERMISSION_DENIED: Permission 'run.jobs.run' denied on resource
 2. `WIF_SERVICE_ACCOUNT` シークレットの値を確認
 3. このサービスアカウントに必要な権限を付与する
 
+現在のプロジェクトでは：
+- サービスアカウント: `event-driven-playground-runner@event-driven-playground-prod.iam.gserviceaccount.com`
+- Workload Identity Pool: `github`
+- Provider: `github-provider`
+
 ### 2. 必要な権限
 
 GitHub Actions のサービスアカウントには以下の権限が必要：
