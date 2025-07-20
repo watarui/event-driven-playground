@@ -1,17 +1,17 @@
 # GitHub Actions 用のサービスアカウント設定
-# 注: このファイルは GitHub Actions の WIF_SERVICE_ACCOUNT シークレットで
-# 指定されているサービスアカウントに権限を追加します
+# 注: GitHub Actions は Workload Identity Federation を使用している可能性があります
+# 正確なサービスアカウント名は GitHub Actions の WIF_SERVICE_ACCOUNT シークレットを確認してください
 
-# GitHub Actions サービスアカウントに Cloud Run Jobs の実行権限を追加
-resource "google_project_iam_member" "github_actions_run_jobs" {
+# 一時的な解決策として、Cloud Run サービスアカウントに Jobs の実行権限を追加
+resource "google_project_iam_member" "cloud_run_sa_run_jobs" {
   project = var.project_id
   role    = "roles/run.developer"
-  member  = "serviceAccount:github-actions@${var.project_id}.iam.gserviceaccount.com"
+  member  = "serviceAccount:${google_service_account.cloud_run_sa.email}"
 }
 
-# GitHub Actions サービスアカウントに Cloud Run Admin 権限を追加（Jobs の作成/更新に必要）
-resource "google_project_iam_member" "github_actions_run_admin" {
+# Cloud Run サービスアカウントに Jobs の管理権限を追加
+resource "google_project_iam_member" "cloud_run_sa_run_invoker" {
   project = var.project_id
-  role    = "roles/run.admin"
-  member  = "serviceAccount:github-actions@${var.project_id}.iam.gserviceaccount.com"
+  role    = "roles/run.invoker"
+  member  = "serviceAccount:${google_service_account.cloud_run_sa.email}"
 }
