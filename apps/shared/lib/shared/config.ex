@@ -61,7 +61,7 @@ defmodule Shared.Config do
       db_config = get_env_config(:database, %{})
 
       Keyword.merge(config,
-        ssl: Map.get(db_config, :ssl, true),
+        ssl: Map.get(db_config, :ssl, default_ssl()),
         ssl_opts: Map.get(db_config, :ssl_opts, ssl_opts()),
         pool_size:
           String.to_integer(
@@ -174,6 +174,12 @@ defmodule Shared.Config do
   end
 
   # プライベート関数
+
+  @spec default_ssl() :: boolean()
+  defp default_ssl do
+    # テスト環境では SSL を無効化
+    Mix.env() != :test
+  end
 
   @spec secret_key_base() :: String.t() | no_return()
   defp secret_key_base do
