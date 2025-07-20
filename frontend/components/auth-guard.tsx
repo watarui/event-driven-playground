@@ -13,7 +13,7 @@ interface AuthGuardProps {
 }
 
 export function AuthGuard({ children, requireRole, fallback, redirectTo }: AuthGuardProps) {
-  const { user, role, loading } = useAuth()
+  const { role, loading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
@@ -42,7 +42,7 @@ export function AuthGuard({ children, requireRole, fallback, redirectTo }: AuthG
         }
       }
     }
-  }, [user, role, loading, requireRole, router, redirectTo])
+  }, [role, loading, requireRole, router, redirectTo])
 
   if (loading) {
     return (

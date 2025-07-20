@@ -57,7 +57,7 @@ export function AdminSetupButton() {
       } else {
         setMessage({ type: "error", text: data.message })
       }
-    } catch (error) {
+    } catch (_error) {
       setMessage({ type: "error", text: "Failed to setup admin role" })
     } finally {
       setIsLoading(false)

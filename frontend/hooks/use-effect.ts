@@ -1,4 +1,4 @@
-import { Effect, Exit, Layer, ManagedRuntime, Runtime } from "effect"
+import { Effect, Exit, ManagedRuntime } from "effect"
 import { useEffect, useState } from "react"
 import { AppLayer } from "@/lib/effects/monitoring"
 
@@ -48,7 +48,7 @@ export function useEffectProgram<A, E>(
 
 export function useEffectStream<A, E>(
   streamProgram: Effect.Effect<A, E>,
-  onMessage: (message: A) => void,
+  _onMessage: (message: A) => void,
   deps: React.DependencyList = []
 ) {
   const [error, setError] = useState<E | null>(null)

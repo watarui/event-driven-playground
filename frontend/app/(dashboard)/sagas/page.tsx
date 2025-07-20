@@ -55,7 +55,7 @@ export default function SagasPage() {
     pollInterval: 5000, // 5秒ごとに更新
   })
 
-  const { data: statsData, loading: statsLoading } = useQuery(SYSTEM_STATISTICS, {
+  const { data: statsData } = useQuery(SYSTEM_STATISTICS, {
     pollInterval: 5000,
   })
 
@@ -245,7 +245,11 @@ export default function SagasPage() {
             ) : (
               sagas.map((saga: SagaDetail) => (
                 <div key={saga.id} className="border rounded-lg hover:shadow-md transition-shadow">
-                  <div className="p-4 cursor-pointer" onClick={() => toggleSagaExpansion(saga.id)}>
+                  <button
+                    type="button"
+                    className="w-full p-4 text-left cursor-pointer"
+                    onClick={() => toggleSagaExpansion(saga.id)}
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         <h3 className="font-semibold">{saga.sagaType}</h3>
@@ -282,7 +286,7 @@ export default function SagasPage() {
                         {new Date(saga.createdAt).toLocaleString()}
                       </div>
                     </div>
-                  </div>
+                  </button>
 
                   {expandedSagas.has(saga.id) && (
                     <div className="border-t px-4 py-4 bg-gray-50">
@@ -304,8 +308,11 @@ export default function SagasPage() {
                             <div className="text-gray-500">No commands dispatched</div>
                           ) : (
                             <div className="space-y-2">
-                              {saga.commandsDispatched.map((cmd, idx) => (
-                                <div key={idx} className="bg-gray-100 p-3 rounded">
+                              {saga.commandsDispatched.map((cmd) => (
+                                <div
+                                  key={`${saga.id}-cmd-${cmd.commandType}-${cmd.timestamp}`}
+                                  className="bg-gray-100 p-3 rounded"
+                                >
                                   <div className="font-semibold text-sm">{cmd.commandType}</div>
                                   <div className="text-xs text-gray-500">{cmd.timestamp}</div>
                                   <pre className="mt-2 text-xs overflow-auto">
@@ -322,8 +329,11 @@ export default function SagasPage() {
                             <div className="text-gray-500">No events handled</div>
                           ) : (
                             <div className="space-y-1">
-                              {saga.eventsHandled.map((event, idx) => (
-                                <div key={idx} className="bg-gray-100 px-3 py-2 rounded text-sm">
+                              {saga.eventsHandled.map((event) => (
+                                <div
+                                  key={`${saga.id}-event-${event}`}
+                                  className="bg-gray-100 px-3 py-2 rounded text-sm"
+                                >
                                   {event}
                                 </div>
                               ))}

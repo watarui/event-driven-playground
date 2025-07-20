@@ -330,7 +330,9 @@ export default function CommandsPage() {
       {/* Filters */}
       <div className="flex gap-4 mb-6">
         <div>
-          <label htmlFor="command-type-select" className="block text-sm font-medium mb-1">Command Type</label>
+          <label htmlFor="command-type-select" className="block text-sm font-medium mb-1">
+            Command Type
+          </label>
           <select
             id="command-type-select"
             value={selectedCommand}

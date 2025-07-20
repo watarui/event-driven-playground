@@ -4,8 +4,6 @@ import { useQuery, useSubscription } from "@apollo/client"
 import { Activity, Filter, Pause, Play, RefreshCw, TrendingUp } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import {
-  Area,
-  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
@@ -148,7 +146,7 @@ export default function PubSubPage() {
         }
       }
     }
-  }, [messages, isPaused])
+  }, [isPaused])
 
   const getTopicColor = (topic: string) => {
     const colors: { [key: string]: string } = {
@@ -331,9 +329,10 @@ export default function PubSubPage() {
           <CardContent>
             <div className="space-y-2 max-h-[600px] overflow-y-auto">
               {topicStats.map((stat: TopicStat) => (
-                <div
+                <button
+                  type="button"
                   key={stat.topic}
-                  className={`flex items-center justify-between p-3 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors ${
+                  className={`w-full flex items-center justify-between p-3 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors ${
                     selectedTopic === stat.topic ? "bg-gray-100 dark:bg-gray-800" : ""
                   }`}
                   onClick={() => setSelectedTopic(stat.topic)}
@@ -357,7 +356,7 @@ export default function PubSubPage() {
                       </div>
                     )}
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </CardContent>

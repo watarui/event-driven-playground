@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     const currentUserEmail = decodedToken.email
 
     // 環境別の設定
-    const { isDevelopment, isProduction } = config.env
+    const { isProduction } = config.env
     const initialAdminEmail = config.auth.initialAdminEmail
 
     // 本番環境では INITIAL_ADMIN_EMAIL が必須

@@ -15,7 +15,6 @@ interface SimpleCodeEditorProps {
 export default function SimpleCodeEditor({
   value,
   onChange,
-  language = "json",
   placeholder,
   height = "200px",
   readOnly = false,

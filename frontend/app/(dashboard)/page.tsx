@@ -4,10 +4,8 @@ import { useQuery, useSubscription } from "@apollo/client"
 import { motion } from "framer-motion"
 import {
   Activity,
-  BarChart3,
   Code,
   Database,
-  Gauge,
   GitBranch,
   MessageSquare,
   Pause,
@@ -96,7 +94,7 @@ export default function Home() {
   const eventStoreStats = data?.eventStoreStats || {}
 
   // メトリクスデータの準備
-  const metrics = {
+  const _metrics = {
     cpu: 45 + Math.random() * 20,
     memory: 62 + Math.random() * 15,
     latency: dashboardStats.averageLatencyMs || 23,

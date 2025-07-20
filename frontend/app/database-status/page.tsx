@@ -1,7 +1,7 @@
 "use client"
 
 import { gql, useQuery } from "@apollo/client"
-import { Activity, AlertCircle, CheckCircle2, Database, RefreshCw, XCircle } from "lucide-react"
+import { CheckCircle2, Database, RefreshCw } from "lucide-react"
 import { useEffect, useState } from "react"
 import {
   Bar,
@@ -176,6 +176,7 @@ export default function DatabaseStatusPage() {
             Last updated: {lastRefreshed.toLocaleTimeString()}
           </span>
           <button
+            type="button"
             onClick={handleRefresh}
             className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
             disabled={isLoading}
@@ -345,8 +346,8 @@ export default function DatabaseStatusPage() {
                     outerRadius={80}
                     label={({ name, value }) => `${name}: ${value}`}
                   >
-                    {getSagaStatusData().map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    {getSagaStatusData().map((entry) => (
+                      <Cell key={entry.name} fill={entry.color} />
                     ))}
                   </Pie>
                   <Tooltip />

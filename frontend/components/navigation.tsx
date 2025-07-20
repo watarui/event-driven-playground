@@ -52,7 +52,7 @@ export function Navigation() {
     setIsDarkMode(isDark)
 
     // システム設定がダークモードの場合、クラスを追加
-    if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches && !isDark) {
+    if (window.matchMedia?.("(prefers-color-scheme: dark)").matches && !isDark) {
       document.documentElement.classList.add("dark")
       setIsDarkMode(true)
     }
@@ -94,6 +94,7 @@ export function Navigation() {
           </div>
           <div className="flex items-center space-x-4">
             <button
+              type="button"
               onClick={toggleDarkMode}
               className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
               aria-label="Toggle dark mode"
@@ -109,6 +110,7 @@ export function Navigation() {
                   <span className="text-sm">{(user as UserType)?.email || ""}</span>
                 </div>
                 <button
+                  type="button"
                   onClick={() => {
                     // TODO: Implement Firebase logout
                     console.log("Logout clicked")
@@ -121,6 +123,7 @@ export function Navigation() {
               </div>
             ) : (
               <button
+                type="button"
                 onClick={() => {
                   // TODO: Implement Firebase login
                   console.log("Login clicked")

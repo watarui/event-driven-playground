@@ -288,7 +288,9 @@ export default function EventsPage() {
 
       {/* Event Type Filter */}
       <div className="mb-6">
-        <label htmlFor="event-type-select" className="block text-sm font-medium mb-2">Filter by Event Type</label>
+        <label htmlFor="event-type-select" className="block text-sm font-medium mb-2">
+          Filter by Event Type
+        </label>
         <select
           id="event-type-select"
           value={selectedType}

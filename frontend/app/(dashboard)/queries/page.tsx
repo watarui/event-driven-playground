@@ -5,7 +5,6 @@ import { useEffect, useState } from "react"
 import {
   CartesianGrid,
   Cell,
-  Legend,
   Line,
   LineChart,
   Pie,
@@ -93,7 +92,7 @@ export default function QueriesPage() {
   const [queryTypeStats, setQueryTypeStats] = useState<QueryTypeStats[]>([])
 
   // Query data from GraphQL
-  const { data, loading, error, refetch } = useQuery(GET_QUERY_DATA, {
+  const { data, loading, error } = useQuery(GET_QUERY_DATA, {
     pollInterval: 10000, // Refresh every 10 seconds
     fetchPolicy: "network-only", // Always fetch fresh data
   })
@@ -358,8 +357,8 @@ export default function QueriesPage() {
                   fill="#8884d8"
                   dataKey="value"
                 >
-                  {getCachePerformanceData().map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  {getCachePerformanceData().map((entry) => (
+                    <Cell key={entry.name} fill={entry.color} />
                   ))}
                 </Pie>
                 <Tooltip />
@@ -420,8 +419,11 @@ export default function QueriesPage() {
       {/* Filters */}
       <div className="flex gap-4 mb-6">
         <div>
-          <label className="block text-sm font-medium mb-1">Query Type</label>
+          <label htmlFor="query-type-select" className="block text-sm font-medium mb-1">
+            Query Type
+          </label>
           <select
+            id="query-type-select"
             value={selectedQueryType}
             onChange={(e) => setSelectedQueryType(e.target.value)}
             className="border rounded px-3 py-2"

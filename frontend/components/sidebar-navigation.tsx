@@ -2,7 +2,6 @@
 
 import {
   Activity,
-  ChevronDown,
   ChevronRight,
   Command,
   Database,
@@ -68,7 +67,7 @@ export function SidebarNavigation({ isSidebarOpen, setIsSidebarOpen }: SidebarNa
     setIsDarkMode(isDark)
 
     // システム設定がダークモードの場合、クラスを追加
-    if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches && !isDark) {
+    if (window.matchMedia?.("(prefers-color-scheme: dark)").matches && !isDark) {
       document.documentElement.classList.add("dark")
       setIsDarkMode(true)
     }
@@ -103,6 +102,7 @@ export function SidebarNavigation({ isSidebarOpen, setIsSidebarOpen }: SidebarNa
       <div className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 md:hidden">
         <div className="flex items-center justify-between h-16 px-4">
           <button
+            type="button"
             onClick={toggleSidebar}
             className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700"
           >
@@ -110,6 +110,7 @@ export function SidebarNavigation({ isSidebarOpen, setIsSidebarOpen }: SidebarNa
           </button>
           <h1 className="text-xl font-bold">CQRS/ES Monitor</h1>
           <button
+            type="button"
             onClick={toggleDarkMode}
             className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700"
           >
@@ -130,6 +131,7 @@ export function SidebarNavigation({ isSidebarOpen, setIsSidebarOpen }: SidebarNa
             <h1 className="text-xl font-bold">CQRS/ES Monitor</h1>
             <div className="flex items-center gap-2">
               <button
+                type="button"
                 onClick={toggleDarkMode}
                 className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700"
                 title="Toggle dark mode"
@@ -137,6 +139,7 @@ export function SidebarNavigation({ isSidebarOpen, setIsSidebarOpen }: SidebarNa
                 {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
               <button
+                type="button"
                 onClick={toggleSidebar}
                 className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700"
                 title="Close sidebar"
@@ -201,49 +204,49 @@ export function SidebarNavigation({ isSidebarOpen, setIsSidebarOpen }: SidebarNa
           {/* ユーザー情報 */}
           <div className="p-4 border-t border-gray-200 dark:border-gray-800">
             {!loading && (
-              <>
-                <div className="space-y-3">
-                  {user ? (
-                    <>
-                      <div className="flex items-center gap-2">
-                        <User className="w-4 h-4" />
-                        <span className="text-sm truncate">{user.email}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                        <span className="px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-700">
-                          {role === "admin" ? "Admin" : role === "writer" ? "Writer" : "Viewer"}
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => signOut()}
-                        className="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-md text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition-colors"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        <span>Sign Out</span>
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex items-center gap-2">
-                        <User className="w-4 h-4" />
-                        <span className="text-sm">ゲストユーザー</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                        <span className="px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-700">
-                          Viewer (読み取り専用)
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => signInWithGoogle()}
-                        className="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                      >
-                        <LogIn className="w-4 h-4" />
-                        <span>ログイン</span>
-                      </button>
-                    </>
-                  )}
-                </div>
-              </>
+              <div className="space-y-3">
+                {user ? (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      <span className="text-sm truncate">{user.email}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                      <span className="px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-700">
+                        {role === "admin" ? "Admin" : role === "writer" ? "Writer" : "Viewer"}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => signOut()}
+                      className="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-md text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Sign Out</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      <span className="text-sm">ゲストユーザー</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                      <span className="px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-700">
+                        Viewer (読み取り専用)
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => signInWithGoogle()}
+                      className="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                    >
+                      <LogIn className="w-4 h-4" />
+                      <span>ログイン</span>
+                    </button>
+                  </>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -251,15 +254,18 @@ export function SidebarNavigation({ isSidebarOpen, setIsSidebarOpen }: SidebarNa
 
       {/* オーバーレイ（モバイルのみ） */}
       {isSidebarOpen && (
-        <div
+        <button
+          type="button"
           className="fixed inset-0 z-30 bg-black bg-opacity-50 md:hidden"
           onClick={() => setIsSidebarOpen(false)}
+          aria-label="Close sidebar"
         />
       )}
 
       {/* デスクトップ用の開くボタン（サイドバーが閉じている時） */}
       {!isSidebarOpen && (
         <button
+          type="button"
           onClick={toggleSidebar}
           className="hidden md:flex fixed left-0 top-20 z-30 p-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-r-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shadow-md"
           title="Open sidebar"

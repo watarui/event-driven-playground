@@ -9,14 +9,13 @@ import {
   type Edge,
   MarkerType,
   type Node,
-  Position,
   ReactFlow,
   useEdgesState,
   useNodesState,
 } from "@xyflow/react"
-import React, { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import "@xyflow/react/dist/style.css"
-import { AnimatePresence, motion } from "framer-motion"
+import { motion } from "framer-motion"
 
 interface FlowMessage {
   id: string
@@ -238,7 +237,7 @@ const initialEdges: Edge[] = [
 ]
 
 export function FlowVisualization({ messages = [] }: { messages?: FlowMessage[] }) {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
+  const [nodes, _setNodes, onNodesChange] = useNodesState(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
   const [animatedEdges, setAnimatedEdges] = useState<Set<string>>(new Set())
 

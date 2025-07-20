@@ -266,7 +266,7 @@ export default function TopologyPage() {
     const interval = setInterval(updateHealth, 5000)
 
     return () => clearInterval(interval)
-  }, [setNodes])
+  }, [setNodes, nodes.forEach])
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),

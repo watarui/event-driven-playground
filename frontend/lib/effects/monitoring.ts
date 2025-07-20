@@ -1,6 +1,5 @@
 import { gql } from "@apollo/client"
 import { Context, Effect, Layer, Queue, Schedule, Stream } from "effect"
-import { apolloClient } from "@/lib/apollo-client"
 
 // Service definitions
 export class MonitoringService extends Context.Tag("MonitoringService")<
@@ -57,7 +56,7 @@ export interface SystemMetrics {
 }
 
 // GraphQL Queries
-const GET_ORDERS = gql`
+const _GET_ORDERS = gql`
   query GetOrders {
     orders {
       id
