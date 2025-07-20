@@ -170,7 +170,7 @@ jobs:
             HEALTHY=false
             for i in {1..5}; do
               # 公開エンドポイントにアクセス（認証なし）
-              if curl -f -s -o /dev/null -w "%{http_code}" "${SERVICE_URL}/health/ready" | grep -q "200"; then
+              if curl -f -s -o /dev/null -w "%{http_code}" "${SERVICE_URL}/health" | grep -q "200"; then
                 echo "✅ ${SERVICE} is healthy"
                 HEALTHY=true
                 break
