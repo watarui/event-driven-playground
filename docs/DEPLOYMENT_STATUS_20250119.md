@@ -1,7 +1,7 @@
 # デプロイメント進捗状況 - 2025/01/19
 
 ## 概要
-`elixir-cqrs` から `event-driven-playground` への移行作業を実施中。Docker イメージのビルドは成功し、Terraform でのインフラ構築段階に入っています。
+`elixir-cqrs` から `event-driven-playground` への移行作業を実施中。全サービスのデプロイが完了し、正常に稼働しています。
 
 ## 完了したタスク
 
@@ -53,53 +53,57 @@
 - `terraform/environments/prod/main.tf` で Cloud Run モジュールのコメントを解除
 - モニタリングモジュールのコメントも解除
 
+### 5. データベース接続の修正
+- Supabase のデータベース接続問題を解決
+  - IPv4-only pooler URL の制限により、直接接続 URL に変更
+  - パスワードを正しい値に更新
+- マイグレーションを手動で実行
+  - event_store スキーマのテーブルを作成
+  - command と query スキーマも作成
+
+### 6. Phoenix エンドポイント設定の修正
+- Cloud Run でのポート設定問題を解決
+  - `Shared.Config.endpoint_config` を修正
+  - `http: [ip: {0, 0, 0, 0}, port: port]` 形式に変更
+- コミット: `f885f16`
+
+### 7. 全サービスのデプロイ完了
+- **client-service**: https://client-service-741925348867.asia-northeast1.run.app
+  - ヘルスチェック: ✅ 200 OK
+  - 認証: 不要（公開アクセス可能）
+  - GraphQL エンドポイント: ✅ 動作確認済み
+- **command-service**: https://command-service-741925348867.asia-northeast1.run.app
+  - ヘルスチェック: ✅ 200 OK
+  - 認証: 必要（IAM 認証）
+- **query-service**: https://query-service-741925348867.asia-northeast1.run.app
+  - ヘルスチェック: ✅ 200 OK
+  - 認証: 必要（IAM 認証）
+
+### 8. データベーススキーマの完成
+- **event_store スキーマ**: 全テーブル作成完了
+- **command スキーマ**: categories, products テーブル作成完了
+- **query スキーマ**: orders テーブル作成完了
+- 全マイグレーション適用済み
+
+### 9. Cloud Run Jobs でマイグレーション自動化
+- マイグレーション用 Docker イメージ作成（Elixir 1.18）
+- Cloud Run Job `database-migrate` を作成
+- 実行コマンド: `gcloud run jobs execute database-migrate`
+- 全スキーマのマイグレーションを自動実行
+
 ## 現在の状況
 
-### Terraform Apply でのエラー
-既存のリソースとの競合により、以下のエラーが発生：
-- Artifact Registry リポジトリが既に存在
-- Service Account が既に存在
-- Secret Manager のシークレットが既に存在
-- Pub/Sub トピックが既に存在
-- Firebase Identity Platform が既に有効化済み
-
-### 解決策
-段階的な Terraform インポートとアプライが必要：
-
-1. 状態ファイルのバックアップ
-   ```bash
-   cp terraform.tfstate terraform.tfstate.backup
-   ```
-
-2. 基本リソースの適用
-   ```bash
-   terraform apply -target=google_project_service.required_apis \
-     -target=google_artifact_registry_repository.event_driven_playground \
-     -target=google_service_account.cloud_run_sa \
-     -target=google_project_iam_member.cloud_run_roles
-   ```
-
-3. Secrets の適用
-   ```bash
-   terraform apply -target=google_secret_manager_secret.app_secrets
-   ```
-
-4. Secret versions の適用
-   ```bash
-   terraform apply -target=google_secret_manager_secret_version.app_secrets_version
-   ```
-
-5. 全リソースの適用
-   ```bash
-   terraform apply
-   ```
+### デプロイ完了
+全サービスが Cloud Run に正常にデプロイされ、稼働中です：
+- Docker イメージ: `f885f16` タグでビルド済み
+- 環境変数とシークレットが正しく設定済み
+- ヘルスチェックが全サービスで成功
 
 ## 今後のタスク
 
-### 1. Terraform デプロイメントの完了
-- [ ] 上記の段階的 apply を実行
-- [ ] Cloud Run サービスのデプロイ確認
-- [ ] ヘルスチェックの確認
+### 1. GitHub Actions の更新
+- [ ] デプロイワークフローにマイグレーション実行ステップを追加
+- [ ] `gcloud run jobs execute database-migrate` をデプロイ前に実行
 
 ### 2. Frontend のデプロイ
 - [ ] Vercel へのデプロイ設定
@@ -119,13 +123,13 @@
 
 ## 重要な注意点
 
-1. **Docker イメージ**: 既に Artifact Registry にプッシュ済み。再ビルドは不要。
+1. **Docker イメージ**: 統合 Dockerfile を使用してビルド。各サービスは異なるターゲットステージとして定義。
 
-2. **Terraform の状態**: 既存リソースとの競合を解決するため、段階的な適用が必要。
+2. **データベース接続**: Supabase の pooler URL は IPv4-only のため、直接接続 URL を使用。
 
-3. **サービスアカウント**: `event-driven-playground-runner@event-driven-playground-prod.iam.gserviceaccount.com` が既に存在。
+3. **ポート設定**: Cloud Run は PORT 環境変数を自動設定するため、アプリケーション側で読み取る。
 
-4. **次回作業時**: `/Users/w/w/event-driven-playground/terraform/environments/prod` ディレクトリから作業を再開。
+4. **マイグレーション**: 今後のデプロイでは Cloud Run Jobs でマイグレーションを自動化する必要がある。
 
 ## 参考リンク
 - プロジェクト ID: `event-driven-playground-prod`

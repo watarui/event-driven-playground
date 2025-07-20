@@ -1,0 +1,53 @@
+apiVersion: run.googleapis.com/v1
+kind: Job
+metadata:
+  name: database-migrate
+  annotations:
+    run.googleapis.com/launch-stage: BETA
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/execution-environment: gen2
+    spec:
+      parallelism: 1
+      taskCount: 1
+      template:
+        spec:
+          containers:
+          - image: asia-northeast1-docker.pkg.dev/event-driven-playground-prod/event-driven-playground/migrate:latest
+            env:
+            - name: MIX_ENV
+              value: prod
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: supabase-url
+                  key: latest
+            - name: EVENT_STORE_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: supabase-url
+                  key: latest
+            - name: COMMAND_SERVICE_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: supabase-url
+                  key: latest
+            - name: QUERY_SERVICE_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: supabase-url
+                  key: latest
+            - name: SECRET_KEY_BASE
+              valueFrom:
+                secretKeyRef:
+                  name: secret-key-base
+                  key: latest
+            resources:
+              limits:
+                cpu: "2"
+                memory: 2Gi
+          maxRetries: 3
+          serviceAccountName: event-driven-playground-runner@event-driven-playground-prod.iam.gserviceaccount.com
+          timeoutSeconds: 600

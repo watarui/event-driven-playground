@@ -1,0 +1,36 @@
+# マイグレーション実行用 Dockerfile
+FROM elixir:1.18-alpine AS migrate
+
+# 必要なパッケージをインストール
+RUN apk add --no-cache \
+    build-base \
+    git \
+    postgresql-client
+
+# 作業ディレクトリ
+WORKDIR /app
+
+# hex と rebar をインストール
+RUN mix local.hex --force && \
+    mix local.rebar --force
+
+# 依存関係ファイルをコピー
+COPY mix.exs mix.lock ./
+COPY apps/shared/mix.exs apps/shared/
+COPY apps/command_service/mix.exs apps/command_service/
+COPY apps/query_service/mix.exs apps/query_service/
+COPY apps/client_service/mix.exs apps/client_service/
+
+# 依存関係を取得
+ENV MIX_ENV=prod
+RUN mix deps.get --only prod
+
+# アプリケーションコードをコピー
+COPY . .
+
+# マイグレーションスクリプトをコピー
+COPY run_migrations.sh /app/run_migrations.sh
+RUN chmod +x /app/run_migrations.sh
+
+# エントリーポイント
+ENTRYPOINT ["/app/run_migrations.sh"]
