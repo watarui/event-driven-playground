@@ -221,7 +221,8 @@ defmodule ClientService.GraphQL.AuthIntegrationTest do
         |> post("/graphql", %{query: query})
 
       response = json_response(conn, 200)
-      assert %{"errors" => _} = response || %{"data" => %{"userOrders" => []}} = response
+      # エラーまたは空のデータが返されることを確認
+      assert match?(%{"errors" => _}, response) || match?(%{"data" => %{"userOrders" => []}}, response)
     end
 
     test "rejects malformed tokens" do
