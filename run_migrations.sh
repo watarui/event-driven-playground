@@ -4,7 +4,8 @@ set -e
 echo "Running migrations..."
 
 # event_store (shared) マイグレーション
-echo "Running shared migrations..."
+# shared のマイグレーションにはスキーマ作成が含まれるため、最初に実行する必要がある
+echo "Running shared migrations (including schema creation)..."
 cd /app/apps/shared
 mix ecto.migrate
 
