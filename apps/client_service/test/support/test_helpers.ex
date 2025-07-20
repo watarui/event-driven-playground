@@ -3,6 +3,7 @@ defmodule ClientService.TestHelpers do
   共通テストヘルパー関数
   """
   
+  import ExUnit.Assertions
   alias ClientService.Auth.Guardian
   
   @doc """

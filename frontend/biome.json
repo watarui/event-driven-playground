@@ -1,8 +1,5 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.1.2/schema.json",
-  "organizer": {
-    "enabled": true
-  },
   "linter": {
     "enabled": true,
     "rules": {
@@ -39,9 +36,5 @@
       "semicolons": "asNeeded",
       "trailingCommas": "es5"
     }
-  },
-  "files": {
-    "ignoreUnknown": true,
-    "includes": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.json"]
   }
 }
