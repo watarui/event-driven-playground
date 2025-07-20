@@ -17,16 +17,6 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        elixir: ['1.18.1', '1.17.3']
-        otp: ['27.2', '26.2']
-        partition: [1, 2, 3, 4]
-        exclude:
-          - elixir: '1.17.3'
-            otp: '27.2'
-          - elixir: '1.18.1'
-            otp: '26.2'
     
     services:
       postgres:
@@ -50,8 +40,8 @@ jobs:
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
         with:
-          elixir-version: ${{ matrix.elixir }}
-          otp-version: ${{ matrix.otp }}
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+          otp-version: ${{ env.OTP_VERSION }}
 
       - name: Restore dependencies cache
         uses: actions/cache@v3
@@ -103,7 +93,6 @@ jobs:
       - name: Run tests with coverage
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost/event_driven_playground_test
-          MIX_TEST_PARTITION: ${{ matrix.partition }}
         run: |
           mix test --cover --warnings-as-errors
 
@@ -130,14 +119,14 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.elixir }}-${{ matrix.otp }}-${{ matrix.partition }}
+          name: test-results
           path: _build/test/lib/*/test-results.xml
 
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-${{ matrix.elixir }}-${{ matrix.otp }}-${{ matrix.partition }}
+          name: coverage
           path: cover/
 
   coverage:
@@ -150,10 +139,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download all coverage reports
+      - name: Download coverage report
         uses: actions/download-artifact@v4
         with:
-          pattern: coverage-*
+          name: coverage
           path: coverage-reports/
 
       - name: Merge coverage reports
