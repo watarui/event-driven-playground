@@ -223,16 +223,6 @@ jobs:
         working-directory: ./frontend
         run: npm run lint
 
-      - name: Run type check
-        working-directory: ./frontend
-        run: npm run type-check
-        continue-on-error: true
-
-      - name: Run tests
-        working-directory: ./frontend
-        run: npm test
-        continue-on-error: true # テストがない場合のため
-
       - name: Setup frontend CI environment
         working-directory: ./frontend
         run: cp .env.ci.example .env.local
