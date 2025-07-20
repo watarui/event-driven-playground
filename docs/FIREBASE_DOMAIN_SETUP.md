@@ -35,7 +35,22 @@ The requested action is invalid.
    ```
 7. **Save** をクリック
 
-### 3. 設定の確認
+### 3. API キーの HTTP リファラー制限を設定
+
+1. [Google Cloud Console](https://console.cloud.google.com/) にアクセス
+2. プロジェクト `event-driven-playground-prod` を選択
+3. **APIs & Services** → **Credentials** を開く
+4. **API Keys** セクションで Firebase API キー（`AIzaSyD3UGpfArhs8y5Y6Vy8xMupV7qEBgtetxE`）をクリック
+5. **Application restrictions** セクションで **HTTP referrers (web sites)** を選択
+6. **Website restrictions** に以下を追加:
+   ```
+   https://event-driven-playground-prod.firebaseapp.com/*
+   https://event-driven-playground.vercel.app/*
+   http://localhost:3000/*
+   ```
+7. **Save** をクリック
+
+### 4. 設定の確認
 
 Firebase の設定が正しいことを確認：
 - Project ID: `event-driven-playground-prod`
