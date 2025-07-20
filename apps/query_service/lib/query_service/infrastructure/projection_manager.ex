@@ -408,5 +408,4 @@ defmodule QueryService.Infrastructure.ProjectionManager do
       %{status | status: :error, last_error: inspect(reason)}
     end)
   end
-
 end

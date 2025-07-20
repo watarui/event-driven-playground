@@ -10,7 +10,7 @@ import {
 import { createContext, useContext, useEffect, useState } from "react"
 import { config } from "@/lib/config"
 import { auth, googleProvider } from "@/lib/firebase"
-import type { UserRole } from "@/lib/firebase-admin"
+import type { UserRole } from "@/lib/server/firebase-admin"
 
 interface AuthContextType {
   user: User | null

@@ -1,7 +1,7 @@
 defmodule Shared.Config do
   @moduledoc """
   共通設定管理モジュール
-  
+
   各サービスで重複している設定を一元管理します。
   環境固有の設定は config/environments/*.exs から読み込みます。
   """
@@ -29,7 +29,7 @@ defmodule Shared.Config do
 
   @doc """
   データベース URL を取得
-  
+
   サービス固有の環境変数を優先し、なければ共通の DATABASE_URL を使用
   """
   @spec database_url(atom()) :: String.t() | nil
@@ -55,25 +55,29 @@ defmodule Shared.Config do
   @spec database_config(atom()) :: Keyword.t() | no_return()
   def database_config(service) do
     url = database_url(service)
-    
+
     if url do
       config = Ecto.Repo.Supervisor.parse_url(url)
       db_config = get_env_config(:database, %{})
-      
-      Keyword.merge(config, [
+
+      Keyword.merge(config,
         ssl: Map.get(db_config, :ssl, true),
         ssl_opts: Map.get(db_config, :ssl_opts, ssl_opts()),
-        pool_size: String.to_integer(System.get_env("POOL_SIZE") || to_string(Map.get(db_config, :pool_size, 2))),
+        pool_size:
+          String.to_integer(
+            System.get_env("POOL_SIZE") || to_string(Map.get(db_config, :pool_size, 2))
+          ),
         socket_options: [:inet6],
-        show_sensitive_data_on_connection_error: Map.get(db_config, :show_sensitive_data_on_connection_error, false),
+        show_sensitive_data_on_connection_error:
+          Map.get(db_config, :show_sensitive_data_on_connection_error, false),
         queue_target: Map.get(db_config, :queue_target, 5000),
         queue_interval: Map.get(db_config, :queue_interval, 1000),
         timeout: Map.get(db_config, :timeout, 15_000)
-      ])
+      )
     else
       raise """
       Database URL not configured for service: #{service}
-      
+
       Please set either #{String.upcase(to_string(service))}_DATABASE_URL or DATABASE_URL
       """
     end
@@ -86,7 +90,7 @@ defmodule Shared.Config do
   def endpoint_config(opts \\ []) do
     port = String.to_integer(System.get_env("PORT") || "8080")
     phoenix_config = get_env_config(:phoenix, %{})
-    
+
     base_config = [
       server: true,
       http: [
@@ -103,15 +107,15 @@ defmodule Shared.Config do
       gzip: Map.get(phoenix_config, :gzip, false),
       force_ssl: Map.get(phoenix_config, :force_ssl, false)
     ]
-    
+
     # Add static cache control if configured
-    final_config = 
+    final_config =
       if cache_control = Map.get(phoenix_config, :static_cache_control) do
         Keyword.put(base_config, :static_cache_control, cache_control)
       else
         base_config
       end
-    
+
     Keyword.merge(final_config, opts)
   end
 
@@ -149,7 +153,7 @@ defmodule Shared.Config do
   @spec firebase_config() :: map() | nil
   def firebase_config do
     api_key = System.get_env("FIREBASE_API_KEY")
-    
+
     if api_key do
       %{
         api_key: api_key,

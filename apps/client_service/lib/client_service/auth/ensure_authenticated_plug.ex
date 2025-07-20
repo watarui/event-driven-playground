@@ -13,14 +13,17 @@ defmodule ClientService.Auth.EnsureAuthenticatedPlug do
       conn
     else
       Logger.warning("Unauthenticated request blocked")
-      
+
       conn
       |> put_status(:unauthorized)
       |> put_resp_content_type("application/json")
-      |> send_resp(401, Jason.encode!(%{
-        error: "Unauthorized",
-        message: "Authentication required"
-      }))
+      |> send_resp(
+        401,
+        Jason.encode!(%{
+          error: "Unauthorized",
+          message: "Authentication required"
+        })
+      )
       |> halt()
     end
   end

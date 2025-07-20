@@ -49,16 +49,18 @@ defmodule ClientServiceWeb.Router do
     pipe_through(:graphiql)
 
     # GET リクエストは GraphiQL UI を返す
-    get "/graphiql", Absinthe.Plug.GraphiQL,
+    get("/graphiql", Absinthe.Plug.GraphiQL,
       schema: ClientService.GraphQL.Schema,
       interface: :simple,
       socket: ClientServiceWeb.AbsintheSocket,
       context: %{pubsub: ClientService.PubSub}
-    
+    )
+
     # POST リクエストは GraphQL クエリを処理
-    post "/graphiql", Absinthe.Plug,
+    post("/graphiql", Absinthe.Plug,
       schema: ClientService.GraphQL.Schema,
       context: %{pubsub: ClientService.PubSub}
+    )
   end
 
   # Prometheus メトリクスエンドポイント（一時的に無効化）

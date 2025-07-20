@@ -15,7 +15,7 @@ defmodule ClientService.GraphQL.Resolvers.OrderResolverPubsub do
     # 認証されたユーザーの情報を使用
     current_user = Map.get(context, :current_user, %{})
     user_id = Map.get(current_user, :user_id, input.user_id)
-    
+
     command = %{
       __struct__: "CommandService.Application.Commands.OrderCommands.CreateOrder",
       command_type: "order.create",
@@ -189,5 +189,4 @@ defmodule ClientService.GraphQL.Resolvers.OrderResolverPubsub do
   end
 
   defp ensure_datetime(nil), do: nil
-
 end

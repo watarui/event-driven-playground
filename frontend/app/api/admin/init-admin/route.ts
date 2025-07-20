@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { config } from "@/lib/config"
-import { adminAuth, setUserRole } from "@/lib/firebase-admin"
+import { getAdminAuth, setUserRole } from "@/lib/server/firebase-admin"
 
 // 初回管理者設定用のエンドポイント
 // 管理者が一人もいない場合のみ、自分自身を管理者に設定できる
@@ -16,6 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.split("Bearer ")[1]
+    const adminAuth = await getAdminAuth()
 
     // トークンを検証して現在のユーザー情報を取得
     const decodedToken = await adminAuth.verifyIdToken(token)

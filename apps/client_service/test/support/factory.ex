@@ -3,9 +3,9 @@ defmodule ClientService.Factory do
   テストデータファクトリー
   ExMachina を使用したテストデータ生成
   """
-  
+
   use ExMachina
-  
+
   @doc """
   ユーザーファクトリー
   """
@@ -18,7 +18,7 @@ defmodule ClientService.Factory do
       updated_at: DateTime.utc_now()
     }
   end
-  
+
   def admin_user_factory do
     struct!(
       user_factory(),
@@ -28,7 +28,7 @@ defmodule ClientService.Factory do
       }
     )
   end
-  
+
   def writer_user_factory do
     struct!(
       user_factory(),
@@ -38,7 +38,7 @@ defmodule ClientService.Factory do
       }
     )
   end
-  
+
   @doc """
   カテゴリファクトリー
   """
@@ -54,7 +54,7 @@ defmodule ClientService.Factory do
       updated_at: DateTime.utc_now()
     }
   end
-  
+
   @doc """
   商品ファクトリー
   """
@@ -71,16 +71,18 @@ defmodule ClientService.Factory do
       updated_at: DateTime.utc_now()
     }
   end
-  
+
   @doc """
   注文ファクトリー
   """
   def order_factory do
     items = build_list(3, :order_item)
-    total_amount = Enum.reduce(items, Decimal.new(0), fn item, acc ->
-      Decimal.add(acc, item.subtotal)
-    end)
-    
+
+    total_amount =
+      Enum.reduce(items, Decimal.new(0), fn item, acc ->
+        Decimal.add(acc, item.subtotal)
+      end)
+
     %{
       id: sequence(:order_id, &"order-#{&1}"),
       user_id: build(:user).id,
@@ -96,7 +98,7 @@ defmodule ClientService.Factory do
       shipping_id: nil
     }
   end
-  
+
   def completed_order_factory do
     struct!(
       order_factory(),
@@ -109,7 +111,7 @@ defmodule ClientService.Factory do
       }
     )
   end
-  
+
   @doc """
   注文アイテムファクトリー
   """
@@ -117,7 +119,7 @@ defmodule ClientService.Factory do
     product = build(:product)
     quantity = Enum.random(1..5)
     subtotal = Decimal.mult(product.price, quantity)
-    
+
     %{
       product_id: product.id,
       product_name: product.name,
@@ -126,23 +128,23 @@ defmodule ClientService.Factory do
       subtotal: subtotal
     }
   end
-  
+
   @doc """
   イベントファクトリー
   """
   def event_factory do
     %{
-      id: sequence(:event_id, &(&1)),
+      id: sequence(:event_id, & &1),
       aggregate_id: sequence(:aggregate_id, &"aggregate-#{&1}"),
       aggregate_type: sequence([:Order, :Product, :Category]),
       event_type: sequence(["Created", "Updated", "Deleted"]),
       event_data: %{test: "data"},
       event_version: 1,
-      global_sequence: sequence(:global_sequence, &(&1)),
+      global_sequence: sequence(:global_sequence, & &1),
       inserted_at: NaiveDateTime.utc_now()
     }
   end
-  
+
   @doc """
   SAGAファクトリー
   """
@@ -161,7 +163,7 @@ defmodule ClientService.Factory do
       correlation_id: sequence(:correlation_id, &"corr-#{&1}")
     }
   end
-  
+
   def completed_saga_factory do
     struct!(
       saga_factory(),
@@ -175,44 +177,44 @@ defmodule ClientService.Factory do
       }
     )
   end
-  
+
   @doc """
   GraphQL コンテキストファクトリー
   """
   def graphql_context_factory do
     user = build(:user)
-    
+
     %{
       current_user: user,
       is_authenticated: true,
       is_admin: user.role == :admin
     }
   end
-  
+
   def admin_context_factory do
     user = build(:admin_user)
-    
+
     %{
       current_user: user,
       is_authenticated: true,
       is_admin: true
     }
   end
-  
+
   @doc """
   認証トークンファクトリー
   """
   def auth_token_factory do
     user = build(:user)
     {:ok, token, _claims} = ClientService.Auth.Guardian.encode_and_sign(user)
-    
+
     %{
       token: token,
       user: user,
       type: "Bearer"
     }
   end
-  
+
   @doc """
   PubSub メッセージファクトリー
   """
@@ -225,7 +227,7 @@ defmodule ClientService.Factory do
       publisher: "test-service"
     }
   end
-  
+
   @doc """
   ヘルスチェックレスポンスファクトリー
   """
@@ -247,14 +249,17 @@ defmodule ClientService.Factory do
       timestamp: DateTime.utc_now()
     }
   end
-  
+
   # プライベートヘルパー関数
-  
-  defp sequence(key, formatter \\ &(&1)) when is_atom(key) do
+
+  # デフォルト引数のヘッダー定義
+  defp sequence(key_or_list, formatter \\ & &1)
+
+  defp sequence(key, formatter) when is_atom(key) do
     ExMachina.sequence(key, formatter)
   end
-  
-  defp sequence(list) when is_list(list) do
+
+  defp sequence(list, _formatter) when is_list(list) do
     Enum.random(list)
   end
 end

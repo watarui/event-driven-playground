@@ -60,7 +60,6 @@ defmodule ClientService.GraphQL.Resolvers.ProductResolverPubsub do
   商品を検索
   """
   def search_products(_parent, %{search_term: search_term} = args, _resolution) do
-
     query = %{
       __struct__: "QueryService.Application.Queries.ProductQueries.SearchProducts",
       query_type: "product.search",

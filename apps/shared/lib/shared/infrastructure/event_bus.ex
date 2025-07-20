@@ -3,28 +3,26 @@ defmodule Shared.Infrastructure.EventBus do
   統一されたイベントバス実装
   環境に応じて PG2 または Google Cloud Pub/Sub を自動的に選択
   """
-  
+
   alias Shared.Telemetry.Tracing.MessagePropagator
   require Logger
-  
+
   @pubsub_name :event_bus_pubsub
-  
+
   @doc """
   イベントバスを開始する
   """
   def child_spec(opts \\ []) do
     adapter = get_adapter()
-    
+
     # GoogleCloudAdapter の場合は独自の child_spec を使用
     if adapter == Shared.Infrastructure.PubSub.GoogleCloudAdapter do
       adapter.child_spec([{:name, @pubsub_name}] ++ opts)
     else
-      Phoenix.PubSub.child_spec(
-        [{:name, @pubsub_name}, {:adapter, adapter}] ++ opts
-      )
+      Phoenix.PubSub.child_spec([{:name, @pubsub_name}, {:adapter, adapter}] ++ opts)
     end
   end
-  
+
   @doc """
   イベントを発行する
   """
@@ -33,18 +31,18 @@ defmodule Shared.Infrastructure.EventBus do
     Logger.debug(
       "EventBus publishing to topic: events:#{event_type}, event: #{inspect(event, limit: :infinity)}"
     )
-    
+
     # 環境に応じてlocal_broadcastかbroadcastを使い分ける
     if use_local_broadcast?() do
       Phoenix.PubSub.local_broadcast(@pubsub_name, "events:#{event_type}", {:event, event})
       Phoenix.PubSub.local_broadcast(@pubsub_name, "events:all", {:event, event_type, event})
     end
-    
+
     Phoenix.PubSub.broadcast(@pubsub_name, "events:#{event_type}", {:event, event})
     Phoenix.PubSub.broadcast(@pubsub_name, "events:all", {:event, event_type, event})
     :ok
   end
-  
+
   @doc """
   特定のイベントタイプを購読する
   """
@@ -53,7 +51,7 @@ defmodule Shared.Infrastructure.EventBus do
     Logger.info("EventBus subscribing to topic: events:#{event_type}")
     Phoenix.PubSub.subscribe(@pubsub_name, "events:#{event_type}")
   end
-  
+
   @doc """
   すべてのイベントを購読する
   """
@@ -61,7 +59,7 @@ defmodule Shared.Infrastructure.EventBus do
   def subscribe_all do
     Phoenix.PubSub.subscribe(@pubsub_name, "events:all")
   end
-  
+
   @doc """
   購読を解除する
   """
@@ -69,7 +67,7 @@ defmodule Shared.Infrastructure.EventBus do
   def unsubscribe(event_type) do
     Phoenix.PubSub.unsubscribe(@pubsub_name, "events:#{event_type}")
   end
-  
+
   @doc """
   すべてのイベントの購読を解除する
   """
@@ -77,7 +75,7 @@ defmodule Shared.Infrastructure.EventBus do
   def unsubscribe_all do
     Phoenix.PubSub.unsubscribe(@pubsub_name, "events:all")
   end
-  
+
   @doc """
   プレフィックスなしでメッセージを発行する（コマンド/レスポンス用）
   """
@@ -86,11 +84,11 @@ defmodule Shared.Infrastructure.EventBus do
     Logger.debug(
       "EventBus publishing raw to topic: #{topic}, message: #{inspect(message, limit: :infinity)}"
     )
-    
+
     Phoenix.PubSub.broadcast(@pubsub_name, to_string(topic), {:event, message})
     :ok
   end
-  
+
   @doc """
   プレフィックスなしでトピックを購読する（コマンド/レスポンス用）
   """
@@ -99,7 +97,7 @@ defmodule Shared.Infrastructure.EventBus do
     Logger.info("EventBus subscribing raw to topic: #{topic}")
     Phoenix.PubSub.subscribe(@pubsub_name, to_string(topic))
   end
-  
+
   @doc """
   プレフィックスなしで購読を解除する
   """
@@ -107,7 +105,7 @@ defmodule Shared.Infrastructure.EventBus do
   def unsubscribe_raw(topic) do
     Phoenix.PubSub.unsubscribe(@pubsub_name, to_string(topic))
   end
-  
+
   @doc """
   イベントオブジェクトからイベントタイプを取得して発行する
   """
@@ -118,14 +116,14 @@ defmodule Shared.Infrastructure.EventBus do
       {:ok, updated_event} ->
         event_type = updated_event.__struct__.event_type()
         publish(event_type, updated_event)
-        
+
       _ ->
         # フォールバック
         event_type = event.__struct__.event_type()
         publish(event_type, event)
     end
   end
-  
+
   @doc """
   複数のイベントを発行する
   """
@@ -134,20 +132,22 @@ defmodule Shared.Infrastructure.EventBus do
     Enum.each(events, &publish_event/1)
     :ok
   end
-  
+
   # Private functions
-  
+
   defp get_adapter do
     cond do
       System.get_env("GOOGLE_CLOUD_PROJECT") ->
         Shared.Infrastructure.PubSub.GoogleCloudAdapter
+
       System.get_env("MIX_ENV") == "prod" && System.get_env("CLOUD_RUN_SERVICE_URL") ->
         Shared.Infrastructure.PubSub.GoogleCloudAdapter
+
       true ->
         Phoenix.PubSub.PG2
     end
   end
-  
+
   defp use_local_broadcast? do
     # PG2アダプターを使用している場合のみlocal_broadcastを使用
     get_adapter() == Phoenix.PubSub.PG2

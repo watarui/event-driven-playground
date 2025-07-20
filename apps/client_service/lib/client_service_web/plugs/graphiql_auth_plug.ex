@@ -11,14 +11,14 @@ defmodule ClientServiceWeb.Plugs.GraphiQLAuthPlug do
       "GET" ->
         # GraphiQL のインターフェースにカスタムスクリプトを注入
         register_before_send(conn, &inject_auth_script/1)
-      
+
       "POST" ->
         # POST リクエストの場合は、Firebase 認証を適用
         conn
         |> ClientService.Auth.FirebasePlug.call([])
         |> ClientService.Auth.ContextPlug.call([])
         |> ClientServiceWeb.Plugs.DataloaderPlug.call([])
-      
+
       _ ->
         conn
     end
@@ -28,7 +28,7 @@ defmodule ClientServiceWeb.Plugs.GraphiQLAuthPlug do
     case get_resp_header(conn, "content-type") do
       ["text/html" <> _] ->
         body = conn.resp_body
-        
+
         # postMessage でトークンを受け取るスクリプトを注入
         auth_script = """
         <script>
@@ -131,14 +131,14 @@ defmodule ClientServiceWeb.Plugs.GraphiQLAuthPlug do
           })();
         </script>
         """
-        
+
         # </body> タグの直前にスクリプトを挿入
         new_body = String.replace(body, "</body>", auth_script <> "</body>")
-        
+
         conn
         |> put_resp_header("content-length", to_string(byte_size(new_body)))
         |> resp(conn.status, new_body)
-      
+
       _ ->
         conn
     end

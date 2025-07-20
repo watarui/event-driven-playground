@@ -4,8 +4,8 @@ defmodule QueryServiceWeb.Endpoint do
   """
   use Plug.Builder
 
-  plug QueryServiceWeb
-  
+  plug(QueryServiceWeb)
+
   def child_spec(opts) do
     %{
       id: __MODULE__,
@@ -13,13 +13,13 @@ defmodule QueryServiceWeb.Endpoint do
       type: :supervisor
     }
   end
-  
+
   def start_link(_opts \\ []) do
     port = System.get_env("PORT", "8080") |> String.to_integer()
-    
+
     require Logger
     Logger.info("Starting QueryService HTTP endpoint on port #{port}")
-    
+
     Plug.Cowboy.http(__MODULE__, [], port: port)
   end
 end

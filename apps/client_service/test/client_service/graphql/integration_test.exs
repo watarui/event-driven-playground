@@ -5,20 +5,21 @@ defmodule ClientService.GraphQL.IntegrationTest do
   """
   use ExUnit.Case
   use Phoenix.ConnTest
-  
+
   import Phoenix.ConnTest
   alias ClientServiceWeb.Endpoint
-  
+
   @endpoint ClientServiceWeb.Endpoint
-  
+
   setup do
     # テスト用の認証コンテキスト
-    conn = build_conn()
-    |> put_req_header("content-type", "application/json")
-    
+    conn =
+      build_conn()
+      |> put_req_header("content-type", "application/json")
+
     {:ok, conn: conn}
   end
-  
+
   describe "Category Queries" do
     test "list_categories query returns categories", %{conn: conn} do
       query = """
@@ -30,12 +31,12 @@ defmodule ClientService.GraphQL.IntegrationTest do
         }
       }
       """
-      
+
       conn = post(conn, "/graphql", %{query: query})
       assert %{"data" => %{"categories" => categories}} = json_response(conn, 200)
       assert is_list(categories)
     end
-    
+
     test "search_categories query works", %{conn: conn} do
       query = """
       query {
@@ -45,13 +46,13 @@ defmodule ClientService.GraphQL.IntegrationTest do
         }
       }
       """
-      
+
       conn = post(conn, "/graphql", %{query: query})
       assert %{"data" => %{"searchCategories" => categories}} = json_response(conn, 200)
       assert is_list(categories)
     end
   end
-  
+
   describe "Product Queries" do
     test "list_products query returns products", %{conn: conn} do
       query = """
@@ -64,12 +65,12 @@ defmodule ClientService.GraphQL.IntegrationTest do
         }
       }
       """
-      
+
       conn = post(conn, "/graphql", %{query: query})
       assert %{"data" => %{"products" => products}} = json_response(conn, 200)
       assert is_list(products)
     end
-    
+
     test "search_products query works", %{conn: conn} do
       query = """
       query {
@@ -80,13 +81,13 @@ defmodule ClientService.GraphQL.IntegrationTest do
         }
       }
       """
-      
+
       conn = post(conn, "/graphql", %{query: query})
       assert %{"data" => %{"searchProducts" => products}} = json_response(conn, 200)
       assert is_list(products)
     end
   end
-  
+
   describe "Order Queries" do
     test "list_orders query returns orders", %{conn: conn} do
       query = """
@@ -99,12 +100,12 @@ defmodule ClientService.GraphQL.IntegrationTest do
         }
       }
       """
-      
+
       conn = post(conn, "/graphql", %{query: query})
       assert %{"data" => %{"orders" => orders}} = json_response(conn, 200)
       assert is_list(orders)
     end
-    
+
     test "user_orders query works", %{conn: conn} do
       query = """
       query {
@@ -115,13 +116,13 @@ defmodule ClientService.GraphQL.IntegrationTest do
         }
       }
       """
-      
+
       conn = post(conn, "/graphql", %{query: query})
       assert %{"data" => %{"userOrders" => orders}} = json_response(conn, 200)
       assert is_list(orders)
     end
   end
-  
+
   describe "Monitoring Queries" do
     test "event_store_stats query returns statistics", %{conn: conn} do
       query = """
@@ -140,12 +141,12 @@ defmodule ClientService.GraphQL.IntegrationTest do
         }
       }
       """
-      
+
       conn = post(conn, "/graphql", %{query: query})
       assert %{"data" => %{"eventStoreStats" => stats}} = json_response(conn, 200)
       assert is_integer(stats["totalEvents"])
     end
-    
+
     test "system_statistics query returns system stats", %{conn: conn} do
       query = """
       query {
@@ -174,12 +175,12 @@ defmodule ClientService.GraphQL.IntegrationTest do
         }
       }
       """
-      
+
       conn = post(conn, "/graphql", %{query: query})
       assert %{"data" => %{"systemStatistics" => stats}} = json_response(conn, 200)
       assert is_map(stats["eventStore"])
     end
-    
+
     test "projection_status query works", %{conn: conn} do
       query = """
       query {
@@ -190,13 +191,13 @@ defmodule ClientService.GraphQL.IntegrationTest do
         }
       }
       """
-      
+
       conn = post(conn, "/graphql", %{query: query})
       response = json_response(conn, 200)
       # エラーまたは空の配列が返ることを許容
       assert Map.has_key?(response, "data") || Map.has_key?(response, "errors")
     end
-    
+
     test "sagas query returns saga list", %{conn: conn} do
       query = """
       query {
@@ -209,12 +210,12 @@ defmodule ClientService.GraphQL.IntegrationTest do
         }
       }
       """
-      
+
       conn = post(conn, "/graphql", %{query: query})
       assert %{"data" => %{"sagas" => sagas}} = json_response(conn, 200)
       assert is_list(sagas)
     end
-    
+
     test "pubsub_stats query returns statistics", %{conn: conn} do
       query = """
       query {
@@ -226,12 +227,12 @@ defmodule ClientService.GraphQL.IntegrationTest do
         }
       }
       """
-      
+
       conn = post(conn, "/graphql", %{query: query})
       assert %{"data" => %{"pubsubStats" => stats}} = json_response(conn, 200)
       assert is_list(stats)
     end
-    
+
     test "dashboard_stats query returns dashboard statistics", %{conn: conn} do
       query = """
       query {
@@ -247,14 +248,14 @@ defmodule ClientService.GraphQL.IntegrationTest do
         }
       }
       """
-      
+
       conn = post(conn, "/graphql", %{query: query})
       assert %{"data" => %{"dashboardStats" => stats}} = json_response(conn, 200)
       assert is_integer(stats["totalEvents"])
       assert is_float(stats["eventsPerMinute"])
     end
   end
-  
+
   describe "Health Queries" do
     test "health_check query returns health status", %{conn: conn} do
       query = """
@@ -269,7 +270,7 @@ defmodule ClientService.GraphQL.IntegrationTest do
         }
       }
       """
-      
+
       conn = post(conn, "/graphql", %{query: query})
       assert %{"data" => %{"healthCheck" => health}} = json_response(conn, 200)
       assert health["status"] in ["healthy", "unhealthy", "degraded"]

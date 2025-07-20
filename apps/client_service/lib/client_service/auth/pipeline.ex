@@ -3,16 +3,16 @@ defmodule ClientService.Auth.Pipeline do
   Guardian 認証パイプライン
   """
   require Logger
-  
+
   def init(opts), do: opts
 
   def call(conn, _opts) do
     Logger.info("Auth.Pipeline called")
-    
+
     # Authorization ヘッダーをチェック
     auth_header = Plug.Conn.get_req_header(conn, "authorization")
     Logger.info("Authorization header: #{inspect(auth_header)}")
-    
+
     conn
     |> Guardian.Plug.VerifyHeader.call(
       Guardian.Plug.VerifyHeader.init(

@@ -119,6 +119,7 @@ defmodule CommandService.Infrastructure.UnitOfWork do
       |> Enum.reduce_while(:ok, fn {aggregate_id, aggregate_events}, :ok ->
         # アグリゲートタイプを最初のイベントから取得
         aggregate_type = get_aggregate_type(hd(aggregate_events))
+
         # 新規作成の場合は expected_version を -1 に設定（イベントがまだ存在しない）
         # TODO: 本来はアグリゲートのバージョンを使用すべきだが、現在は新規作成のみ対応
         expected_version = -1

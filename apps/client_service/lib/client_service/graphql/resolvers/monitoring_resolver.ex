@@ -508,7 +508,7 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
         connections: []
       }
     ]
-    
+
     {:ok, nodes ++ other_nodes}
   end
 
@@ -532,7 +532,7 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
         rescue
           _ -> 0
         end
-      
+
       # イベントレート（分間）
       events_per_minute = recent_events_count * 1.0
 
@@ -541,8 +541,10 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
          total_events: total_events,
          events_per_minute: events_per_minute,
          active_sagas: saga_stats.active,
-         total_commands: 0,  # TODO: 実装
-         total_queries: 0,   # TODO: 実装
+         # TODO: 実装
+         total_commands: 0,
+         # TODO: 実装
+         total_queries: 0,
          system_health: determine_system_health(),
          error_rate: 0.0,
          average_latency_ms: 0
@@ -615,5 +617,4 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
     # TODO: より詳細なヘルスチェック
     "healthy"
   end
-  
 end

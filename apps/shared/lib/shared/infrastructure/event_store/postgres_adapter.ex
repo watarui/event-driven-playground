@@ -35,16 +35,19 @@ defmodule Shared.Infrastructure.EventStore.PostgresAdapter do
   @impl true
   def append_events(stream_id, events, expected_version, metadata) do
     # aggregate_type を取得
-    aggregate_type = case events do
-      [first_event | _] -> 
-        if function_exported?(first_event.__struct__, :aggregate_type, 0) do
-          first_event.__struct__.aggregate_type()
-        else
+    aggregate_type =
+      case events do
+        [first_event | _] ->
+          if function_exported?(first_event.__struct__, :aggregate_type, 0) do
+            first_event.__struct__.aggregate_type()
+          else
+            "unknown"
+          end
+
+        _ ->
           "unknown"
-        end
-      _ -> "unknown"
-    end
-    
+      end
+
     Logger.debug(
       "PostgresAdapter.append_events called for stream #{stream_id}, type: #{aggregate_type}, events count: #{length(events)}, expected_version: #{expected_version}"
     )
@@ -220,7 +223,7 @@ defmodule Shared.Infrastructure.EventStore.PostgresAdapter do
   @impl true
   def unsubscribe({_subscriber, event_types}) do
     event_bus = Config.event_bus_module()
-    
+
     if event_types == :all do
       event_bus.unsubscribe_all()
     else
@@ -454,16 +457,17 @@ defmodule Shared.Infrastructure.EventStore.PostgresAdapter do
     Logger.error("Unexpected aggregate_id type: #{inspect(aggregate_id)}")
     to_string(aggregate_id)
   end
-  
+
   # 追加の behaviour 関数
-  
+
   @impl true
   def read_all_events(limit) do
-    query = from(e in Event,
-      order_by: [asc: e.global_sequence],
-      limit: ^limit
-    )
-    
+    query =
+      from(e in Event,
+        order_by: [asc: e.global_sequence],
+        limit: ^limit
+      )
+
     events = Shared.Infrastructure.EventStore.Repo.all(query)
     decoded_events = Enum.map(events, &decode_event/1)
     {:ok, decoded_events}
@@ -472,18 +476,19 @@ defmodule Shared.Infrastructure.EventStore.PostgresAdapter do
       Logger.error("Failed to read all events: #{inspect(e)}")
       {:error, e}
   end
-  
+
   @impl true
   def get_stream_version(stream_id) do
     uuid_stream_id = ensure_uuid_string(stream_id)
-    
+
     case AggregateVersionCache.get_version(uuid_stream_id) do
       {:ok, version} ->
         {:ok, version}
-      
+
       {:error, :not_found} ->
         # キャッシュにない場合は DB から取得
         version = get_current_version(nil, uuid_stream_id)
+
         if version > 0 do
           {:ok, version}
         else
@@ -491,24 +496,25 @@ defmodule Shared.Infrastructure.EventStore.PostgresAdapter do
         end
     end
   end
-  
+
   @impl true
   def archive_events(days) do
     cutoff_date = DateTime.utc_now() |> DateTime.add(-days * 24 * 60 * 60, :second)
-    
+
     # 古いイベントをアーカイブテーブルに移動
-    {count, _} = from(e in Event,
-      where: e.inserted_at < ^cutoff_date
-    )
-    |> Shared.Infrastructure.EventStore.Repo.delete_all()
-    
+    {count, _} =
+      from(e in Event,
+        where: e.inserted_at < ^cutoff_date
+      )
+      |> Shared.Infrastructure.EventStore.Repo.delete_all()
+
     {:ok, count}
   rescue
     e ->
       Logger.error("Failed to archive events: #{inspect(e)}")
       {:error, e}
   end
-  
+
   @impl true
   def health_check do
     # データベース接続をチェック
@@ -517,10 +523,9 @@ defmodule Shared.Infrastructure.EventStore.PostgresAdapter do
       {:error, reason} -> {:error, reason}
     end
   end
-  
+
   # 互換性のために旧 API も保持
   def get_events(aggregate_id, from_version) do
     read_stream(aggregate_id, from_version)
   end
-
 end

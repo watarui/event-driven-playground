@@ -11,15 +11,17 @@ defmodule ClientService.Auth.AuthPlug do
     Logger.info("AuthPlug.call - checking current resource")
     current_resource = Guardian.Plug.current_resource(conn)
     Logger.info("Current resource: #{inspect(current_resource)}")
-    
+
     case current_resource do
       nil ->
         Logger.info("No current resource found, checking token directly")
+
         # Guardian.Plug がリソースをロードできなかった場合、直接トークンを検証
         token = get_token_from_header(conn)
-        
+
         if token do
           Logger.info("Found token, verifying with Firebase")
+
           case ClientService.Auth.Guardian.verify_token(token) do
             {:ok, auth_info} ->
               Logger.info("Token verified successfully")

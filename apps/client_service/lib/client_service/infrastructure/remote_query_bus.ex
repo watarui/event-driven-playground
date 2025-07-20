@@ -110,5 +110,4 @@ defmodule ClientService.Infrastructure.RemoteQueryBus do
   def handle_info(_msg, state) do
     {:noreply, state}
   end
-
 end

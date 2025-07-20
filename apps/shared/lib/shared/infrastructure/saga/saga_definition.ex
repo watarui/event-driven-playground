@@ -78,13 +78,13 @@ defmodule Shared.Infrastructure.Saga.SagaDefinition do
   @spec get_next_step(module(), saga_state()) :: step_name() | nil
   def get_next_step(saga_module, saga_state) do
     steps = saga_module.steps()
-    
+
     # 現在のステップまたは最後に完了したステップを基準にする
     current_step = saga_state[:current_step] || List.last(saga_state[:completed_steps] || [])
-    
+
     if current_step do
       current_index = Enum.find_index(steps, fn step -> step.name == current_step end)
-      
+
       if current_index && current_index < length(steps) - 1 do
         Enum.at(steps, current_index + 1).name
       else

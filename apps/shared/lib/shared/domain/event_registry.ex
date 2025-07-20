@@ -2,10 +2,10 @@ defmodule Shared.Domain.EventRegistry do
   @moduledoc """
   イベントタイプとモジュールのマッピングを管理
   """
-  
+
   @type event_type :: String.t() | atom()
   @type event_module :: module()
-  
+
   @doc """
   登録されているすべてのイベントマッピングを返す
   """
@@ -16,13 +16,13 @@ defmodule Shared.Domain.EventRegistry do
       "category.created" => Shared.Domain.Events.CategoryEvents.CategoryCreated,
       "category.updated" => Shared.Domain.Events.CategoryEvents.CategoryUpdated,
       "category.deleted" => Shared.Domain.Events.CategoryEvents.CategoryDeleted,
-      
+
       # Product events
       "product.created" => Shared.Domain.Events.ProductEvents.ProductCreated,
       "product.updated" => Shared.Domain.Events.ProductEvents.ProductUpdated,
       "product.deleted" => Shared.Domain.Events.ProductEvents.ProductDeleted,
       "product.price_changed" => Shared.Domain.Events.ProductEvents.ProductPriceChanged,
-      
+
       # Order events
       "order.created" => Shared.Domain.Events.OrderEvents.OrderCreated,
       "order.confirmed" => Shared.Domain.Events.OrderEvents.OrderConfirmed,
@@ -31,7 +31,7 @@ defmodule Shared.Domain.EventRegistry do
       "order.payment_processed" => Shared.Domain.Events.OrderEvents.OrderPaymentProcessed
     }
   end
-  
+
   @doc """
   イベントタイプからモジュールを取得
   """
@@ -46,16 +46,16 @@ defmodule Shared.Domain.EventRegistry do
         rescue
           _ -> {:error, :not_found}
         end
-        
+
       module ->
         {:ok, module}
     end
   end
-  
+
   def get_module(event_type) when is_atom(event_type) do
     get_module(to_string(event_type))
   end
-  
+
   @doc """
   モジュールからイベントタイプを取得
   """
@@ -72,7 +72,7 @@ defmodule Shared.Domain.EventRegistry do
       end
     end
   end
-  
+
   @doc """
   イベントタイプからモジュールを取得（例外を投げる）
   """

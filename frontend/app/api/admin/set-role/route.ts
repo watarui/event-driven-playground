@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { adminAuth, setUserRole } from "@/lib/firebase-admin"
+import { getAdminAuth, setUserRole } from "@/lib/server/firebase-admin"
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,6 +13,7 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.split("Bearer ")[1]
+    const adminAuth = await getAdminAuth()
 
     // トークンを検証して現在のユーザー情報を取得
     const decodedToken = await adminAuth.verifyIdToken(token)

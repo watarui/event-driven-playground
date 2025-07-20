@@ -39,7 +39,9 @@ defmodule ClientService.Infrastructure.RemoteCommandBus do
     event_bus = Config.event_bus_module()
     event_bus.subscribe_raw(response_topic)
 
-    Logger.info("RemoteCommandBus initialized with response_topic: #{response_topic}, using #{inspect(event_bus)}")
+    Logger.info(
+      "RemoteCommandBus initialized with response_topic: #{response_topic}, using #{inspect(event_bus)}"
+    )
 
     state = %{
       pending_requests: %{},
@@ -146,5 +148,4 @@ defmodule ClientService.Infrastructure.RemoteCommandBus do
 
     {:noreply, state}
   end
-
 end

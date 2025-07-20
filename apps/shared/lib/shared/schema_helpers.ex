@@ -1,16 +1,16 @@
 defmodule Shared.SchemaHelpers do
   @moduledoc """
   Ecto スキーマのプレフィックス管理ヘルパー
-  
+
   各スキーマで手動で @schema_prefix を設定する代わりに、
   このモジュールのマクロを使用することで、一元的に管理できます。
   """
 
   @doc """
   event_store スキーマを使用する Ecto スキーマ用のマクロ
-  
+
   ## 使用例
-  
+
       defmodule MyModule do
         use Ecto.Schema
         import Shared.SchemaHelpers
@@ -48,9 +48,9 @@ defmodule Shared.SchemaHelpers do
 
   @doc """
   スキーマプレフィックスを動的に設定するヘルパー
-  
+
   ## 使用例
-  
+
       query = from e in Event, select: e
       |> put_schema_prefix(:event_store)
   """
@@ -64,9 +64,9 @@ defmodule Shared.SchemaHelpers do
 
   @doc """
   スキーマ名を完全修飾名で返す
-  
+
   ## 使用例
-  
+
       qualified_table(:event_store, :events)
       # => "event_store.events"
   """
@@ -80,9 +80,9 @@ defmodule Shared.SchemaHelpers do
 
   @doc """
   SQL クエリでスキーマプレフィックスを自動的に適用するヘルパー
-  
+
   ## 使用例
-  
+
       with_schema_prefix(:event_store, "SELECT * FROM events")
       # => "SELECT * FROM event_store.events"
   """

@@ -120,7 +120,7 @@ defmodule Shared.Infrastructure.Idempotency.IdempotentSaga do
   defp extract_step_params(step_name, saga_state) do
     # Saga モジュールが冪等性ビヘイビアを実装している場合は使用
     saga_module = Map.get(saga_state, :saga_type)
-    
+
     if saga_module && function_exported?(saga_module, :extract_step_params, 2) do
       saga_module.extract_step_params(step_name, saga_state)
     else
@@ -132,7 +132,7 @@ defmodule Shared.Infrastructure.Idempotency.IdempotentSaga do
   defp extract_compensation_params(step_name, saga_state) do
     # Saga モジュールが冪等性ビヘイビアを実装している場合は使用
     saga_module = Map.get(saga_state, :saga_type)
-    
+
     if saga_module && function_exported?(saga_module, :extract_compensation_params, 2) do
       saga_module.extract_compensation_params(step_name, saga_state)
     else
@@ -140,7 +140,7 @@ defmodule Shared.Infrastructure.Idempotency.IdempotentSaga do
       extract_default_compensation_params(step_name, saga_state)
     end
   end
-  
+
   defp extract_default_step_params(step_name, saga_state) do
     # 後方互換性のためのデフォルト実装
     case step_name do

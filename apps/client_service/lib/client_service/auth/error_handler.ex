@@ -3,7 +3,6 @@ defmodule ClientService.Auth.ErrorHandler do
   認証エラーのハンドリング
   """
   import Plug.Conn
-  import Phoenix.Controller, only: [json: 2]
   require Logger
 
   @behaviour Guardian.Plug.ErrorHandler
@@ -11,7 +10,7 @@ defmodule ClientService.Auth.ErrorHandler do
   @impl Guardian.Plug.ErrorHandler
   def auth_error(conn, {type, reason}, _opts) do
     Logger.error("Auth error occurred - Type: #{inspect(type)}, Reason: #{inspect(reason)}")
-    
+
     body =
       Jason.encode!(%{
         error: to_string(type),

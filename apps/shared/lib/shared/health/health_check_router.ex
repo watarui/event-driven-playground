@@ -1,7 +1,7 @@
 defmodule Shared.Health.HealthCheckRouter do
   @moduledoc """
   統一されたヘルスチェックエンドポイント
-  
+
   /         - 基本的な生存確認
   /ready    - サービスの準備状態確認（DB接続等）
   /live     - 軽量な生存確認
@@ -11,13 +11,13 @@ defmodule Shared.Health.HealthCheckRouter do
   use Plug.Router
   alias Shared.Config
 
-  plug :match
-  plug :dispatch
+  plug(:match)
+  plug(:dispatch)
 
   # 基本的なヘルスチェック
   get "/" do
     service_name = conn.private[:service_name] || "unknown"
-    
+
     send_json(conn, 200, %{
       status: "ok",
       service: service_name,
@@ -34,27 +34,29 @@ defmodule Shared.Health.HealthCheckRouter do
   # 準備状態の確認（Cloud Run やロードバランサー用）
   get "/ready" do
     health_config = Config.get_env_config(:health_check, %{})
-    
+
     # データベース接続チェック
-    db_checks = if Map.get(health_config, :check_database, true) do
-      [check_database(conn.private[:repo])]
-    else
-      []
-    end
-    
+    db_checks =
+      if Map.get(health_config, :check_database, true) do
+        [check_database(conn.private[:repo])]
+      else
+        []
+      end
+
     # 外部サービスチェック
-    service_checks = if Map.get(health_config, :check_external_services, false) do
-      check_external_services()
-    else
-      []
-    end
-    
+    service_checks =
+      if Map.get(health_config, :check_external_services, false) do
+        check_external_services()
+      else
+        []
+      end
+
     checks = db_checks ++ service_checks
-    
+
     # すべてのチェックを実行
     results = Enum.map(checks, & &1.())
     all_healthy = Enum.all?(results, fn {_name, status, _details} -> status == :ok end)
-    
+
     if all_healthy do
       send_json(conn, 200, %{
         ready: true,
@@ -72,7 +74,7 @@ defmodule Shared.Health.HealthCheckRouter do
   get "/detailed" do
     service_name = conn.private[:service_name] || "unknown"
     health_config = Config.get_env_config(:health_check, %{})
-    
+
     # 基本情報
     base_info = %{
       service: service_name,
@@ -81,7 +83,7 @@ defmodule Shared.Health.HealthCheckRouter do
       environment: Config.get_env_config(:environment, :unknown),
       uptime_seconds: get_uptime()
     }
-    
+
     # システム情報
     system_info = %{
       erlang_version: :erlang.system_info(:version) |> to_string(),
@@ -90,18 +92,23 @@ defmodule Shared.Health.HealthCheckRouter do
       process_count: :erlang.system_info(:process_count),
       memory: get_memory_info()
     }
-    
+
     # 詳細チェックが有効な場合
-    checks = if Map.get(health_config, :detailed_checks, false) do
-      perform_detailed_checks(conn)
-    else
-      %{}
-    end
-    
-    send_json(conn, 200, Map.merge(base_info, %{
-      system: system_info,
-      checks: checks
-    }))
+    checks =
+      if Map.get(health_config, :detailed_checks, false) do
+        perform_detailed_checks(conn)
+      else
+        %{}
+      end
+
+    send_json(
+      conn,
+      200,
+      Map.merge(base_info, %{
+        system: system_info,
+        checks: checks
+      })
+    )
   end
 
   # プライベート関数
@@ -113,21 +120,23 @@ defmodule Shared.Health.HealthCheckRouter do
   end
 
   defp check_database(nil), do: fn -> {"database", :error, "No repo configured"} end
+
   defp check_database(repo) do
     fn ->
       timeout = Config.get_env_config(:health_check, :check_timeout, 5_000)
-      
-      task = Task.async(fn ->
-        try do
-          case repo.query("SELECT 1", [], timeout: timeout) do
-            {:ok, _} -> {"database", :ok, %{connected: true}}
-            {:error, error} -> {"database", :error, inspect(error)}
+
+      task =
+        Task.async(fn ->
+          try do
+            case repo.query("SELECT 1", [], timeout: timeout) do
+              {:ok, _} -> {"database", :ok, %{connected: true}}
+              {:error, error} -> {"database", :error, inspect(error)}
+            end
+          rescue
+            error -> {"database", :error, inspect(error)}
           end
-        rescue
-          error -> {"database", :error, inspect(error)}
-        end
-      end)
-      
+        end)
+
       case Task.yield(task, timeout) || Task.shutdown(task) do
         {:ok, result} -> result
         _ -> {"database", :error, "Check timed out"}
@@ -162,11 +171,13 @@ defmodule Shared.Health.HealthCheckRouter do
       try do
         # Event Store の接続確認
         repo = Module.concat([Shared.Infrastructure.EventStore.Repo])
+
         if Code.ensure_loaded?(repo) and function_exported?(repo, :query, 2) do
           case repo.query("SELECT COUNT(*) FROM event_store.events", []) do
-            {:ok, %{rows: [[count]]}} -> 
+            {:ok, %{rows: [[count]]}} ->
               {"event_store", :ok, %{event_count: count}}
-            {:error, error} -> 
+
+            {:error, error} ->
               {"event_store", :error, inspect(error)}
           end
         else
@@ -195,6 +206,7 @@ defmodule Shared.Health.HealthCheckRouter do
 
   defp get_memory_info do
     memory = :erlang.memory()
+
     %{
       total_mb: div(memory[:total], 1_048_576),
       processes_mb: div(memory[:processes], 1_048_576),
@@ -213,26 +225,33 @@ defmodule Shared.Health.HealthCheckRouter do
   end
 
   defp perform_database_check(nil), do: %{status: :error, message: "No repo configured"}
+
   defp perform_database_check(repo) do
     try do
       # 接続プールの状態
-      pool_status = if function_exported?(repo, :pool_status, 0) do
-        repo.pool_status()
-      else
-        %{}
-      end
-      
+      pool_status =
+        if function_exported?(repo, :pool_status, 0) do
+          repo.pool_status()
+        else
+          %{}
+        end
+
       # スキーマごとのテーブル数
-      schemas = case repo.query("SELECT schema_name, COUNT(*) as table_count 
+      schemas =
+        case repo.query(
+               "SELECT schema_name, COUNT(*) as table_count 
                                 FROM information_schema.tables 
                                 WHERE table_schema IN ('event_store', 'command', 'query')
-                                GROUP BY schema_name", []) do
-        {:ok, %{rows: rows}} ->
-          Enum.map(rows, fn [schema, count] -> {schema, count} end) |> Enum.into(%{})
-        _ ->
-          %{}
-      end
-      
+                                GROUP BY schema_name",
+               []
+             ) do
+          {:ok, %{rows: rows}} ->
+            Enum.map(rows, fn [schema, count] -> {schema, count} end) |> Enum.into(%{})
+
+          _ ->
+            %{}
+        end
+
       %{
         status: :ok,
         pool: pool_status,
@@ -273,7 +292,7 @@ defmodule Shared.Health.HealthCheckRouter do
     schedulers = :erlang.system_info(:schedulers_online)
     utilization = :scheduler.utilization(1) |> Enum.map(fn {_, util, _} -> util end)
     avg_utilization = Enum.sum(utilization) / length(utilization)
-    
+
     %{
       schedulers: schedulers,
       average_utilization: Float.round(avg_utilization * 100, 2)
@@ -287,9 +306,11 @@ defmodule Shared.Health.HealthCheckRouter do
     case System.cmd("df", ["-h", "/"]) do
       {output, 0} ->
         lines = String.split(output, "\n")
+
         if length(lines) > 1 do
           [_header | [data | _]] = lines
           parts = String.split(data, ~r/\s+/)
+
           if length(parts) >= 5 do
             %{
               used: Enum.at(parts, 2),
@@ -302,6 +323,7 @@ defmodule Shared.Health.HealthCheckRouter do
         else
           %{error: "Unable to get disk usage"}
         end
+
       _ ->
         %{error: "Unable to get disk usage"}
     end

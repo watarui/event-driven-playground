@@ -23,7 +23,10 @@ defmodule QueryService.Infrastructure.QueryListener do
     # クエリトピックを購読（raw メソッドを使用）
     event_bus_module = Config.event_bus_module()
     event_bus_module.subscribe_raw(@query_topic)
-    Logger.info("QueryListener started and subscribed to queries using #{inspect(event_bus_module)}")
+
+    Logger.info(
+      "QueryListener started and subscribed to queries using #{inspect(event_bus_module)}"
+    )
 
     {:ok, %{event_bus: event_bus_module}}
   end
@@ -127,5 +130,4 @@ defmodule QueryService.Infrastructure.QueryListener do
       module -> {:ok, module}
     end
   end
-
 end

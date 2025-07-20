@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 import { useAuth } from "@/contexts/auth-context"
-import type { UserRole } from "@/lib/firebase-admin"
+import type { UserRole } from "@/lib/server/firebase-admin"
 
 interface AuthGuardProps {
   children: React.ReactNode

@@ -150,17 +150,22 @@ defmodule Shared.Infrastructure.EventStore.InMemoryAdapter do
 
   @impl GenServer
   def handle_call({:get_events_after, after_id, limit}, _from, state) do
-    events = state.events
-    |> Enum.sort_by(& &1.id)
-    |> Enum.filter(& &1.id > after_id)
-    |> Enum.take(limit || 100)
-    |> Enum.map(& &1.event_data)
+    events =
+      state.events
+      |> Enum.sort_by(& &1.id)
+      |> Enum.filter(&(&1.id > after_id))
+      |> Enum.take(limit || 100)
+      |> Enum.map(& &1.event_data)
 
     {:reply, events, state}
   end
 
   @impl GenServer
-  def handle_call({:save_snapshot, aggregate_id, _aggregate_type, version, data, metadata}, _from, state) do
+  def handle_call(
+        {:save_snapshot, aggregate_id, _aggregate_type, version, data, metadata},
+        _from,
+        state
+      ) do
     snapshot = %{
       aggregate_id: aggregate_id,
       version: version,
@@ -168,7 +173,7 @@ defmodule Shared.Infrastructure.EventStore.InMemoryAdapter do
       metadata: metadata,
       created_at: DateTime.utc_now()
     }
-    
+
     snapshots = Map.put(Map.get(state, :snapshots, %{}), aggregate_id, snapshot)
     {:reply, {:ok, snapshot}, Map.put(state, :snapshots, snapshots)}
   end
@@ -176,6 +181,7 @@ defmodule Shared.Infrastructure.EventStore.InMemoryAdapter do
   @impl GenServer
   def handle_call({:get_snapshot, aggregate_id}, _from, state) do
     snapshots = Map.get(state, :snapshots, %{})
+
     case Map.get(snapshots, aggregate_id) do
       nil -> {:reply, {:error, :not_found}, state}
       snapshot -> {:reply, {:ok, snapshot}, state}
@@ -190,7 +196,10 @@ defmodule Shared.Infrastructure.EventStore.InMemoryAdapter do
 
   @impl true
   def save_snapshot(aggregate_id, aggregate_type, version, data, metadata) do
-    GenServer.call(__MODULE__, {:save_snapshot, aggregate_id, aggregate_type, version, data, metadata})
+    GenServer.call(
+      __MODULE__,
+      {:save_snapshot, aggregate_id, aggregate_type, version, data, metadata}
+    )
   end
 
   @impl true
@@ -206,5 +215,4 @@ defmodule Shared.Infrastructure.EventStore.InMemoryAdapter do
     |> Enum.map(& &1.event_version)
     |> Enum.max(fn -> 0 end)
   end
-
 end

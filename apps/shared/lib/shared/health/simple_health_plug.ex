@@ -14,25 +14,33 @@ defmodule Shared.Health.SimpleHealthPlug do
   @impl true
   def call(%{path_info: ["health"]} = conn, opts) do
     service_name = Keyword.get(opts, :service_name, "unknown")
+
     conn
     |> put_resp_content_type("application/json")
-    |> send_resp(200, Jason.encode!(%{
-      status: "ok", 
-      timestamp: DateTime.utc_now(),
-      service: service_name
-    }))
+    |> send_resp(
+      200,
+      Jason.encode!(%{
+        status: "ok",
+        timestamp: DateTime.utc_now(),
+        service: service_name
+      })
+    )
   end
-  
+
   # forwardからの呼び出しの場合、path_infoが空になることがある
   def call(%{path_info: []} = conn, opts) do
     service_name = Keyword.get(opts, :service_name, "unknown")
+
     conn
     |> put_resp_content_type("application/json")
-    |> send_resp(200, Jason.encode!(%{
-      status: "ok", 
-      timestamp: DateTime.utc_now(),
-      service: service_name
-    }))
+    |> send_resp(
+      200,
+      Jason.encode!(%{
+        status: "ok",
+        timestamp: DateTime.utc_now(),
+        service: service_name
+      })
+    )
   end
 
   def call(%{path_info: ["health", "live"]} = conn, _opts) do

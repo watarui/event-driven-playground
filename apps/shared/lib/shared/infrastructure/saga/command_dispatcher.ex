@@ -60,5 +60,4 @@ defmodule Shared.Infrastructure.Saga.CommandDispatcher do
       {:error, "Some commands failed to dispatch: #{inspect(errors)}"}
     end
   end
-
 end

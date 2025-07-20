@@ -23,7 +23,10 @@ defmodule CommandService.Infrastructure.CommandListener do
     # コマンドトピックを購読（raw メソッドを使用）
     event_bus_module = Config.event_bus_module()
     event_bus_module.subscribe_raw(@command_topic)
-    Logger.info("CommandListener started and subscribed to commands using #{inspect(event_bus_module)}")
+
+    Logger.info(
+      "CommandListener started and subscribed to commands using #{inspect(event_bus_module)}"
+    )
 
     {:ok, %{event_bus: event_bus_module}}
   end
@@ -305,5 +308,4 @@ defmodule CommandService.Infrastructure.CommandListener do
         {:error, "Unknown command type: #{type}"}
     end
   end
-
 end
