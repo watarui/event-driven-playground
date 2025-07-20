@@ -53,12 +53,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 },
               })
               if (response.ok) {
-                // トークンを更新して新しいロールを取得
-                await user.getIdToken(true)
-                const newTokenResult = await getIdTokenResult(user)
-                setRole((newTokenResult.claims.role as UserRole) || "writer")
+                // Firebase カスタムクレームの反映には時間がかかることがあるため、
+                // ページをリロードして確実に新しいトークンを取得
+                console.log("Initial admin setup successful, reloading page...")
+                window.location.reload()
               } else {
                 // 管理者設定に失敗した場合は writer
+                console.error("Failed to set initial admin:", await response.text())
                 setRole("writer")
               }
             } catch (error) {

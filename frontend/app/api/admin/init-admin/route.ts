@@ -78,11 +78,20 @@ export async function POST(request: NextRequest) {
     console.log("[init-admin] Setting user as admin...")
     await setUserRole(currentUserId, "admin")
     console.log("[init-admin] Admin role set successfully")
+    
+    // カスタムクレームが設定されたことを確認
+    const updatedUser = await adminAuth.getUser(currentUserId)
+    console.log("[init-admin] Updated user claims:", updatedUser.customClaims)
 
     return NextResponse.json({
       success: true,
       message: `Successfully set ${currentUserEmail} as admin`,
       requiresTokenRefresh: true,
+      debug: process.env.NODE_ENV === "development" ? {
+        uid: currentUserId,
+        email: currentUserEmail,
+        customClaims: updatedUser.customClaims,
+      } : undefined,
     })
   } catch (error) {
     console.error("[init-admin] Error:", error)

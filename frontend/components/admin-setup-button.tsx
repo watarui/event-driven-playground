@@ -48,12 +48,11 @@ export function AdminSetupButton() {
       const data = await response.json()
 
       if (response.ok) {
-        setMessage({ type: "success", text: data.message })
-        // トークンをリフレッシュして新しいロールを反映
-        if (data.requiresTokenRefresh) {
-          await user.getIdToken(true)
+        setMessage({ type: "success", text: data.message || "管理者権限を設定しました。ページを再読み込みします..." })
+        // Firebase カスタムクレームの反映のため、必ずページをリロード
+        setTimeout(() => {
           window.location.reload()
-        }
+        }, 1000)
       } else {
         console.error("Admin setup failed:", {
           status: response.status,
