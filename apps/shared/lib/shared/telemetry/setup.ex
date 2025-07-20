@@ -96,7 +96,9 @@ defmodule Shared.Telemetry.Setup do
 
   defp handle_cloud_event(event_name, measurements, _metadata, _config) do
     # OpenTelemetry の現在のスパンに属性を追加
-    :otel_span.set_attributes([
+    current_span = :otel_tracer.current_span_ctx()
+
+    :otel_span.set_attributes(current_span, [
       {"business.event", event_name |> List.last() |> to_string()},
       {"business.value", Map.get(measurements, :value, 0)}
     ])

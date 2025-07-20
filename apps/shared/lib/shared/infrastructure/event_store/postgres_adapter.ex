@@ -173,7 +173,6 @@ defmodule Shared.Infrastructure.EventStore.PostgresAdapter do
       {:error, e}
   end
 
-  @impl true
   def get_events_by_type(event_type, opts) do
     limit = Keyword.get(opts, :limit, 100)
     after_id = Keyword.get(opts, :after_id)
@@ -233,7 +232,6 @@ defmodule Shared.Infrastructure.EventStore.PostgresAdapter do
     :ok
   end
 
-  @impl true
   def get_events_after(after_id, limit) do
     query =
       from(e in Event,
@@ -424,12 +422,10 @@ defmodule Shared.Infrastructure.EventStore.PostgresAdapter do
     event_bus.publish(String.to_atom(event_record.event_type), event)
   end
 
-  @impl true
   def save_snapshot(aggregate_id, aggregate_type, version, data, metadata) do
     SnapshotStore.save_snapshot(aggregate_id, aggregate_type, version, data, metadata)
   end
 
-  @impl true
   def get_snapshot(aggregate_id) do
     uuid_aggregate_id = ensure_uuid_string(aggregate_id)
     SnapshotStore.get_latest_snapshot(uuid_aggregate_id)

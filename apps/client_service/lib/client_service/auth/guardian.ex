@@ -11,6 +11,7 @@ defmodule ClientService.Auth.Guardian do
   @doc """
   JWT からサブジェクトを取得
   """
+  @impl Guardian
   def subject_for_token(resource, _claims) do
     sub = to_string(resource.user_id || resource.id)
     {:ok, sub}
@@ -19,6 +20,7 @@ defmodule ClientService.Auth.Guardian do
   @doc """
   JWT のサブジェクトからリソースを取得
   """
+  @impl Guardian
   def resource_from_claims(claims) do
     Logger.info("Guardian.resource_from_claims called with: #{inspect(claims)}")
 
@@ -41,26 +43,6 @@ defmodule ClientService.Auth.Guardian do
   """
   def verify_token(token) do
     FirebaseAuth.verify_token(token)
-  end
-
-  # Guardian の decode_and_verify をオーバーライド
-  @impl Guardian
-  def decode_and_verify(token, claims \\ %{}, opts \\ [])
-
-  def decode_and_verify(token, _claims, _opts) do
-    Logger.info(
-      "Guardian.decode_and_verify called with token: #{String.slice(token || "", 0, 50)}..."
-    )
-
-    case FirebaseAuth.verify_token(token) do
-      {:ok, user_info} ->
-        Logger.info("Token verified successfully for user: #{user_info.user_id}")
-        {:ok, user_info.claims}
-
-      error ->
-        Logger.error("Token verification failed: #{inspect(error)}")
-        error
-    end
   end
 
   # Guardian の verify_claims をオーバーライド

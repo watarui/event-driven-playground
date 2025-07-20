@@ -249,17 +249,4 @@ defmodule ClientService.Factory do
       timestamp: DateTime.utc_now()
     }
   end
-
-  # プライベートヘルパー関数
-
-  # デフォルト引数のヘッダー定義
-  defp sequence(key_or_list, formatter \\ & &1)
-
-  defp sequence(key, formatter) when is_atom(key) do
-    ExMachina.sequence(key, formatter)
-  end
-
-  defp sequence(list, _formatter) when is_list(list) do
-    Enum.random(list)
-  end
 end

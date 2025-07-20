@@ -74,7 +74,7 @@ defmodule Shared.Infrastructure.PubSub.GoogleCloudAdapter do
   end
 
   @impl Phoenix.PubSub.Adapter
-  def direct_broadcast(adapter_name, node_name, topic, message, dispatcher) do
+  def direct_broadcast(adapter_name, _node_name, topic, message, dispatcher) do
     # Cloud Pub/Sub では全ノードに配信されるため、通常の broadcast と同じ
     broadcast(adapter_name, topic, message, dispatcher)
   end

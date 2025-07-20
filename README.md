@@ -30,7 +30,7 @@ cd frontend
 bun install
 
 # 環境変数ファイルの準備
-cp .env.example .env.local
+cp .env.local.example .env.local
 # .env.local を編集して Firebase の認証情報を設定
 ```
 
@@ -132,3 +132,26 @@ INITIAL_ADMIN_EMAIL=admin@your-company.com  # 必須
 - ユーザー一覧の表示
 - ユーザーの権限変更（admin/writer/viewer）
 - システム設定の変更
+
+## CI/CD での環境変数
+
+### Frontend のビルド
+
+CI/CD 環境では、Firebase の実際の認証情報は不要です。ビルド時の型チェックを通すため、ダミーの環境変数を使用します：
+
+```bash
+# CI でのビルド前に実行
+cd frontend
+cp .env.ci.example .env.local
+npm run build
+```
+
+`.env.ci.example` にはビルドに必要な最小限のダミー値が含まれています。本番環境へのデプロイ時は、実際の環境変数を設定してください。
+
+### 環境変数ファイルの構成
+
+| ファイル | 用途 | 使用場面 |
+|---------|------|----------|
+| `.env.local.example` | ローカル開発用のテンプレート | 開発環境 |
+| `.env.production.example` | 本番環境用のテンプレート | 本番デプロイ |
+| `.env.ci.example` | CI ビルド用のダミー値 | GitHub Actions 等 |
