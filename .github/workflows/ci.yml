@@ -110,7 +110,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost/event_driven_playground_test
         run: |
-          mix test --cover --warnings-as-errors
+          mix test --warnings-as-errors
 
       - name: Check formatting
         run: |

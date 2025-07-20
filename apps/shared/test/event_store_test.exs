@@ -3,7 +3,7 @@ defmodule Shared.Infrastructure.EventStore.EventStoreTest do
   イベントストアの基本機能テスト
   """
 
-  use ExUnit.Case
+  use ExUnit.Case, async: false
 
   alias Shared.Infrastructure.EventStore.{
     EventStore,

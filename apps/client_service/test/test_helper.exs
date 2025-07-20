@@ -19,7 +19,4 @@ if Code.ensure_loaded?(Ecto.Adapters.SQL.Sandbox) do
 end
 
 # Configure Mox for mocking
-if Code.ensure_loaded?(Mox) do
-  Mox.defmock(ClientService.MockFirebaseClient, for: ClientService.Auth.FirebaseClient)
-  Application.put_env(:client_service, :firebase_client, ClientService.MockFirebaseClient)
-end
+# (Firebase mocking is currently not used)
