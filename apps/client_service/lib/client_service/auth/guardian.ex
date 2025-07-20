@@ -70,4 +70,35 @@ defmodule ClientService.Auth.Guardian do
   """
   def get_token_type(%{"typ" => type}), do: type
   def get_token_type(_), do: "access"
+
+  @doc """
+  クレームを構築
+  Guardian のデフォルト実装をオーバーライド
+  """
+  @impl Guardian
+  def build_claims(claims, resource, opts) do
+    Logger.info("Guardian.build_claims called with resource: #{inspect(resource)}")
+    
+    # 基本的なクレームを構築
+    new_claims = %{
+      "aud" => "client_service",
+      "typ" => Keyword.get(opts, :token_type, "access"),
+      "iss" => "client_service"
+    }
+    
+    # リソースから追加のクレームを抽出
+    resource_claims = 
+      case resource do
+        %{email: email, role: role} when not is_nil(email) ->
+          %{
+            "email" => email,
+            "role" => to_string(role)
+          }
+        _ ->
+          %{}
+      end
+    
+    # すべてのクレームをマージ
+    {:ok, Map.merge(claims, Map.merge(new_claims, resource_claims))}
+  end
 end

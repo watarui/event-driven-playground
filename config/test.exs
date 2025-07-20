@@ -19,6 +19,15 @@ config :client_service, ClientService.Auth.Guardian,
 # テスト環境では認証を無効化（任意）
 config :client_service, :auth_mode, :disabled
 
+# テスト環境では CircuitBreaker を無効化
+config :shared, :circuit_breaker_enabled, false
+
+# テスト環境では Firebase Auth のモックを使用
+config :client_service, :firebase_auth_adapter, ClientService.Auth.FirebaseAuthMock
+
+# Firebase のテスト用プロジェクト ID
+config :client_service, :firebase_project_id, "test-project"
+
 # QueryService の Phoenix エンドポイントを無効化
 config :query_service, QueryServiceWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4003],

@@ -25,10 +25,16 @@ defmodule Shared.Infrastructure.EventStore.PostgresAdapter do
     uuid_aggregate_id = ensure_uuid_string(aggregate_id)
     Logger.debug("Converted aggregate_id to UUID string: #{uuid_aggregate_id}")
 
-    # サーキットブレーカーを通じて実行
-    CircuitBreaker.call(:event_store, fn ->
+    # テスト環境では CircuitBreaker をスキップ
+    if Application.get_env(:shared, :circuit_breaker_enabled, true) do
+      # サーキットブレーカーを通じて実行
+      CircuitBreaker.call(:event_store, fn ->
+        do_append_events(uuid_aggregate_id, aggregate_type, events, expected_version, metadata)
+      end)
+    else
+      # 直接実行
       do_append_events(uuid_aggregate_id, aggregate_type, events, expected_version, metadata)
-    end)
+    end
   end
 
   # append_events/4 (behaviour と一致させる)
@@ -56,10 +62,16 @@ defmodule Shared.Infrastructure.EventStore.PostgresAdapter do
     uuid_stream_id = ensure_uuid_string(stream_id)
     Logger.debug("Converted stream_id to UUID string: #{uuid_stream_id}")
 
-    # サーキットブレーカーを通じて実行
-    CircuitBreaker.call(:event_store, fn ->
+    # テスト環境では CircuitBreaker をスキップ
+    if Application.get_env(:shared, :circuit_breaker_enabled, true) do
+      # サーキットブレーカーを通じて実行
+      CircuitBreaker.call(:event_store, fn ->
+        do_append_events(uuid_stream_id, aggregate_type, events, expected_version, metadata)
+      end)
+    else
+      # 直接実行
       do_append_events(uuid_stream_id, aggregate_type, events, expected_version, metadata)
-    end)
+    end
   end
 
   defp do_append_events(uuid_aggregate_id, aggregate_type, events, expected_version, metadata) do
@@ -144,7 +156,8 @@ defmodule Shared.Infrastructure.EventStore.PostgresAdapter do
   def read_stream(stream_id, from_version) do
     uuid_stream_id = ensure_uuid_string(stream_id)
 
-    CircuitBreaker.call(:event_store, fn ->
+    # テスト環境では CircuitBreaker をスキップ
+    execute_fn = fn ->
       query =
         from(e in Event,
           where: e.aggregate_id == ^uuid_stream_id,
@@ -166,7 +179,13 @@ defmodule Shared.Infrastructure.EventStore.PostgresAdapter do
         end)
 
       {:ok, decoded_events}
-    end)
+    end
+
+    if Application.get_env(:shared, :circuit_breaker_enabled, true) do
+      CircuitBreaker.call(:event_store, execute_fn)
+    else
+      execute_fn.()
+    end
   rescue
     e ->
       Logger.error("Failed to get events: #{inspect(e)}")
