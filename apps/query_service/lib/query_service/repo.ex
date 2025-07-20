@@ -3,15 +3,5 @@ defmodule QueryService.Repo do
     otp_app: :query_service,
     adapter: Ecto.Adapters.Postgres
 
-  def init(_, config) do
-    # schema_prefix が設定されている場合はサーチパスを設定
-    config = 
-      if schema_prefix = Keyword.get(config, :schema_prefix) do
-        Keyword.put(config, :after_connect, {Postgrex, :query!, ["SET search_path TO #{schema_prefix}", []]})
-      else
-        config
-      end
-    
-    {:ok, config}
-  end
+  # 追加の設定は不要
 end

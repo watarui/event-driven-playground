@@ -11,24 +11,15 @@ if config_env() == :test do
   # データベース設定（Shared.Config を使用）
   config :shared, Shared.Infrastructure.EventStore.Repo,
     Shared.Config.database_config(:event_store)
-    |> Keyword.merge(
-      pool: Ecto.Adapters.SQL.Sandbox,
-      schema_prefix: "event_store"
-    )
+    |> Keyword.merge(pool: Ecto.Adapters.SQL.Sandbox)
     
   config :command_service, CommandService.Repo,
     Shared.Config.database_config(:command_service)
-    |> Keyword.merge(
-      pool: Ecto.Adapters.SQL.Sandbox,
-      schema_prefix: "command_service"
-    )
+    |> Keyword.merge(pool: Ecto.Adapters.SQL.Sandbox)
     
   config :query_service, QueryService.Repo,
     Shared.Config.database_config(:query_service)
-    |> Keyword.merge(
-      pool: Ecto.Adapters.SQL.Sandbox,
-      schema_prefix: "query_service"
-    )
+    |> Keyword.merge(pool: Ecto.Adapters.SQL.Sandbox)
 end
 
 # 本番環境でのみ実行時設定を適用
@@ -41,21 +32,12 @@ if config_env() == :prod do
   # データベース設定（Shared.Config を使用）
   config :shared, Shared.Infrastructure.EventStore.Repo,
     Shared.Config.database_config(:event_store)
-    |> Keyword.merge(schema_prefix: "event_store")
     
   config :command_service, CommandService.Repo,
     Shared.Config.database_config(:command_service)
-    |> Keyword.merge(
-      schema_prefix: "command_service",
-      migration_default_prefix: "command_service"
-    )
     
   config :query_service, QueryService.Repo,
     Shared.Config.database_config(:query_service)
-    |> Keyword.merge(
-      schema_prefix: "query_service",
-      migration_default_prefix: "query_service"
-    )
 
   # Phoenix エンドポイント設定（Shared.Config を使用）
   config :client_service, ClientServiceWeb.Endpoint,
