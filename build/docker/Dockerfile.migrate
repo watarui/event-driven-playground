@@ -24,17 +24,20 @@ COPY apps/command_service/mix.exs apps/command_service/
 COPY apps/query_service/mix.exs apps/query_service/
 COPY apps/client_service/mix.exs apps/client_service/
 
-# 依存関係を取得（キャッシュマウント使用）
+# 依存関係を取得
 ENV MIX_ENV=prod
-RUN --mount=type=cache,target=/app/deps \
-    --mount=type=cache,target=/root/.hex \
-    mix deps.get --only prod && \
-    mix deps.compile
+RUN mix deps.get --only prod
 
 # アプリケーションコードをコピー
 COPY config config
 COPY apps apps
 COPY run_migrations.sh /app/run_migrations.sh
+
+# 依存関係をコンパイル
+RUN mix deps.compile
+
+# アプリケーションをコンパイル（マイグレーションに必要）
+RUN mix compile
 
 # スクリプトに実行権限を付与
 RUN chmod +x /app/run_migrations.sh
