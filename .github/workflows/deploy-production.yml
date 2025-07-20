@@ -48,15 +48,24 @@ jobs:
             --config=cloudbuild-optimized.yaml \
             --substitutions=SHORT_SHA=${GITHUB_SHA::7} \
             --project=${PROJECT_ID}
+      
+      # マイグレーションイメージのビルド
+      - name: Build Migration Image
+        run: |
+          echo "🔨 Building migration image..."
+          gcloud builds submit \
+            --config=cloudbuild-migrate.yaml \
+            --project=${PROJECT_ID}
 
       # マイグレーションの実行
       - name: Run Database Migrations
         run: |
-          # Query Service のマイグレーション
-          gcloud run jobs execute query-service-migrate \
+          echo "🗄️ Running database migrations..."
+          gcloud run jobs execute database-migrate \
             --region=${REGION} \
             --project=${PROJECT_ID} \
             --wait
+          echo "✅ Migrations completed"
 
       # サービスのデプロイ
       - name: Deploy Services
