@@ -26,12 +26,12 @@ defmodule Shared.Health.HealthCheckRouter do
     })
   end
 
-  # 軽量な生存確認（Kubernetes liveness probe 用）
+  # 軽量な生存確認（外部監視ツール用）
   get "/live" do
     send_json(conn, 200, %{alive: true})
   end
 
-  # 準備状態の確認（Kubernetes readiness probe 用）
+  # 準備状態の確認（Cloud Run やロードバランサー用）
   get "/ready" do
     health_config = Config.get_env_config(:health_check, %{})
     

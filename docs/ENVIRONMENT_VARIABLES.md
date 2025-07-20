@@ -196,13 +196,11 @@ openssl rand -base64 32
 - フロントエンドの `.env.local`、`.env.production` ファイルを `.gitignore` に追加
 - シークレット管理サービスを使用
 
-### 3. Kubernetes での使用例
+### 3. Google Cloud Secret Manager での使用例
 
 ```bash
 # シークレットの作成
-kubectl create secret generic elixir-cqrs-secrets \
-  --from-env-file=.env.production \
-  -n elixir-cqrs
+gcloud secrets create app-secrets --data-file=.env.production
 ```
 
 ### 4. Docker Compose での使用例

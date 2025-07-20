@@ -180,8 +180,11 @@ services:
 ```
 
 ```bash
-# Kubernetes でのスケーリング
-kubectl scale deployment query-service --replicas=5
+# Cloud Run でのスケーリング
+gcloud run services update query-service \
+  --min-instances=2 \
+  --max-instances=10 \
+  --region=asia-northeast1
 ```
 
 #### ロードバランサーの設定

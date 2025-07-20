@@ -35,7 +35,7 @@
 - `503 Service Unavailable` - システムは異常
 
 #### `/health/live` - Liveness Probe
-Kubernetes liveness probe 用のシンプルなエンドポイント。
+ロードバランサーや外部監視ツール用のシンプルなエンドポイント。
 
 **レスポンス:**
 - `200 OK` ボディ "OK" - サービスは生存中
@@ -161,24 +161,17 @@ Erlang VM のメモリ使用量を監視：
 - メモリ使用量がクリティカル
 - サーキットブレーカーが open
 
-## Kubernetes 統合
+## Cloud Run 統合
 
-### デプロイメント設定
-```yaml
-livenessProbe:
-  httpGet:
-    path: /health/live
-    port: 4000
-  initialDelaySeconds: 30
-  periodSeconds: 10
+### ヘルスチェック設定
+Cloud Run では、サービスの起動時と実行時のヘルスチェックが自動的に行われます：
 
-readinessProbe:
-  httpGet:
-    path: /health/ready
-    port: 4000
-  initialDelaySeconds: 10
-  periodSeconds: 5
-```
+- **起動プローブ**: TCP ポートチェック（自動）
+- **ライブネスプローブ**: `/health/live` エンドポイント
+- **レディネスプローブ**: `/health/ready` エンドポイント
+
+### 外部監視ツール統合
+Uptime Robot、Pingdom などの外部監視ツールでは `/health` エンドポイントを使用できます。
 
 ## 監視システム統合
 

@@ -35,7 +35,8 @@
 ### デプロイメントと設定
 
 - [**環境変数リファレンス**](ENVIRONMENT_VARIABLES.md) - すべての設定オプションの詳細
-- [**デプロイメント**](DEPLOYMENT.md) - Docker、Kubernetes、本番環境へのデプロイ
+- [**デプロイメント**](DEPLOYMENT.md) - Docker Compose、Google Cloud Run へのデプロイ
+- [**本番環境デプロイメント**](PRODUCTION_DEPLOYMENT_GUIDE.md) - Google Cloud Run での本番環境構築
 
 ### 監視と運用
 

@@ -6,18 +6,22 @@
 
 ## デプロイメントオプション
 
-### 1. Docker Compose（小規模）
+### 1. Google Cloud Run（推奨）
 
-開発環境に近い構成で、小規模な本番環境に適しています。
+本番環境では Google Cloud Run を使用してサーバーレスでデプロイします。詳細は [PRODUCTION_DEPLOYMENT_GUIDE.md](./PRODUCTION_DEPLOYMENT_GUIDE.md) を参照してください。
+
+### 2. Docker Compose（開発環境）
+
+開発環境でのローカル実行用：
 
 ```bash
-# 本番用の docker-compose.yml を使用
-docker compose -f docker-compose.prod.yml up -d
+# 開発環境の起動
+docker compose up -d
 ```
 
-### 2. Elixir Release（中規模）
+### 3. Elixir Release（ローカルテスト）
 
-Elixir の組み込みリリース機能を使用した展開。
+Elixir の組み込みリリース機能を使用したローカルテスト：
 
 ```bash
 # リリースビルド
@@ -28,10 +32,6 @@ MIX_ENV=prod mix release
 # 起動
 _build/prod/rel/event_driven_playground/bin/event_driven_playground start
 ```
-
-### 3. Kubernetes（大規模）
-
-将来的な拡張を考慮した大規模環境向け。
 
 ## 環境変数
 
