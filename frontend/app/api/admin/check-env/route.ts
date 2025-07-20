@@ -1,14 +1,19 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { config } from "@/lib/config"
 
 // 環境変数の状態を確認するエンドポイント（開発・デバッグ用）
 export async function GET(request: NextRequest) {
   // 本番環境では無効化
-  if (process.env.NODE_ENV === "production") {
+  if (config.env.isProduction) {
     return NextResponse.json({ error: "Not available in production" }, { status: 403 })
   }
 
   const envStatus = {
-    environment: process.env.NODE_ENV,
+    environment: {
+      isDevelopment: config.env.isDevelopment,
+      isProduction: config.env.isProduction,
+      nodeEnv: process.env.NODE_ENV,
+    },
     firebase: {
       // クライアント側の設定
       publicApiKey: !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY,

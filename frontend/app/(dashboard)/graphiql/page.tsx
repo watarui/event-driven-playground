@@ -4,6 +4,7 @@ import { RefreshCw, Shield, ShieldAlert } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { AdminSetupButton } from "@/components/admin-setup-button"
 import { useAuth } from "@/contexts/auth-context"
+import { config } from "@/lib/config"
 
 export default function GraphiQLPage() {
   const { user, role, loading } = useAuth()
@@ -137,7 +138,7 @@ export default function GraphiQLPage() {
         )}
         <iframe
           ref={iframeRef}
-          src={`${process.env.NODE_ENV === "production" ? "https://client-service-yfmozh2e7a-an.a.run.app" : "http://localhost:4000"}/graphiql`}
+          src={`${config.env.isProduction ? "https://client-service-yfmozh2e7a-an.a.run.app" : "http://localhost:4000"}/graphiql`}
           className="w-full h-full border-0"
           onLoad={handleIframeLoad}
           title="GraphiQL Explorer"

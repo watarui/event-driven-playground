@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { config } from "@/lib/config"
 import { getAdminAuth } from "@/lib/server/firebase-admin"
 
 // 管理者が存在するかどうかをチェックするエンドポイント
@@ -40,7 +41,7 @@ export async function GET() {
       {
         error: "Failed to check admin existence",
         adminExists: null,
-        details: process.env.NODE_ENV === "development" ? error instanceof Error ? error.message : String(error) : undefined,
+        details: config.env.isDevelopment ? error instanceof Error ? error.message : String(error) : undefined,
       },
       { status: 500 }
     )

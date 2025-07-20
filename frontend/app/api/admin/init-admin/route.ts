@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
       success: true,
       message: `Successfully set ${currentUserEmail} as admin`,
       requiresTokenRefresh: true,
-      debug: process.env.NODE_ENV === "development" ? {
+      debug: config.env.isDevelopment ? {
         uid: currentUserId,
         email: currentUserEmail,
         customClaims: updatedUser.customClaims,
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
       { 
         success: false, 
         message: "Internal server error",
-        error: process.env.NODE_ENV === "development" ? errorMessage : undefined
+        error: config.env.isDevelopment ? errorMessage : undefined
       }, 
       { status: 500 }
     )

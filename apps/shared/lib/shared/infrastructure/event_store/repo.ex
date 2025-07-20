@@ -7,14 +7,14 @@ defmodule Shared.Infrastructure.EventStore.Repo do
     otp_app: :shared,
     adapter: Ecto.Adapters.Postgres
 
-  # SQL クエリのログ出力
+  # SQL クエリのログ出力とスキーマ設定
   def init(_, config) do
     config = Keyword.put(config, :log, :debug)
     
-    # テスト環境と本番環境では event_store スキーマを使用
+    # schema_prefix が設定されている場合はサーチパスを設定
     config = 
-      if Mix.env() in [:test, :prod] do
-        Keyword.put(config, :after_connect, {Ecto.Adapters.Postgres, :set_search_path, ["event_store"]})
+      if schema_prefix = Keyword.get(config, :schema_prefix) do
+        Keyword.put(config, :after_connect, {Ecto.Adapters.Postgres, :set_search_path, [schema_prefix]})
       else
         config
       end
