@@ -155,34 +155,46 @@ jobs:
           
           # 各サービスの新しいリビジョンの URL を取得
           SERVICES=("command-service" "query-service" "client-service")
+          FAILED_SERVICES=()
           
           for SERVICE in "${SERVICES[@]}"; do
             echo "Checking ${SERVICE}..."
             
-            # 最新リビジョンの URL を取得
-            REVISION_URL=$(gcloud run services describe ${SERVICE} \
-              --region=${REGION} \
-              --project=${PROJECT_ID} \
-              --format="value(status.latestCreatedRevisionName)")
-            
+            # サービスの URL を取得
             SERVICE_URL=$(gcloud run services describe ${SERVICE} \
               --region=${REGION} \
               --project=${PROJECT_ID} \
               --format="value(status.url)")
             
             # ヘルスチェック（リトライ付き）
+            HEALTHY=false
             for i in {1..5}; do
-              if curl -f "${SERVICE_URL}/health/ready" \
-                -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
-                -m 10; then
+              # 公開エンドポイントにアクセス（認証なし）
+              if curl -f -s -o /dev/null -w "%{http_code}" "${SERVICE_URL}/health/ready" | grep -q "200"; then
                 echo "✅ ${SERVICE} is healthy"
+                HEALTHY=true
                 break
               else
                 echo "⏳ Waiting for ${SERVICE} to be ready (attempt $i/5)..."
-                sleep 10
+                if [ $i -lt 5 ]; then
+                  sleep 10
+                fi
               fi
             done
+            
+            if [ "$HEALTHY" = false ]; then
+              echo "❌ ${SERVICE} health check failed after 5 attempts"
+              FAILED_SERVICES+=("${SERVICE}")
+            fi
           done
+          
+          # 失敗したサービスがある場合はエラー
+          if [ ${#FAILED_SERVICES[@]} -gt 0 ]; then
+            echo "❌ Health check failed for: ${FAILED_SERVICES[*]}"
+            exit 1
+          fi
+          
+          echo "✅ All services are healthy"
 
       # トラフィックの切り替え
       - name: Switch Traffic
