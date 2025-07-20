@@ -77,6 +77,11 @@ jobs:
           mix ecto.create -r CommandService.Repo
           mix ecto.create -r QueryService.Repo
           
+          # スキーマを作成（マイグレーション前に実行）
+          echo ""
+          echo "Creating database schemas..."
+          mix db.create_schemas
+          
           # 各アプリケーションのマイグレーションを実行
           echo ""
           echo "Running Shared migrations..."

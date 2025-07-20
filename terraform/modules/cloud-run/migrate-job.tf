@@ -12,7 +12,7 @@ resource "google_cloud_run_v2_job" "migrate_shared" {
         image = "${local.image_base}/client-service:latest"
         
         command = ["/app/bin/client_service"]
-        args    = ["eval", "Ecto.Migrator.with_repo(Shared.Infrastructure.EventStore.Repo, &Ecto.Migrator.run(&1, :up, all: true))"]
+        args    = ["eval", "Shared.Release.migrate()"]
         
         resources {
           limits = {
@@ -71,7 +71,7 @@ resource "google_cloud_run_v2_job" "migrate_command" {
         image = "${local.image_base}/command-service:latest"
         
         command = ["/app/bin/command_service"]
-        args    = ["eval", "Ecto.Migrator.with_repo(CommandService.Repo, &Ecto.Migrator.run(&1, :up, all: true))"]
+        args    = ["eval", "CommandService.Release.migrate()"]
         
         resources {
           limits = {
@@ -130,7 +130,7 @@ resource "google_cloud_run_v2_job" "migrate_query" {
         image = "${local.image_base}/query-service:latest"
         
         command = ["/app/bin/query_service"]
-        args    = ["eval", "Shared.Release.migrate_query()"]
+        args    = ["eval", "QueryService.Release.migrate()"]
         
         resources {
           limits = {
