@@ -123,6 +123,7 @@ jobs:
         run: |
           # イメージタグ
           IMAGE_TAG=${GITHUB_SHA::7}
+          REVISION_TAG="sha-${IMAGE_TAG}"
           
           # Command Service
           gcloud run deploy command-service \
@@ -130,6 +131,7 @@ jobs:
             --region=${REGION} \
             --project=${PROJECT_ID} \
             --platform=managed \
+            --tag=${REVISION_TAG} \
             --no-traffic
           
           # Query Service
@@ -138,6 +140,7 @@ jobs:
             --region=${REGION} \
             --project=${PROJECT_ID} \
             --platform=managed \
+            --tag=${REVISION_TAG} \
             --no-traffic
           
           # Client Service
@@ -146,6 +149,7 @@ jobs:
             --region=${REGION} \
             --project=${PROJECT_ID} \
             --platform=managed \
+            --tag=${REVISION_TAG} \
             --no-traffic
 
       # ヘルスチェック
@@ -200,24 +204,25 @@ jobs:
       - name: Switch Traffic
         run: |
           IMAGE_TAG=${GITHUB_SHA::7}
+          REVISION_TAG="sha-${IMAGE_TAG}"
           
           # 全サービスのトラフィックを新バージョンに切り替え
           gcloud run services update-traffic command-service \
-            --to-latest \
+            --to-tags=${REVISION_TAG}=100 \
             --region=${REGION} \
             --project=${PROJECT_ID}
           
           gcloud run services update-traffic query-service \
-            --to-latest \
+            --to-tags=${REVISION_TAG}=100 \
             --region=${REGION} \
             --project=${PROJECT_ID}
           
           gcloud run services update-traffic client-service \
-            --to-latest \
+            --to-tags=${REVISION_TAG}=100 \
             --region=${REGION} \
             --project=${PROJECT_ID}
           
-          echo "✅ Traffic switched to new version"
+          echo "✅ Traffic switched to new version (${REVISION_TAG})"
 
       # デプロイ結果の通知
       - name: Deployment Summary
