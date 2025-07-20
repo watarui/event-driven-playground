@@ -20,10 +20,16 @@ defmodule QueryService.Application do
       # プロジェクションマネージャー
       QueryService.Infrastructure.ProjectionManager,
       # クエリリスナー（PubSub経由でクエリを受信）
-      QueryService.Infrastructure.QueryListener,
-      # HTTP エンドポイント（ヘルスチェック用）
-      QueryServiceWeb.Endpoint
+      QueryService.Infrastructure.QueryListener
     ]
+    
+    # テスト環境以外では HTTP エンドポイントを起動
+    children = 
+      if Mix.env() != :test do
+        children ++ [QueryServiceWeb.Endpoint]
+      else
+        children
+      end
 
     opts = [strategy: :one_for_one, name: QueryService.Supervisor]
 
