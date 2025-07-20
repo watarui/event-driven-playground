@@ -1,27 +1,21 @@
 steps:
-  # マイグレーション用 Docker イメージをビルド
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'build-migrate'
-    args: 
-      - 'build'
-      - '-f'
-      - 'Dockerfile.migrate'
-      - '-t'
-      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/migrate:latest'
-      - '.'
-    env:
-      - 'DOCKER_BUILDKIT=1'
-
-  # イメージをプッシュ
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'push-migrate'
-    waitFor: ['build-migrate']
-    args: ['push', '--all-tags', 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/migrate']
+  # マイグレーション用 Docker イメージをビルドとプッシュ（kaniko使用）
+  - name: 'gcr.io/kaniko-project/executor:latest'
+    id: 'build-and-push-migrate'
+    args:
+      - '--dockerfile=Dockerfile.migrate'
+      - '--destination=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/migrate:latest'
+      - '--destination=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/migrate:$SHORT_SHA'
+      - '--cache=true'
+      - '--cache-ttl=168h'
+      - '--compressed-caching=false'
+      - '--use-new-run'
+      - '--snapshot-mode=redo'
 
   # Cloud Run Job を作成または更新
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: 'deploy-job'
-    waitFor: ['push-migrate']
+    waitFor: ['build-and-push-migrate']
     args:
       - 'gcloud'
       - 'run'

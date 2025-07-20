@@ -101,6 +101,17 @@ jobs:
       - name: Run Database Migrations
         run: |
           echo "🗄️ Running database migrations..."
+          # Job のリソースを一時的に増やす
+          gcloud run jobs update database-migrate \
+            --cpu=2 \
+            --memory=2Gi \
+            --max-retries=1 \
+            --parallelism=1 \
+            --task-timeout=600 \
+            --region=${REGION} \
+            --project=${PROJECT_ID}
+          
+          # マイグレーションを実行
           gcloud run jobs execute database-migrate \
             --region=${REGION} \
             --project=${PROJECT_ID} \

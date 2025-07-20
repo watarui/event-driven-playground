@@ -1,4 +1,5 @@
-# マイグレーション実行用 Dockerfile
+# syntax=docker/dockerfile:1
+# マイグレーション実行用 Dockerfile（最適化版）
 FROM elixir:1.18-alpine AS migrate
 
 # 必要なパッケージをインストール
@@ -10,26 +11,32 @@ RUN apk add --no-cache \
 # 作業ディレクトリ
 WORKDIR /app
 
-# hex と rebar をインストール
-RUN mix local.hex --force && \
+# hex と rebar をインストール（キャッシュマウント使用）
+RUN --mount=type=cache,target=/root/.cache/rebar3 \
+    --mount=type=cache,target=/root/.hex \
+    mix local.hex --force && \
     mix local.rebar --force
 
-# 依存関係ファイルをコピー
+# 依存関係ファイルをコピー（変更が少ないファイルから）
 COPY mix.exs mix.lock ./
 COPY apps/shared/mix.exs apps/shared/
 COPY apps/command_service/mix.exs apps/command_service/
 COPY apps/query_service/mix.exs apps/query_service/
 COPY apps/client_service/mix.exs apps/client_service/
 
-# 依存関係を取得
+# 依存関係を取得（キャッシュマウント使用）
 ENV MIX_ENV=prod
-RUN mix deps.get --only prod
+RUN --mount=type=cache,target=/app/deps \
+    --mount=type=cache,target=/root/.hex \
+    mix deps.get --only prod && \
+    mix deps.compile
 
 # アプリケーションコードをコピー
-COPY . .
-
-# マイグレーションスクリプトをコピー
+COPY config config
+COPY apps apps
 COPY run_migrations.sh /app/run_migrations.sh
+
+# スクリプトに実行権限を付与
 RUN chmod +x /app/run_migrations.sh
 
 # エントリーポイント
