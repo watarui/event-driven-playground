@@ -5,7 +5,7 @@ steps:
   # Step 0: Build migration image with Kaniko (parallel with services)
   - name: 'gcr.io/kaniko-project/executor:latest'
     args:
-      - '--dockerfile=Dockerfile.migrate'
+      - '--dockerfile=build/docker/Dockerfile.migrate'
       - '--destination=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/migrate:$SHORT_SHA'
       - '--destination=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/migrate:latest'
       - '--cache=true'
@@ -22,7 +22,7 @@ steps:
       - 'build'
       - '--target=builder'
       - '--tag=event-driven-playground-builder:latest'
-      - '--file=Dockerfile'
+      - '--file=build/docker/Dockerfile'
       - '--cache-from=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/builder-cache:latest'
       - '.'
     id: 'build-all'
@@ -35,7 +35,7 @@ steps:
       - '--target=client_service'
       - '--tag=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/client-service:$SHORT_SHA'
       - '--tag=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/client-service:latest'
-      - '--file=Dockerfile'
+      - '--file=build/docker/Dockerfile'
       - '.'
     id: 'build-client-service'
     waitFor: ['build-all']
@@ -47,7 +47,7 @@ steps:
       - '--target=command_service'
       - '--tag=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/command-service:$SHORT_SHA'
       - '--tag=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/command-service:latest'
-      - '--file=Dockerfile'
+      - '--file=build/docker/Dockerfile'
       - '.'
     id: 'build-command-service'
     waitFor: ['build-all']
@@ -59,7 +59,7 @@ steps:
       - '--target=query_service'
       - '--tag=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/query-service:$SHORT_SHA'
       - '--tag=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/query-service:latest'
-      - '--file=Dockerfile'
+      - '--file=build/docker/Dockerfile'
       - '.'
     id: 'build-query-service'
     waitFor: ['build-all']

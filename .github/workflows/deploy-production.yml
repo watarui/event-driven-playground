@@ -47,7 +47,7 @@ jobs:
           echo "🔨 Building all images including migration..."
           # Cloud Build を実行（ログのストリーミングエラーは無視）
           gcloud builds submit \
-            --config=cloudbuild-optimized.yaml \
+            --config=build/cloudbuild/optimized.yaml \
             --substitutions=SHORT_SHA=${GITHUB_SHA::7} \
             --project=${PROJECT_ID} || true
           

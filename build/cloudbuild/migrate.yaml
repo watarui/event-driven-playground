@@ -3,7 +3,7 @@ steps:
   - name: 'gcr.io/kaniko-project/executor:latest'
     id: 'build-and-push-migrate'
     args:
-      - '--dockerfile=Dockerfile.migrate'
+      - '--dockerfile=build/docker/Dockerfile.migrate'
       - '--destination=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/migrate:latest'
       - '--destination=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/migrate:$SHORT_SHA'
       - '--cache=true'

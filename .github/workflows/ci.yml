@@ -168,7 +168,7 @@ jobs:
           docker build \
             --target build \
             --tag event-driven-playground-base:test \
-            --file Dockerfile.base \
+            --file build/docker/Dockerfile.base \
             .
 
       - name: Build service images
