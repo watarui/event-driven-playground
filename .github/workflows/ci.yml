@@ -59,41 +59,63 @@ jobs:
           mix local.rebar --force
           mix deps.get
 
+      - name: Compile code with warnings as errors
+        env:
+          MIX_ENV: test
+        run: |
+          echo "Compiling code..."
+          mix compile --warnings-as-errors
+
       - name: Setup test database
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost/event_driven_playground_test
           MIX_ENV: test
+          MIX_QUIET: 1
         run: |
           # 既存のデータベースを削除（エラーは無視）
           echo "Dropping existing databases..."
-          mix ecto.drop -r Shared.Infrastructure.EventStore.Repo || true
-          mix ecto.drop -r CommandService.Repo || true
-          mix ecto.drop -r QueryService.Repo || true
+          mix ecto.drop -r Shared.Infrastructure.EventStore.Repo --no-compile || true
+          mix ecto.drop -r CommandService.Repo --no-compile || true
+          mix ecto.drop -r QueryService.Repo --no-compile || true
           
           # データベースを作成
           echo ""
           echo "Creating databases..."
-          mix ecto.create -r Shared.Infrastructure.EventStore.Repo
-          mix ecto.create -r CommandService.Repo
-          mix ecto.create -r QueryService.Repo
+          mix ecto.create -r Shared.Infrastructure.EventStore.Repo --no-compile
+          mix ecto.create -r CommandService.Repo --no-compile
+          mix ecto.create -r QueryService.Repo --no-compile
           
           # スキーマを作成（マイグレーション前に実行）
           echo ""
           echo "Creating database schemas..."
-          mix db.create_schemas
+          mix db.create_schemas --no-compile
+          
+          # デバッグ: QueryService のテーブル状態を確認
+          echo ""
+          echo "Checking query schema tables before migrations..."
+          mix eval "QueryService.Repo.query!(\"SELECT tablename FROM pg_tables WHERE schemaname = 'query'\") |> IO.inspect(label: \"Tables in query schema\")" --no-compile || true
           
           # 各アプリケーションのマイグレーションを実行
           echo ""
           echo "Running Shared migrations..."
-          mix ecto.migrate -r Shared.Infrastructure.EventStore.Repo --log-migrations-sql
+          mix ecto.migrate -r Shared.Infrastructure.EventStore.Repo --log-migrations-sql --no-compile
           
           echo ""
           echo "Running CommandService migrations..."
-          mix ecto.migrate -r CommandService.Repo --log-migrations-sql
+          mix ecto.migrate -r CommandService.Repo --log-migrations-sql --no-compile
+          
+          echo ""
+          echo "Checking QueryService migration status..."
+          mix ecto.migrations -r QueryService.Repo --no-compile
           
           echo ""
           echo "Running QueryService migrations..."
-          mix ecto.migrate -r QueryService.Repo --log-migrations-sql
+          mix ecto.migrate -r QueryService.Repo --log-migrations-sql --no-compile
+          
+          # デバッグ: QueryService のテーブル状態を再確認
+          echo ""
+          echo "Checking query schema tables after migrations..."
+          mix eval "QueryService.Repo.query!(\"SELECT tablename FROM pg_tables WHERE schemaname = 'query'\") |> IO.inspect(label: \"Tables in query schema after migration\")" --no-compile || true
 
       - name: Run tests with coverage
         env:
