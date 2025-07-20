@@ -15,6 +15,9 @@ jobs:
   dependency-check:
     name: Dependency Security Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     
     steps:
       - name: Checkout code
@@ -33,7 +36,9 @@ jobs:
           mix deps.get
 
       - name: Check for security vulnerabilities
-        run: mix deps.audit
+        run: |
+          mix deps.get
+          mix deps.audit
 
       - name: Upload dependency check results
         if: failure()
@@ -46,6 +51,9 @@ jobs:
     name: Container Image Security Scan
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
+    permissions:
+      contents: read
+      security-events: write
     
     strategy:
       matrix:
@@ -75,6 +83,9 @@ jobs:
   code-quality:
     name: Code Quality Analysis
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     
     steps:
       - name: Checkout code
@@ -93,7 +104,9 @@ jobs:
           mix deps.get
 
       - name: Run Sobelow security scanner
-        run: mix sobelow --config
+        run: |
+          mix deps.get
+          mix sobelow --config
 
       - name: Upload Sobelow results
         if: always()
