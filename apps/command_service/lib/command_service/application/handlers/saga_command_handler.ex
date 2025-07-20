@@ -278,7 +278,7 @@ defmodule CommandService.Application.Handlers.SagaCommandHandler do
     end
   end
 
-  defp simulate_payment_processing(amount, _user_id) do
+  defp simulate_payment_processing(_amount, _user_id) do
     # 90%の確率で成功
     if :rand.uniform() < 0.9 do
       transaction_id = UUID.uuid4()

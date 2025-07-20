@@ -89,11 +89,6 @@ jobs:
           echo "Creating database schemas..."
           mix db.create_schemas
           
-          # デバッグ: QueryService のテーブル状態を確認
-          echo ""
-          echo "Checking query schema tables before migrations..."
-          mix eval "QueryService.Repo.query!(\"SELECT tablename FROM pg_tables WHERE schemaname = 'query'\") |> IO.inspect(label: \"Tables in query schema\")" || true
-          
           # 各アプリケーションのマイグレーションを実行
           echo ""
           echo "Running Shared migrations..."
@@ -110,11 +105,6 @@ jobs:
           echo ""
           echo "Running QueryService migrations..."
           mix ecto.migrate -r QueryService.Repo --log-migrations-sql
-          
-          # デバッグ: QueryService のテーブル状態を再確認
-          echo ""
-          echo "Checking query schema tables after migrations..."
-          mix eval "QueryService.Repo.query!(\"SELECT tablename FROM pg_tables WHERE schemaname = 'query'\") |> IO.inspect(label: \"Tables in query schema after migration\")" || true
 
       - name: Run tests with coverage
         env:
