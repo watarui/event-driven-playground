@@ -44,10 +44,31 @@ jobs:
       # ビルドとプッシュ（Cloud Build を使用）
       - name: Build and Push Images
         run: |
+          # Cloud Build を実行（ログのストリーミングエラーは無視）
           gcloud builds submit \
             --config=cloudbuild-optimized.yaml \
             --substitutions=SHORT_SHA=${GITHUB_SHA::7} \
-            --project=${PROJECT_ID}
+            --project=${PROJECT_ID} \
+            --no-source || true
+          
+          # ビルドの完了を待つ
+          BUILD_ID=$(gcloud builds list --limit=1 --format="value(id)" --project=${PROJECT_ID})
+          echo "Waiting for build ${BUILD_ID} to complete..."
+          
+          # ビルドステータスを確認
+          while true; do
+            STATUS=$(gcloud builds describe ${BUILD_ID} --project=${PROJECT_ID} --format="value(status)")
+            if [[ "${STATUS}" == "SUCCESS" ]]; then
+              echo "✅ Build completed successfully"
+              break
+            elif [[ "${STATUS}" == "FAILURE" || "${STATUS}" == "TIMEOUT" || "${STATUS}" == "CANCELLED" ]]; then
+              echo "❌ Build failed with status: ${STATUS}"
+              exit 1
+            else
+              echo "⏳ Build status: ${STATUS}. Waiting..."
+              sleep 10
+            fi
+          done
       
       # マイグレーションイメージのビルド
       - name: Build Migration Image
@@ -55,7 +76,28 @@ jobs:
           echo "🔨 Building migration image..."
           gcloud builds submit \
             --config=cloudbuild-migrate.yaml \
-            --project=${PROJECT_ID}
+            --project=${PROJECT_ID} \
+            --no-source || true
+          
+          # ビルドの完了を待つ
+          sleep 5
+          BUILD_ID=$(gcloud builds list --limit=1 --format="value(id)" --project=${PROJECT_ID})
+          echo "Waiting for migration build ${BUILD_ID} to complete..."
+          
+          # ビルドステータスを確認
+          while true; do
+            STATUS=$(gcloud builds describe ${BUILD_ID} --project=${PROJECT_ID} --format="value(status)")
+            if [[ "${STATUS}" == "SUCCESS" ]]; then
+              echo "✅ Migration build completed successfully"
+              break
+            elif [[ "${STATUS}" == "FAILURE" || "${STATUS}" == "TIMEOUT" || "${STATUS}" == "CANCELLED" ]]; then
+              echo "❌ Migration build failed with status: ${STATUS}"
+              exit 1
+            else
+              echo "⏳ Build status: ${STATUS}. Waiting..."
+              sleep 10
+            fi
+          done
 
       # マイグレーションの実行
       - name: Run Database Migrations

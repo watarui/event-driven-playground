@@ -132,7 +132,7 @@ export default function GraphiQLPage() {
         )}
         <iframe
           ref={iframeRef}
-          src={`${process.env.NODE_ENV === 'production' ? 'https://client-service-prod-581148615576.asia-northeast1.run.app' : 'http://localhost:4000'}/graphiql`}
+          src={`${process.env.NODE_ENV === 'production' ? 'https://client-service-yfmozh2e7a-an.a.run.app' : 'http://localhost:4000'}/graphiql`}
           className="w-full h-full border-0"
           onLoad={handleIframeLoad}
           title="GraphiQL Explorer"
