@@ -1,28 +1,28 @@
 "use client"
 
-import React, { useCallback, useEffect, useState } from 'react'
 import {
-  ReactFlow,
-  Node,
-  Edge,
-  Controls,
+  addEdge,
   Background,
   BackgroundVariant,
-  useNodesState,
-  useEdgesState,
-  addEdge,
-  Connection,
+  type Connection,
+  Controls,
+  type Edge,
   MarkerType,
+  type Node,
   Position,
-} from '@xyflow/react'
-import '@xyflow/react/dist/style.css'
-import { motion, AnimatePresence } from 'framer-motion'
+  ReactFlow,
+  useEdgesState,
+  useNodesState,
+} from "@xyflow/react"
+import React, { useCallback, useEffect, useState } from "react"
+import "@xyflow/react/dist/style.css"
+import { AnimatePresence, motion } from "framer-motion"
 
 interface FlowMessage {
   id: string
   from: string
   to: string
-  type: 'command' | 'event' | 'query'
+  type: "command" | "event" | "query"
   data: any
 }
 
@@ -60,77 +60,77 @@ function ServiceNode({ data }: { data: any }) {
 
 const initialNodes: Node[] = [
   {
-    id: 'client',
-    type: 'service',
+    id: "client",
+    type: "service",
     position: { x: 50, y: 200 },
     data: {
-      label: 'Client Service',
-      icon: '🌐',
-      color: 'border-blue-500',
-      status: 'GraphQL Gateway',
+      label: "Client Service",
+      icon: "🌐",
+      color: "border-blue-500",
+      status: "GraphQL Gateway",
       metrics: {
-        'Req/s': '120',
-        'Latency': '45ms',
+        "Req/s": "120",
+        Latency: "45ms",
       },
     },
   },
   {
-    id: 'command',
-    type: 'service',
+    id: "command",
+    type: "service",
     position: { x: 400, y: 100 },
     data: {
-      label: 'Command Service',
-      icon: '⚡',
-      color: 'border-green-500',
-      status: 'Processing Commands',
+      label: "Command Service",
+      icon: "⚡",
+      color: "border-green-500",
+      status: "Processing Commands",
       metrics: {
-        'Commands/s': '85',
-        'Queue': '12',
+        "Commands/s": "85",
+        Queue: "12",
       },
     },
   },
   {
-    id: 'query',
-    type: 'service',
+    id: "query",
+    type: "service",
     position: { x: 400, y: 300 },
     data: {
-      label: 'Query Service',
-      icon: '🔍',
-      color: 'border-purple-500',
-      status: 'Serving Queries',
+      label: "Query Service",
+      icon: "🔍",
+      color: "border-purple-500",
+      status: "Serving Queries",
       metrics: {
-        'Queries/s': '200',
-        'Cache Hit': '92%',
+        "Queries/s": "200",
+        "Cache Hit": "92%",
       },
     },
   },
   {
-    id: 'eventstore',
-    type: 'service',
+    id: "eventstore",
+    type: "service",
     position: { x: 750, y: 200 },
     data: {
-      label: 'Event Store',
-      icon: '📚',
-      color: 'border-orange-500',
-      status: 'Storing Events',
+      label: "Event Store",
+      icon: "📚",
+      color: "border-orange-500",
+      status: "Storing Events",
       metrics: {
-        'Events': '1.2M',
-        'Growth': '+120/s',
+        Events: "1.2M",
+        Growth: "+120/s",
       },
     },
   },
   {
-    id: 'saga',
-    type: 'service',
+    id: "saga",
+    type: "service",
     position: { x: 400, y: 450 },
     data: {
-      label: 'Saga Coordinator',
-      icon: '🔄',
-      color: 'border-red-500',
-      status: 'Orchestrating',
+      label: "Saga Coordinator",
+      icon: "🔄",
+      color: "border-red-500",
+      status: "Orchestrating",
       metrics: {
-        'Active': '23',
-        'Completed': '450',
+        Active: "23",
+        Completed: "450",
       },
     },
   },
@@ -138,10 +138,10 @@ const initialNodes: Node[] = [
 
 const initialEdges: Edge[] = [
   {
-    id: 'e1',
-    source: 'client',
-    target: 'command',
-    type: 'smoothstep',
+    id: "e1",
+    source: "client",
+    target: "command",
+    type: "smoothstep",
     animated: false,
     markerEnd: {
       type: MarkerType.ArrowClosed,
@@ -150,14 +150,14 @@ const initialEdges: Edge[] = [
     },
     style: {
       strokeWidth: 2,
-      stroke: '#10b981',
+      stroke: "#10b981",
     },
   },
   {
-    id: 'e2',
-    source: 'client',
-    target: 'query',
-    type: 'smoothstep',
+    id: "e2",
+    source: "client",
+    target: "query",
+    type: "smoothstep",
     animated: false,
     markerEnd: {
       type: MarkerType.ArrowClosed,
@@ -166,14 +166,14 @@ const initialEdges: Edge[] = [
     },
     style: {
       strokeWidth: 2,
-      stroke: '#8b5cf6',
+      stroke: "#8b5cf6",
     },
   },
   {
-    id: 'e3',
-    source: 'command',
-    target: 'eventstore',
-    type: 'smoothstep',
+    id: "e3",
+    source: "command",
+    target: "eventstore",
+    type: "smoothstep",
     animated: false,
     markerEnd: {
       type: MarkerType.ArrowClosed,
@@ -182,14 +182,14 @@ const initialEdges: Edge[] = [
     },
     style: {
       strokeWidth: 2,
-      stroke: '#f59e0b',
+      stroke: "#f59e0b",
     },
   },
   {
-    id: 'e4',
-    source: 'eventstore',
-    target: 'query',
-    type: 'smoothstep',
+    id: "e4",
+    source: "eventstore",
+    target: "query",
+    type: "smoothstep",
     animated: false,
     markerEnd: {
       type: MarkerType.ArrowClosed,
@@ -198,15 +198,15 @@ const initialEdges: Edge[] = [
     },
     style: {
       strokeWidth: 2,
-      stroke: '#f59e0b',
+      stroke: "#f59e0b",
     },
-    label: 'Projections',
+    label: "Projections",
   },
   {
-    id: 'e5',
-    source: 'eventstore',
-    target: 'saga',
-    type: 'smoothstep',
+    id: "e5",
+    source: "eventstore",
+    target: "saga",
+    type: "smoothstep",
     animated: false,
     markerEnd: {
       type: MarkerType.ArrowClosed,
@@ -215,14 +215,14 @@ const initialEdges: Edge[] = [
     },
     style: {
       strokeWidth: 2,
-      stroke: '#ef4444',
+      stroke: "#ef4444",
     },
   },
   {
-    id: 'e6',
-    source: 'saga',
-    target: 'command',
-    type: 'smoothstep',
+    id: "e6",
+    source: "saga",
+    target: "command",
+    type: "smoothstep",
     animated: false,
     markerEnd: {
       type: MarkerType.ArrowClosed,
@@ -231,9 +231,9 @@ const initialEdges: Edge[] = [
     },
     style: {
       strokeWidth: 2,
-      stroke: '#ef4444',
+      stroke: "#ef4444",
     },
-    label: 'Compensate',
+    label: "Compensate",
   },
 ]
 
@@ -247,7 +247,7 @@ export function FlowVisualization({ messages = [] }: { messages?: FlowMessage[] 
     messages.forEach((message) => {
       const edgeId = `${message.from}-${message.to}`
       setAnimatedEdges((prev) => new Set(prev).add(edgeId))
-      
+
       // 3秒後にアニメーションを停止
       setTimeout(() => {
         setAnimatedEdges((prev) => {

@@ -1,16 +1,16 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState } from 'react'
-import { 
-  User, 
-  signInWithPopup, 
+import {
   signOut as firebaseSignOut,
+  getIdTokenResult,
   onAuthStateChanged,
-  getIdTokenResult
-} from 'firebase/auth'
-import { auth, googleProvider } from '@/lib/firebase'
-import { config } from '@/lib/config'
-import type { UserRole } from '@/lib/firebase-admin'
+  signInWithPopup,
+  type User,
+} from "firebase/auth"
+import { createContext, useContext, useEffect, useState } from "react"
+import { config } from "@/lib/config"
+import { auth, googleProvider } from "@/lib/firebase"
+import type { UserRole } from "@/lib/firebase-admin"
 
 interface AuthContextType {
   user: User | null
@@ -24,18 +24,18 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [role, setRole] = useState<UserRole>('viewer') // デフォルトは viewer
+  const [role, setRole] = useState<UserRole>("viewer") // デフォルトは viewer
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user)
-      
+
       if (user) {
         // トークンを強制的にリフレッシュして最新のカスタムクレームを取得
         const tokenResult = await getIdTokenResult(user, true)
         const userRole = tokenResult.claims.role as UserRole | undefined
-        
+
         if (userRole) {
           // すでにロールが設定されている場合はそれを使用
           setRole(userRole)
@@ -45,36 +45,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // INITIAL_ADMIN_EMAIL の場合は管理者設定を試みる
             try {
               const token = await user.getIdToken()
-              const response = await fetch('/api/admin/init-admin', {
-                method: 'POST',
+              const response = await fetch("/api/admin/init-admin", {
+                method: "POST",
                 headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
                 },
               })
               if (response.ok) {
                 // トークンを更新して新しいロールを取得
                 await user.getIdToken(true)
                 const newTokenResult = await getIdTokenResult(user)
-                setRole(newTokenResult.claims.role as UserRole || 'writer')
+                setRole((newTokenResult.claims.role as UserRole) || "writer")
               } else {
                 // 管理者設定に失敗した場合は writer
-                setRole('writer')
+                setRole("writer")
               }
             } catch (error) {
-              console.error('Error setting initial admin:', error)
-              setRole('writer')
+              console.error("Error setting initial admin:", error)
+              setRole("writer")
             }
           } else {
             // 通常のログインユーザーは writer
-            setRole('writer')
+            setRole("writer")
           }
         }
       } else {
         // 未ログインユーザーは viewer
-        setRole('viewer')
+        setRole("viewer")
       }
-      
+
       setLoading(false)
     })
 
@@ -85,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await signInWithPopup(auth, googleProvider)
     } catch (error) {
-      console.error('Error signing in with Google:', error)
+      console.error("Error signing in with Google:", error)
       throw error
     }
   }
@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await firebaseSignOut(auth)
     } catch (error) {
-      console.error('Error signing out:', error)
+      console.error("Error signing out:", error)
       throw error
     }
   }
@@ -109,7 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext)
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
+    throw new Error("useAuth must be used within an AuthProvider")
   }
   return context
 }

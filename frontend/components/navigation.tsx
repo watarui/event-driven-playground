@@ -1,9 +1,9 @@
 "use client"
 
+import { LogIn, LogOut, Moon, Sun, User } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
-import { Moon, Sun, LogIn, LogOut, User } from "lucide-react"
 
 interface NavItem {
   name: string
@@ -30,7 +30,7 @@ export function Navigation() {
   const pathname = usePathname()
   const [currentTime, setCurrentTime] = useState<string>("")
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true)
-  
+
   // TODO: Implement Firebase Authentication
   const user: UserType = null
   const isAdmin = false
@@ -39,21 +39,21 @@ export function Navigation() {
     const updateTime = () => {
       setCurrentTime(new Date().toLocaleTimeString())
     }
-    
+
     updateTime()
     const interval = setInterval(updateTime, 1000)
-    
+
     return () => clearInterval(interval)
   }, [])
 
   useEffect(() => {
     // 初回マウント時にダークモードの状態を確認
-    const isDark = document.documentElement.classList.contains('dark')
+    const isDark = document.documentElement.classList.contains("dark")
     setIsDarkMode(isDark)
-    
+
     // システム設定がダークモードの場合、クラスを追加
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches && !isDark) {
-      document.documentElement.classList.add('dark')
+    if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches && !isDark) {
+      document.documentElement.classList.add("dark")
       setIsDarkMode(true)
     }
   }, [])
@@ -62,9 +62,9 @@ export function Navigation() {
     const newMode = !isDarkMode
     setIsDarkMode(newMode)
     if (newMode) {
-      document.documentElement.classList.add('dark')
+      document.documentElement.classList.add("dark")
     } else {
-      document.documentElement.classList.remove('dark')
+      document.documentElement.classList.remove("dark")
     }
   }
 
@@ -76,7 +76,7 @@ export function Navigation() {
             <h1 className="text-xl font-bold">CQRS/ES Monitor</h1>
             <div className="flex space-x-4">
               {navItems
-                .filter(item => !item.adminOnly || (item.adminOnly && isAdmin))
+                .filter((item) => !item.adminOnly || (item.adminOnly && isAdmin))
                 .map((item) => (
                   <Link
                     key={item.name}
@@ -101,12 +101,12 @@ export function Navigation() {
               {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
             <span className="text-sm text-gray-600 dark:text-gray-400">{currentTime}</span>
-            
+
             {user ? (
               <div className="flex items-center space-x-3">
                 <div className="flex items-center space-x-2">
                   <User className="w-4 h-4" />
-                  <span className="text-sm">{(user as UserType)?.email || ''}</span>
+                  <span className="text-sm">{(user as UserType)?.email || ""}</span>
                 </div>
                 <button
                   onClick={() => {

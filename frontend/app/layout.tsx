@@ -1,7 +1,5 @@
 import type { Metadata } from "next"
-import { SidebarNavigation } from "@/components/sidebar-navigation"
 import { Providers } from "@/components/providers"
-import { AuthGuard } from "@/components/auth-guard"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -17,9 +15,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <Providers>
-          {children}
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   )

@@ -1,14 +1,24 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { useQuery, useSubscription } from "@apollo/client"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Activity, ChevronDown, ChevronUp, RefreshCw } from "lucide-react"
+import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { LIST_SAGAS, SAGA_UPDATES_SUBSCRIPTION, SYSTEM_STATISTICS } from "@/lib/graphql/queries/saga"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ChevronDown, ChevronUp, RefreshCw, Activity } from "lucide-react"
+import {
+  LIST_SAGAS,
+  SAGA_UPDATES_SUBSCRIPTION,
+  SYSTEM_STATISTICS,
+} from "@/lib/graphql/queries/saga"
 
 interface SagaDetail {
   id: string
@@ -31,7 +41,12 @@ export default function SagasPage() {
   const [sagaTypeFilter, setSagaTypeFilter] = useState<string>("all")
   const [expandedSagas, setExpandedSagas] = useState<Set<string>>(new Set())
 
-  const { data: sagasData, loading: sagasLoading, error: sagasError, refetch } = useQuery(LIST_SAGAS, {
+  const {
+    data: sagasData,
+    loading: sagasLoading,
+    error: sagasError,
+    refetch,
+  } = useQuery(LIST_SAGAS, {
     variables: {
       status: statusFilter === "all" ? null : statusFilter,
       sagaType: sagaTypeFilter === "all" ? null : sagaTypeFilter,
@@ -59,7 +74,7 @@ export default function SagasPage() {
   }, [updateData, refetch])
 
   const toggleSagaExpansion = (sagaId: string) => {
-    setExpandedSagas(prev => {
+    setExpandedSagas((prev) => {
       const newSet = new Set(prev)
       if (newSet.has(sagaId)) {
         newSet.delete(sagaId)
@@ -202,7 +217,7 @@ export default function SagasPage() {
             <SelectItem value="compensated">Compensated</SelectItem>
           </SelectContent>
         </Select>
-        
+
         <Select value={sagaTypeFilter} onValueChange={setSagaTypeFilter}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filter by type" />
@@ -229,14 +244,8 @@ export default function SagasPage() {
               </div>
             ) : (
               sagas.map((saga: SagaDetail) => (
-                <div
-                  key={saga.id}
-                  className="border rounded-lg hover:shadow-md transition-shadow"
-                >
-                  <div
-                    className="p-4 cursor-pointer"
-                    onClick={() => toggleSagaExpansion(saga.id)}
-                  >
+                <div key={saga.id} className="border rounded-lg hover:shadow-md transition-shadow">
+                  <div className="p-4 cursor-pointer" onClick={() => toggleSagaExpansion(saga.id)}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         <h3 className="font-semibold">{saga.sagaType}</h3>
@@ -256,7 +265,7 @@ export default function SagasPage() {
                         )}
                       </div>
                     </div>
-                    
+
                     <div className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
                       <div>
                         <span className="text-gray-500">ID:</span>{" "}
@@ -274,7 +283,7 @@ export default function SagasPage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   {expandedSagas.has(saga.id) && (
                     <div className="border-t px-4 py-4 bg-gray-50">
                       <Tabs defaultValue="state" className="w-full">
@@ -283,13 +292,13 @@ export default function SagasPage() {
                           <TabsTrigger value="commands">Commands</TabsTrigger>
                           <TabsTrigger value="events">Events</TabsTrigger>
                         </TabsList>
-                        
+
                         <TabsContent value="state" className="mt-4">
                           <pre className="bg-gray-100 p-3 rounded overflow-auto text-xs">
                             {JSON.stringify(saga.state, null, 2)}
                           </pre>
                         </TabsContent>
-                        
+
                         <TabsContent value="commands" className="mt-4">
                           {saga.commandsDispatched.length === 0 ? (
                             <div className="text-gray-500">No commands dispatched</div>
@@ -307,7 +316,7 @@ export default function SagasPage() {
                             </div>
                           )}
                         </TabsContent>
-                        
+
                         <TabsContent value="events" className="mt-4">
                           {saga.eventsHandled.length === 0 ? (
                             <div className="text-gray-500">No events handled</div>

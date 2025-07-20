@@ -1,21 +1,21 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
 import {
-  ReactFlow,
-  MiniMap,
-  Controls,
+  addEdge,
   Background,
   BackgroundVariant,
-  useNodesState,
-  useEdgesState,
-  addEdge,
-  Node,
-  Edge,
-  Connection,
+  type Connection,
   ConnectionMode,
+  Controls,
+  type Edge,
   MarkerType,
+  MiniMap,
+  type Node,
+  ReactFlow,
+  useEdgesState,
+  useNodesState,
 } from "@xyflow/react"
+import { useCallback, useEffect, useState } from "react"
 import "@xyflow/react/dist/style.css"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -375,8 +375,8 @@ export default function TopologyPage() {
                           health.status === "healthy"
                             ? "bg-green-500"
                             : health.status === "warning"
-                            ? "bg-yellow-500"
-                            : "bg-red-500"
+                              ? "bg-yellow-500"
+                              : "bg-red-500"
                         }`}
                       />
                     </div>

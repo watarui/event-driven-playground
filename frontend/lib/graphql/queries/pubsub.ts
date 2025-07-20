@@ -1,4 +1,4 @@
-import { gql } from '@apollo/client'
+import { gql } from "@apollo/client"
 
 export const LIST_PUBSUB_MESSAGES = gql`
   query ListPubSubMessages($topic: String, $limit: Int, $afterTimestamp: DateTime) {

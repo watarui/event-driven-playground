@@ -1,10 +1,20 @@
 "use client"
 
+import { gql, useQuery } from "@apollo/client"
 import { useEffect, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts"
 import { Badge } from "@/components/ui/badge"
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
-import { useQuery, gql } from "@apollo/client"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 // GraphQL queries to fetch data
 const GET_ALL_DATA = gql`
@@ -64,7 +74,7 @@ interface CommandStats {
 export default function CommandsPage() {
   const [commands, setCommands] = useState<Command[]>([])
   const [selectedCommand, setSelectedCommand] = useState<string>("all")
-  const [timeRange, setTimeRange] = useState<string>("1h")
+  const [_timeRange, _setTimeRange] = useState<string>("1h")
   const [stats, setStats] = useState<CommandStats>({
     total: 0,
     success: 0,
@@ -83,7 +93,7 @@ export default function CommandsPage() {
 
     // Convert GraphQL data to command history
     const commandHistory: Command[] = []
-    
+
     // Process categories as CreateCategory commands
     data.categories?.forEach((category: any) => {
       commandHistory.push({
@@ -95,7 +105,7 @@ export default function CommandsPage() {
         payload: {
           name: category.name,
           id: category.id,
-        }
+        },
       })
 
       // If updated, add an UpdateCategory command
@@ -109,7 +119,7 @@ export default function CommandsPage() {
           payload: {
             id: category.id,
             name: category.name,
-          }
+          },
         })
       }
     })
@@ -126,15 +136,19 @@ export default function CommandsPage() {
           name: product.name,
           categoryId: product.category?.id,
           id: product.id,
-        }
+        },
       })
     })
 
     // Process orders as CreateOrder commands
     data.orders?.forEach((order: any) => {
-      const status = order.sagaStatus === "failed" ? "failed" : 
-                    order.sagaStatus === "completed" ? "success" : "pending"
-      
+      const status =
+        order.sagaStatus === "failed"
+          ? "failed"
+          : order.sagaStatus === "completed"
+            ? "success"
+            : "pending"
+
       commandHistory.push({
         id: `cmd-ord-${order.id}`,
         type: "CreateOrder",
@@ -146,7 +160,7 @@ export default function CommandsPage() {
           totalAmount: order.totalAmount,
           items: order.items,
         },
-        error: status === "failed" ? "Saga execution failed" : undefined
+        error: status === "failed" ? "Saga execution failed" : undefined,
       })
 
       // Add saga-related commands
@@ -160,33 +174,35 @@ export default function CommandsPage() {
           payload: {
             orderId: order.id,
             sagaStatus: order.sagaStatus,
-          }
+          },
         })
       }
     })
 
     // Sort by timestamp descending
     commandHistory.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-    
+
     setCommands(commandHistory)
 
     // Calculate statistics
     const stats: CommandStats = {
       total: commandHistory.length,
-      success: commandHistory.filter(c => c.status === "success").length,
-      failed: commandHistory.filter(c => c.status === "failed").length,
-      pending: commandHistory.filter(c => c.status === "pending").length,
-      avgResponseTime: commandHistory.length > 0 
-        ? Math.round(commandHistory.reduce((acc, c) => acc + c.responseTime, 0) / commandHistory.length)
-        : 0
+      success: commandHistory.filter((c) => c.status === "success").length,
+      failed: commandHistory.filter((c) => c.status === "failed").length,
+      pending: commandHistory.filter((c) => c.status === "pending").length,
+      avgResponseTime:
+        commandHistory.length > 0
+          ? Math.round(
+              commandHistory.reduce((acc, c) => acc + c.responseTime, 0) / commandHistory.length
+            )
+          : 0,
     }
     setStats(stats)
-
   }, [data])
 
   const getCommandTypeDistribution = () => {
     const distribution: { [key: string]: number } = {}
-    commands.forEach(cmd => {
+    commands.forEach((cmd) => {
       distribution[cmd.type] = (distribution[cmd.type] || 0) + 1
     })
     return Object.entries(distribution)
@@ -195,38 +211,37 @@ export default function CommandsPage() {
   }
 
   const getResponseTimeData = () => {
-    const timeGroups: { [key: string]: { time: string, avg: number, count: number } } = {}
+    const timeGroups: { [key: string]: { time: string; avg: number; count: number } } = {}
     const now = new Date()
-    
-    commands.forEach(cmd => {
+
+    commands.forEach((cmd) => {
       const cmdTime = new Date(cmd.timestamp)
       const diffMinutes = Math.floor((now.getTime() - cmdTime.getTime()) / 60000)
-      
+
       // Group by 5-minute intervals
       const groupKey = Math.floor(diffMinutes / 5) * 5
       const groupTime = new Date(now.getTime() - groupKey * 60000).toLocaleTimeString()
-      
+
       if (!timeGroups[groupKey]) {
         timeGroups[groupKey] = { time: groupTime, avg: 0, count: 0 }
       }
-      
-      timeGroups[groupKey].avg = 
-        (timeGroups[groupKey].avg * timeGroups[groupKey].count + cmd.responseTime) / 
+
+      timeGroups[groupKey].avg =
+        (timeGroups[groupKey].avg * timeGroups[groupKey].count + cmd.responseTime) /
         (timeGroups[groupKey].count + 1)
       timeGroups[groupKey].count++
     })
-    
+
     return Object.values(timeGroups)
       .sort((a, b) => b.time.localeCompare(a.time))
       .slice(0, 10)
       .reverse()
   }
 
-  const filteredCommands = selectedCommand === "all"
-    ? commands
-    : commands.filter(cmd => cmd.type === selectedCommand)
+  const filteredCommands =
+    selectedCommand === "all" ? commands : commands.filter((cmd) => cmd.type === selectedCommand)
 
-  const commandTypes = [...new Set(commands.map(cmd => cmd.type))]
+  const commandTypes = [...new Set(commands.map((cmd) => cmd.type))]
 
   return (
     <div className="container mx-auto p-8">
@@ -315,15 +330,18 @@ export default function CommandsPage() {
       {/* Filters */}
       <div className="flex gap-4 mb-6">
         <div>
-          <label className="block text-sm font-medium mb-1">Command Type</label>
+          <label htmlFor="command-type-select" className="block text-sm font-medium mb-1">Command Type</label>
           <select
+            id="command-type-select"
             value={selectedCommand}
             onChange={(e) => setSelectedCommand(e.target.value)}
             className="border rounded px-3 py-2"
           >
             <option value="all">All Commands</option>
-            {commandTypes.map(type => (
-              <option key={type} value={type}>{type}</option>
+            {commandTypes.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
             ))}
           </select>
         </div>
@@ -349,8 +367,8 @@ export default function CommandsPage() {
                         command.status === "success"
                           ? "bg-green-500"
                           : command.status === "failed"
-                          ? "bg-red-500"
-                          : "bg-yellow-500"
+                            ? "bg-red-500"
+                            : "bg-yellow-500"
                       }
                     >
                       {command.status}
@@ -372,9 +390,7 @@ export default function CommandsPage() {
                   </details>
                 )}
                 {command.error && (
-                  <div className="mt-2 text-sm text-red-600">
-                    Error: {command.error}
-                  </div>
+                  <div className="mt-2 text-sm text-red-600">Error: {command.error}</div>
                 )}
               </div>
             ))}

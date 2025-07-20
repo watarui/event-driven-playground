@@ -1,15 +1,38 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
 import { useQuery, useSubscription } from "@apollo/client"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Activity, Filter, Pause, Play, RefreshCw, TrendingUp } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { LIST_PUBSUB_MESSAGES, PUBSUB_STATS, PUBSUB_MESSAGE_STREAM, DASHBOARD_STATS } from "@/lib/graphql/queries/pubsub"
-import { RefreshCw, Pause, Play, Filter, Activity, TrendingUp } from "lucide-react"
-import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  DASHBOARD_STATS,
+  LIST_PUBSUB_MESSAGES,
+  PUBSUB_MESSAGE_STREAM,
+  PUBSUB_STATS,
+} from "@/lib/graphql/queries/pubsub"
 
 interface PubSubMessage {
   id: string
@@ -36,7 +59,11 @@ export default function PubSubPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // 履歴データの取得
-  const { data: historyData, loading: historyLoading, refetch } = useQuery(LIST_PUBSUB_MESSAGES, {
+  const {
+    data: historyData,
+    loading: historyLoading,
+    refetch,
+  } = useQuery(LIST_PUBSUB_MESSAGES, {
     variables: {
       limit: 100,
       topic: selectedTopic === "all" ? null : selectedTopic,
@@ -74,7 +101,7 @@ export default function PubSubPage() {
   useEffect(() => {
     if (streamData?.pubsubStream && !isPaused) {
       const newMessage = streamData.pubsubStream
-      setMessages(prev => {
+      setMessages((prev) => {
         const updated = [...prev, newMessage]
         // 最大500メッセージを保持
         return updated.slice(-500)
@@ -87,16 +114,19 @@ export default function PubSubPage() {
     const interval = setInterval(() => {
       if (!isPaused) {
         const now = new Date()
-        const recentMessages = messages.filter(m => {
+        const recentMessages = messages.filter((m) => {
           const msgTime = new Date(m.timestamp)
           return now.getTime() - msgTime.getTime() < 60000 // 1分以内
         })
-        
-        setMessageHistory(prev => {
-          const updated = [...prev, {
-            time: now.toLocaleTimeString(),
-            count: recentMessages.length
-          }]
+
+        setMessageHistory((prev) => {
+          const updated = [
+            ...prev,
+            {
+              time: now.toLocaleTimeString(),
+              count: recentMessages.length,
+            },
+          ]
           // 最大20ポイントを保持
           return updated.slice(-20)
         })
@@ -128,8 +158,8 @@ export default function PubSubPage() {
       sagas: "bg-orange-500",
       system: "bg-gray-500",
     }
-    
-    const topicType = topic.split(':')[0]
+
+    const topicType = topic.split(":")[0]
     return colors[topicType] || "bg-gray-400"
   }
 
@@ -141,9 +171,10 @@ export default function PubSubPage() {
     return "📌"
   }
 
-  const filteredMessages = messages.filter(m => {
+  const filteredMessages = messages.filter((m) => {
     const matchesTopic = selectedTopic === "all" || m.topic === selectedTopic
-    const matchesSearch = !searchTerm || 
+    const matchesSearch =
+      !searchTerm ||
       JSON.stringify(m.payload).toLowerCase().includes(searchTerm.toLowerCase()) ||
       m.messageType.toLowerCase().includes(searchTerm.toLowerCase())
     return matchesTopic && matchesSearch
@@ -156,7 +187,7 @@ export default function PubSubPage() {
 
   // トピック別メッセージ数のデータ準備
   const topicChartData = topicStats.slice(0, 10).map((stat: TopicStat) => ({
-    topic: stat.topic.split(':').pop() || stat.topic,
+    topic: stat.topic.split(":").pop() || stat.topic,
     count: stat.messageCount,
     rate: stat.messagesPerMinute,
   }))
@@ -169,11 +200,7 @@ export default function PubSubPage() {
           <Badge className={isConnected ? "bg-green-500" : "bg-red-500"}>
             {isConnected ? "Connected" : "Disconnected"}
           </Badge>
-          <Button
-            onClick={() => setIsPaused(!isPaused)}
-            variant="outline"
-            size="sm"
-          >
+          <Button onClick={() => setIsPaused(!isPaused)} variant="outline" size="sm">
             {isPaused ? <Play className="w-4 h-4 mr-2" /> : <Pause className="w-4 h-4 mr-2" />}
             {isPaused ? "Resume" : "Pause"}
           </Button>
@@ -225,9 +252,7 @@ export default function PubSubPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-sm font-bold truncate">
-              {topicStats[0]?.topic || "N/A"}
-            </div>
+            <div className="text-sm font-bold truncate">{topicStats[0]?.topic || "N/A"}</div>
             <div className="text-xs text-gray-500">
               {topicStats[0]?.messagesPerMinute.toFixed(1)} msg/min
             </div>
@@ -287,7 +312,7 @@ export default function PubSubPage() {
             ))}
           </SelectContent>
         </Select>
-        
+
         <Input
           placeholder="Search in messages..."
           value={searchTerm}
@@ -309,12 +334,14 @@ export default function PubSubPage() {
                 <div
                   key={stat.topic}
                   className={`flex items-center justify-between p-3 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors ${
-                    selectedTopic === stat.topic ? 'bg-gray-100 dark:bg-gray-800' : ''
+                    selectedTopic === stat.topic ? "bg-gray-100 dark:bg-gray-800" : ""
                   }`}
                   onClick={() => setSelectedTopic(stat.topic)}
                 >
                   <div className="flex items-center space-x-3 flex-1 min-w-0">
-                    <div className={`w-3 h-3 rounded-full flex-shrink-0 ${getTopicColor(stat.topic)}`} />
+                    <div
+                      className={`w-3 h-3 rounded-full flex-shrink-0 ${getTopicColor(stat.topic)}`}
+                    />
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-mono truncate">{stat.topic}</div>
                       <div className="text-xs text-gray-500">
@@ -340,7 +367,7 @@ export default function PubSubPage() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>
-              Message Stream 
+              Message Stream
               <span className="text-sm font-normal text-gray-500 ml-2">
                 ({filteredMessages.length} messages)
               </span>
@@ -349,40 +376,43 @@ export default function PubSubPage() {
           <CardContent>
             <div className="space-y-2 max-h-[600px] overflow-y-auto">
               {filteredMessages.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  No messages to display
-                </div>
+                <div className="text-center py-8 text-gray-500">No messages to display</div>
               ) : (
-                filteredMessages.slice(-100).reverse().map((message) => (
-                  <div
-                    key={message.id}
-                    className="border rounded-lg p-3 hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        <Badge className={`${getTopicColor(message.topic)} text-white`}>
-                          {getTopicIcon(message.topic)} {message.topic}
-                        </Badge>
-                        <Badge variant="outline">{message.messageType}</Badge>
-                        {message.sourceService && (
-                          <span className="text-xs text-gray-500">from {message.sourceService}</span>
-                        )}
+                filteredMessages
+                  .slice(-100)
+                  .reverse()
+                  .map((message) => (
+                    <div
+                      key={message.id}
+                      className="border rounded-lg p-3 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <Badge className={`${getTopicColor(message.topic)} text-white`}>
+                            {getTopicIcon(message.topic)} {message.topic}
+                          </Badge>
+                          <Badge variant="outline">{message.messageType}</Badge>
+                          {message.sourceService && (
+                            <span className="text-xs text-gray-500">
+                              from {message.sourceService}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {new Date(message.timestamp).toLocaleTimeString("en-US", {
+                            hour12: false,
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                            fractionalSecondDigits: 3,
+                          })}
+                        </span>
                       </div>
-                      <span className="text-xs text-gray-500">
-                        {new Date(message.timestamp).toLocaleTimeString('en-US', {
-                          hour12: false,
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          second: '2-digit',
-                          fractionalSecondDigits: 3
-                        })}
-                      </span>
+                      <pre className="mt-2 p-2 bg-gray-50 dark:bg-gray-800 rounded text-xs overflow-x-auto">
+                        {JSON.stringify(message.payload, null, 2)}
+                      </pre>
                     </div>
-                    <pre className="mt-2 p-2 bg-gray-50 dark:bg-gray-800 rounded text-xs overflow-x-auto">
-                      {JSON.stringify(message.payload, null, 2)}
-                    </pre>
-                  </div>
-                ))
+                  ))
               )}
               <div ref={messagesEndRef} />
             </div>

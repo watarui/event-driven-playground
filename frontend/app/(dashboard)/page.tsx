@@ -1,18 +1,34 @@
 "use client"
 
 import { useQuery, useSubscription } from "@apollo/client"
+import { motion } from "framer-motion"
+import {
+  Activity,
+  BarChart3,
+  Code,
+  Database,
+  Gauge,
+  GitBranch,
+  MessageSquare,
+  Pause,
+  Play,
+  RefreshCw,
+  Search,
+} from "lucide-react"
+import Link from "next/link"
 import { useEffect, useState } from "react"
-import { DASHBOARD_OVERVIEW, EVENT_STREAM_SUBSCRIPTION, DASHBOARD_STATS_SUBSCRIPTION } from "@/lib/graphql/queries/dashboard"
-import { FlowVisualization } from "@/components/flow-visualization"
 import { EventStream } from "@/components/event-stream"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { FlowVisualization } from "@/components/flow-visualization"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Activity, GitBranch, Database, MessageSquare, RefreshCw, Pause, Play, BarChart3, Gauge, Search, Code } from "lucide-react"
-import Link from "next/link"
-import { motion } from "framer-motion"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { config } from "@/lib/config"
+import {
+  DASHBOARD_OVERVIEW,
+  DASHBOARD_STATS_SUBSCRIPTION,
+  EVENT_STREAM_SUBSCRIPTION,
+} from "@/lib/graphql/queries/dashboard"
 
 export default function Home() {
   const [isPaused, setIsPaused] = useState(false)
@@ -37,25 +53,25 @@ export default function Home() {
       const event = eventStreamData.eventStream
       const streamEvent = {
         id: event.id,
-        type: 'event' as const,
+        type: "event" as const,
         name: event.eventType,
         service: event.aggregateType,
         timestamp: event.insertedAt,
         data: event.eventData,
-        status: 'success' as const,
+        status: "success" as const,
       }
-      
-      setEvents(prev => [streamEvent, ...prev].slice(0, 100))
+
+      setEvents((prev) => [streamEvent, ...prev].slice(0, 100))
 
       // フローメッセージも生成
       const flowMessage = {
         id: event.id,
-        from: 'command',
-        to: 'eventstore',
-        type: 'event' as const,
+        from: "command",
+        to: "eventstore",
+        type: "event" as const,
         data: event.eventData,
       }
-      setFlowMessages(prev => [...prev, flowMessage])
+      setFlowMessages((prev) => [...prev, flowMessage])
     }
   }, [eventStreamData])
 
@@ -64,12 +80,12 @@ export default function Home() {
     if (data?.recentEvents) {
       const initialEvents = data.recentEvents.map((event: any) => ({
         id: event.id,
-        type: 'event' as const,
+        type: "event" as const,
         name: event.eventType,
         service: event.aggregateType,
         timestamp: event.insertedAt,
         data: event.eventData,
-        status: 'success' as const,
+        status: "success" as const,
       }))
       setEvents(initialEvents)
     }
@@ -139,14 +155,10 @@ export default function Home() {
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <Badge variant={dashboardStats.systemHealth === 'healthy' ? 'default' : 'destructive'}>
-            System {dashboardStats.systemHealth || 'Unknown'}
+          <Badge variant={dashboardStats.systemHealth === "healthy" ? "default" : "destructive"}>
+            System {dashboardStats.systemHealth || "Unknown"}
           </Badge>
-          <Button
-            onClick={() => setIsPaused(!isPaused)}
-            variant="outline"
-            size="sm"
-          >
+          <Button onClick={() => setIsPaused(!isPaused)} variant="outline" size="sm">
             {isPaused ? <Play className="w-4 h-4 mr-2" /> : <Pause className="w-4 h-4 mr-2" />}
             {isPaused ? "Resume" : "Pause"}
           </Button>
@@ -176,7 +188,6 @@ export default function Home() {
           <EventStream events={events} title="Live Event Stream" />
         </div>
       </div>
-
 
       {/* 詳細タブ */}
       <Card>
@@ -238,19 +249,27 @@ export default function Home() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-950/20">
                     <div className="text-sm text-muted-foreground">Active</div>
-                    <div className="text-2xl font-bold text-blue-600">{systemStats.sagas?.active || 0}</div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {systemStats.sagas?.active || 0}
+                    </div>
                   </div>
                   <div className="p-4 border rounded-lg bg-green-50 dark:bg-green-950/20">
                     <div className="text-sm text-muted-foreground">Completed</div>
-                    <div className="text-2xl font-bold text-green-600">{systemStats.sagas?.completed || 0}</div>
+                    <div className="text-2xl font-bold text-green-600">
+                      {systemStats.sagas?.completed || 0}
+                    </div>
                   </div>
                   <div className="p-4 border rounded-lg bg-red-50 dark:bg-red-950/20">
                     <div className="text-sm text-muted-foreground">Failed</div>
-                    <div className="text-2xl font-bold text-red-600">{systemStats.sagas?.failed || 0}</div>
+                    <div className="text-2xl font-bold text-red-600">
+                      {systemStats.sagas?.failed || 0}
+                    </div>
                   </div>
                   <div className="p-4 border rounded-lg bg-yellow-50 dark:bg-yellow-950/20">
                     <div className="text-sm text-muted-foreground">Compensated</div>
-                    <div className="text-2xl font-bold text-yellow-600">{systemStats.sagas?.compensated || 0}</div>
+                    <div className="text-2xl font-bold text-yellow-600">
+                      {systemStats.sagas?.compensated || 0}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -453,9 +472,7 @@ function StatsCard({ title, value, icon, trend }: any) {
               <p className="text-2xl font-bold">{value}</p>
               <p className="text-xs text-muted-foreground">{trend}</p>
             </div>
-            <div className="p-3 bg-primary/10 rounded-lg">
-              {icon}
-            </div>
+            <div className="p-3 bg-primary/10 rounded-lg">{icon}</div>
           </div>
         </CardContent>
       </Card>
@@ -472,9 +489,7 @@ function QuickAccessCard({ href, title, description, icon }: any) {
         className="p-6 border rounded-lg hover:shadow-lg transition-all cursor-pointer"
       >
         <div className="flex items-start space-x-4">
-          <div className="p-3 bg-primary/10 rounded-lg">
-            {icon}
-          </div>
+          <div className="p-3 bg-primary/10 rounded-lg">{icon}</div>
           <div>
             <h3 className="font-semibold">{title}</h3>
             <p className="text-sm text-muted-foreground mt-1">{description}</p>

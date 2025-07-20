@@ -52,7 +52,8 @@ defmodule ClientService.MixProject do
       {:guardian, "~> 2.3"},
       {:jose, "~> 1.11"},
       {:httpoison, "~> 2.2"},
-      {:cachex, "~> 3.6"}
+      {:cachex, "~> 3.6"},
+      {:ex_machina, "~> 2.7", only: :test}
     ]
   end
 

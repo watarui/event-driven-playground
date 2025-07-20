@@ -1,14 +1,27 @@
 "use client"
 
+import {
+  Activity,
+  ChevronDown,
+  ChevronRight,
+  Command,
+  Database,
+  Heart,
+  Home,
+  LogIn,
+  LogOut,
+  Menu,
+  Moon,
+  Network,
+  Radio,
+  Sun,
+  User,
+  X,
+} from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/auth-context"
-import { 
-  Menu, X, Home, Activity, Command, Database, 
-  Radio, Heart, Network, User, 
-  LogIn, LogOut, Moon, Sun, ChevronDown, ChevronRight
-} from "lucide-react"
 
 interface NavItem {
   name: string
@@ -40,10 +53,10 @@ export function SidebarNavigation({ isSidebarOpen, setIsSidebarOpen }: SidebarNa
   const pathname = usePathname()
   const { user, role, loading, signOut, signInWithGoogle } = useAuth()
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true)
-  
+
   // モバイルかどうかを判定する関数
   const isMobile = () => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       return window.innerWidth < 768
     }
     return false
@@ -51,12 +64,12 @@ export function SidebarNavigation({ isSidebarOpen, setIsSidebarOpen }: SidebarNa
 
   useEffect(() => {
     // 初回マウント時にダークモードの状態を確認
-    const isDark = document.documentElement.classList.contains('dark')
+    const isDark = document.documentElement.classList.contains("dark")
     setIsDarkMode(isDark)
-    
+
     // システム設定がダークモードの場合、クラスを追加
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches && !isDark) {
-      document.documentElement.classList.add('dark')
+    if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches && !isDark) {
+      document.documentElement.classList.add("dark")
       setIsDarkMode(true)
     }
   }, [])
@@ -65,9 +78,9 @@ export function SidebarNavigation({ isSidebarOpen, setIsSidebarOpen }: SidebarNa
     const newMode = !isDarkMode
     setIsDarkMode(newMode)
     if (newMode) {
-      document.documentElement.classList.add('dark')
+      document.documentElement.classList.add("dark")
     } else {
-      document.documentElement.classList.remove('dark')
+      document.documentElement.classList.remove("dark")
     }
   }
 
@@ -75,12 +88,14 @@ export function SidebarNavigation({ isSidebarOpen, setIsSidebarOpen }: SidebarNa
     const newState = !isSidebarOpen
     setIsSidebarOpen(newState)
     // localStorage に保存
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('sidebarOpen', newState.toString())
+    if (typeof window !== "undefined") {
+      localStorage.setItem("sidebarOpen", newState.toString())
     }
   }
 
-  const filteredNavItems = navItems.filter(item => !item.adminOnly || (item.adminOnly && role === 'admin'))
+  const filteredNavItems = navItems.filter(
+    (item) => !item.adminOnly || (item.adminOnly && role === "admin")
+  )
 
   return (
     <>
@@ -104,9 +119,11 @@ export function SidebarNavigation({ isSidebarOpen, setIsSidebarOpen }: SidebarNa
       </div>
 
       {/* サイドバー */}
-      <div className={`fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transform transition-transform duration-300 ease-in-out ${
-        isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
+      <div
+        className={`fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transform transition-transform duration-300 ease-in-out ${
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
         <div className="flex flex-col h-screen">
           {/* ヘッダー */}
           <div className="hidden md:flex items-center justify-between h-16 px-6 border-b border-gray-200 dark:border-gray-800">
@@ -135,7 +152,7 @@ export function SidebarNavigation({ isSidebarOpen, setIsSidebarOpen }: SidebarNa
               {filteredNavItems.map((item) => {
                 const Icon = item.icon
                 const isActive = pathname === item.href
-                
+
                 if (item.external) {
                   return (
                     <a
@@ -156,7 +173,7 @@ export function SidebarNavigation({ isSidebarOpen, setIsSidebarOpen }: SidebarNa
                     </a>
                   )
                 }
-                
+
                 return (
                   <Link
                     key={item.name}
@@ -194,7 +211,7 @@ export function SidebarNavigation({ isSidebarOpen, setIsSidebarOpen }: SidebarNa
                       </div>
                       <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                         <span className="px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-700">
-                          {role === 'admin' ? 'Admin' : role === 'writer' ? 'Writer' : 'Viewer'}
+                          {role === "admin" ? "Admin" : role === "writer" ? "Writer" : "Viewer"}
                         </span>
                       </div>
                       <button

@@ -1,10 +1,22 @@
 "use client"
 
+import { gql, useQuery } from "@apollo/client"
 import { useEffect, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  CartesianGrid,
+  Cell,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts"
 import { Badge } from "@/components/ui/badge"
-import { PieChart, Pie, LineChart, Line, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
-import { useQuery, gql } from "@apollo/client"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 // GraphQL introspection query to get available queries
 const GET_QUERY_DATA = gql`
@@ -83,7 +95,7 @@ export default function QueriesPage() {
   // Query data from GraphQL
   const { data, loading, error, refetch } = useQuery(GET_QUERY_DATA, {
     pollInterval: 10000, // Refresh every 10 seconds
-    fetchPolicy: 'network-only', // Always fetch fresh data
+    fetchPolicy: "network-only", // Always fetch fresh data
   })
 
   useEffect(() => {
@@ -99,7 +111,7 @@ export default function QueriesPage() {
       cacheHit: Math.random() > 0.3,
       timestamp: now.toISOString(),
       dataSize: JSON.stringify(data || {}).length,
-      result: data
+      result: data,
     })
 
     // Add simulated individual query executions based on the data
@@ -114,7 +126,7 @@ export default function QueriesPage() {
           cacheHit: Math.random() > 0.4,
           timestamp: timestamp.toISOString(),
           dataSize: JSON.stringify(data.categories).length,
-          filters: { active: true }
+          filters: { active: true },
         })
       }
 
@@ -128,7 +140,7 @@ export default function QueriesPage() {
           cacheHit: Math.random() > 0.2,
           timestamp: timestamp.toISOString(),
           dataSize: JSON.stringify(category).length,
-          filters: { id: category.id }
+          filters: { id: category.id },
         })
       })
     }
@@ -144,10 +156,10 @@ export default function QueriesPage() {
           cacheHit: Math.random() > 0.5,
           timestamp: timestamp.toISOString(),
           dataSize: JSON.stringify(data.products).length,
-          filters: { 
+          filters: {
             category: i % 2 === 0 ? "Electronics" : undefined,
-            inStock: true 
-          }
+            inStock: true,
+          },
         })
       }
 
@@ -162,7 +174,7 @@ export default function QueriesPage() {
           cacheHit: Math.random() > 0.7,
           timestamp: timestamp.toISOString(),
           dataSize: Math.floor(Math.random() * 5000) + 500,
-          filters: { searchTerm: term }
+          filters: { searchTerm: term },
         })
       })
     }
@@ -178,10 +190,10 @@ export default function QueriesPage() {
           cacheHit: Math.random() > 0.6,
           timestamp: timestamp.toISOString(),
           dataSize: JSON.stringify(data.orders).length,
-          filters: { 
+          filters: {
             status: ["pending", "completed", "processing"][i % 3],
-            limit: 10 
-          }
+            limit: 10,
+          },
         })
       }
 
@@ -196,7 +208,7 @@ export default function QueriesPage() {
           cacheHit: Math.random() > 0.4,
           timestamp: timestamp.toISOString(),
           dataSize: Math.floor(Math.random() * 3000) + 200,
-          filters: { userId }
+          filters: { userId },
         })
       })
     }
@@ -208,18 +220,21 @@ export default function QueriesPage() {
     // Calculate statistics
     const stats: QueryStats = {
       total: queryHistory.length,
-      cacheHits: queryHistory.filter(q => q.cacheHit).length,
-      cacheMisses: queryHistory.filter(q => !q.cacheHit).length,
-      avgResponseTime: queryHistory.length > 0
-        ? Math.round(queryHistory.reduce((acc, q) => acc + q.responseTime, 0) / queryHistory.length)
-        : 0,
-      queryTypes: new Set(queryHistory.map(q => q.queryType)).size
+      cacheHits: queryHistory.filter((q) => q.cacheHit).length,
+      cacheMisses: queryHistory.filter((q) => !q.cacheHit).length,
+      avgResponseTime:
+        queryHistory.length > 0
+          ? Math.round(
+              queryHistory.reduce((acc, q) => acc + q.responseTime, 0) / queryHistory.length
+            )
+          : 0,
+      queryTypes: new Set(queryHistory.map((q) => q.queryType)).size,
     }
     setStats(stats)
 
     // Calculate per-query-type statistics
-    const typeStats: { [key: string]: { count: number, totalTime: number, cacheHits: number } } = {}
-    queryHistory.forEach(query => {
+    const typeStats: { [key: string]: { count: number; totalTime: number; cacheHits: number } } = {}
+    queryHistory.forEach((query) => {
       if (!typeStats[query.queryType]) {
         typeStats[query.queryType] = { count: 0, totalTime: 0, cacheHits: 0 }
       }
@@ -228,40 +243,41 @@ export default function QueriesPage() {
       if (query.cacheHit) typeStats[query.queryType].cacheHits++
     })
 
-    const queryTypeStatsArray: QueryTypeStats[] = Object.entries(typeStats).map(([name, stats]) => ({
-      name,
-      count: stats.count,
-      avgResponseTime: Math.round(stats.totalTime / stats.count),
-      cacheHitRate: Math.round((stats.cacheHits / stats.count) * 100)
-    }))
+    const queryTypeStatsArray: QueryTypeStats[] = Object.entries(typeStats).map(
+      ([name, stats]) => ({
+        name,
+        count: stats.count,
+        avgResponseTime: Math.round(stats.totalTime / stats.count),
+        cacheHitRate: Math.round((stats.cacheHits / stats.count) * 100),
+      })
+    )
 
     setQueryTypeStats(queryTypeStatsArray.sort((a, b) => b.count - a.count))
-
   }, [data])
 
   const getCachePerformanceData = () => [
     { name: "Cache Hits", value: stats.cacheHits, color: "#10b981" },
-    { name: "Cache Misses", value: stats.cacheMisses, color: "#ef4444" }
+    { name: "Cache Misses", value: stats.cacheMisses, color: "#ef4444" },
   ]
 
   const getResponseTimeData = () => {
-    const timeGroups: { [key: string]: { time: string, avg: number, count: number } } = {}
+    const timeGroups: { [key: string]: { time: string; avg: number; count: number } } = {}
     const now = new Date()
 
-    queries.forEach(query => {
+    queries.forEach((query) => {
       const queryTime = new Date(query.timestamp)
       const diffMinutes = Math.floor((now.getTime() - queryTime.getTime()) / 60000)
-      
+
       // Group by 10-minute intervals
       const groupKey = Math.floor(diffMinutes / 10) * 10
       const groupTime = new Date(now.getTime() - groupKey * 60000).toLocaleTimeString()
-      
+
       if (!timeGroups[groupKey]) {
         timeGroups[groupKey] = { time: groupTime, avg: 0, count: 0 }
       }
-      
-      timeGroups[groupKey].avg = 
-        (timeGroups[groupKey].avg * timeGroups[groupKey].count + query.responseTime) / 
+
+      timeGroups[groupKey].avg =
+        (timeGroups[groupKey].avg * timeGroups[groupKey].count + query.responseTime) /
         (timeGroups[groupKey].count + 1)
       timeGroups[groupKey].count++
     })
@@ -272,11 +288,10 @@ export default function QueriesPage() {
       .reverse()
   }
 
-  const filteredQueries = selectedQueryType === "all"
-    ? queries
-    : queries.filter(q => q.queryType === selectedQueryType)
+  const filteredQueries =
+    selectedQueryType === "all" ? queries : queries.filter((q) => q.queryType === selectedQueryType)
 
-  const queryTypes = [...new Set(queries.map(q => q.queryType))]
+  const queryTypes = [...new Set(queries.map((q) => q.queryType))]
 
   return (
     <div className="container mx-auto p-8">
@@ -412,8 +427,10 @@ export default function QueriesPage() {
             className="border rounded px-3 py-2"
           >
             <option value="all">All Query Types</option>
-            {queryTypes.map(type => (
-              <option key={type} value={type}>{type}</option>
+            {queryTypes.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
             ))}
           </select>
         </div>
@@ -427,20 +444,17 @@ export default function QueriesPage() {
         <CardContent>
           <div className="space-y-4">
             {filteredQueries.slice(0, 30).map((query) => (
-              <div
-                key={query.id}
-                className="border rounded p-4 hover:shadow-md transition-shadow"
-              >
+              <div key={query.id} className="border rounded p-4 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-3">
                     <Badge className="bg-purple-500">{query.queryType}</Badge>
-                    <Badge
-                      className={query.cacheHit ? "bg-green-500" : "bg-gray-500"}
-                    >
+                    <Badge className={query.cacheHit ? "bg-green-500" : "bg-gray-500"}>
                       {query.cacheHit ? "Cache Hit" : "Cache Miss"}
                     </Badge>
                     <span className="text-sm text-gray-500">{query.responseTime}ms</span>
-                    <span className="text-sm text-gray-500">{(query.dataSize / 1024).toFixed(1)}KB</span>
+                    <span className="text-sm text-gray-500">
+                      {(query.dataSize / 1024).toFixed(1)}KB
+                    </span>
                   </div>
                   <span className="text-sm text-gray-500">
                     {new Date(query.timestamp).toLocaleString()}

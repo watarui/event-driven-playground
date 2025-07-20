@@ -1,6 +1,6 @@
-import { Effect, Context, Layer, Schedule, Stream, Queue } from "effect"
-import { apolloClient } from "@/lib/apollo-client"
 import { gql } from "@apollo/client"
+import { Context, Effect, Layer, Queue, Schedule, Stream } from "effect"
+import { apolloClient } from "@/lib/apollo-client"
 
 // Service definitions
 export class MonitoringService extends Context.Tag("MonitoringService")<
@@ -194,10 +194,12 @@ export const createEventStream = () => {
     const queue = yield* Queue.unbounded<Event>()
 
     // Subscribe to events and pipe to queue
-    yield* monitoring.subscribeToEvents.pipe(
-      Stream.retry(Schedule.exponential("1 second")),
-      Stream.runForEach((event) => Queue.offer(queue, event))
-    ).pipe(Effect.fork)
+    yield* monitoring.subscribeToEvents
+      .pipe(
+        Stream.retry(Schedule.exponential("1 second")),
+        Stream.runForEach((event) => Queue.offer(queue, event))
+      )
+      .pipe(Effect.fork)
 
     return queue
   })

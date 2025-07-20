@@ -1,10 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { gql, useQuery } from "@apollo/client"
 import { ChevronDown, ChevronRight } from "lucide-react"
-import { useQuery, gql } from "@apollo/client"
+import { useEffect, useState } from "react"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 // GraphQL queries
 const GET_ORDERS = gql`
@@ -84,17 +84,17 @@ export default function EventsPage() {
   const [eventTypeStats, setEventTypeStats] = useState<EventTypeStats>({})
 
   // Query for orders data
-  const { data: ordersData, loading: ordersLoading, refetch: refetchOrders } = useQuery(GET_ORDERS, {
+  const { data: ordersData, loading: ordersLoading } = useQuery(GET_ORDERS, {
     pollInterval: 5000, // Poll every 5 seconds
   })
 
   // Query for products data
-  const { data: productsData, loading: productsLoading, refetch: refetchProducts } = useQuery(GET_PRODUCTS, {
+  const { data: productsData, loading: productsLoading } = useQuery(GET_PRODUCTS, {
     pollInterval: 5000,
   })
 
   // Query for categories data
-  const { data: categoriesData, loading: categoriesLoading, refetch: refetchCategories } = useQuery(GET_CATEGORIES, {
+  const { data: categoriesData, loading: categoriesLoading } = useQuery(GET_CATEGORIES, {
     pollInterval: 5000,
   })
 
@@ -121,8 +121,8 @@ export default function EventsPage() {
           timestamp: new Date().toISOString(),
           sequence_number: sequenceNumber++,
           metadata: {
-            source: "GraphQL Query"
-          }
+            source: "GraphQL Query",
+          },
         })
       })
     }
@@ -148,8 +148,8 @@ export default function EventsPage() {
           timestamp: new Date().toISOString(),
           sequence_number: sequenceNumber++,
           metadata: {
-            source: "GraphQL Query"
-          }
+            source: "GraphQL Query",
+          },
         })
       })
     }
@@ -173,8 +173,8 @@ export default function EventsPage() {
           timestamp: order.createdAt,
           sequence_number: sequenceNumber++,
           metadata: {
-            source: "GraphQL Query"
-          }
+            source: "GraphQL Query",
+          },
         })
 
         // Order status events based on saga status
@@ -196,8 +196,8 @@ export default function EventsPage() {
             sequence_number: sequenceNumber++,
             metadata: {
               source: "GraphQL Query",
-              saga_id: order.sagaId
-            }
+              saga_id: order.sagaId,
+            },
           })
         }
       })
@@ -209,11 +209,10 @@ export default function EventsPage() {
 
     // Calculate event type statistics
     const stats: EventTypeStats = {}
-    allEvents.forEach(event => {
+    allEvents.forEach((event) => {
       stats[event.event_type] = (stats[event.event_type] || 0) + 1
     })
     setEventTypeStats(stats)
-
   }, [ordersData, productsData, categoriesData])
 
   const toggleEventExpansion = (eventId: string) => {
@@ -235,12 +234,11 @@ export default function EventsPage() {
     return "bg-gray-500"
   }
 
-  const filteredEvents = selectedType === "all"
-    ? events
-    : events.filter(e => e.event_type === selectedType)
+  const filteredEvents =
+    selectedType === "all" ? events : events.filter((e) => e.event_type === selectedType)
 
-  const aggregateTypes = new Set(events.map(e => e.aggregate_type))
-  const totalDataSize = events.reduce((acc, e) => acc + JSON.stringify(e.event_data).length, 0)
+  const aggregateTypes = new Set(events.map((e) => e.aggregate_type))
+  const _totalDataSize = events.reduce((acc, e) => acc + JSON.stringify(e.event_data).length, 0)
 
   const isLoading = ordersLoading || productsLoading || categoriesLoading
 
@@ -248,9 +246,7 @@ export default function EventsPage() {
     <div className="container mx-auto p-8">
       <h1 className="text-3xl font-bold mb-6">Event Store</h1>
 
-      {isLoading && (
-        <div className="mb-4 text-gray-500">Loading data...</div>
-      )}
+      {isLoading && <div className="mb-4 text-gray-500">Loading data...</div>}
 
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
@@ -284,7 +280,7 @@ export default function EventsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {events.length > 0 ? Math.max(...events.map(e => e.sequence_number)) : 0}
+              {events.length > 0 ? Math.max(...events.map((e) => e.sequence_number)) : 0}
             </div>
           </CardContent>
         </Card>
@@ -292,8 +288,9 @@ export default function EventsPage() {
 
       {/* Event Type Filter */}
       <div className="mb-6">
-        <label className="block text-sm font-medium mb-2">Filter by Event Type</label>
+        <label htmlFor="event-type-select" className="block text-sm font-medium mb-2">Filter by Event Type</label>
         <select
+          id="event-type-select"
           value={selectedType}
           onChange={(e) => setSelectedType(e.target.value)}
           className="w-full md:w-64 border rounded px-3 py-2"
@@ -317,27 +314,20 @@ export default function EventsPage() {
         <CardContent>
           <div className="space-y-4">
             {filteredEvents.map((event) => (
-              <div
-                key={event.id}
-                className="border rounded p-4 hover:shadow-md transition-shadow"
-              >
+              <div key={event.id} className="border rounded p-4 hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
-                      <Badge className={getEventColor(event.event_type)}>
-                        {event.event_type}
-                      </Badge>
-                      <span className="text-sm text-gray-500">
-                        #{event.sequence_number}
-                      </span>
-                      <span className="text-sm text-gray-500">
-                        v{event.event_version}
-                      </span>
+                      <Badge className={getEventColor(event.event_type)}>{event.event_type}</Badge>
+                      <span className="text-sm text-gray-500">#{event.sequence_number}</span>
+                      <span className="text-sm text-gray-500">v{event.event_version}</span>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                       <div>
                         <span className="font-medium">Aggregate:</span>{" "}
-                        <span className="font-mono">{event.aggregate_type}/{event.aggregate_id.substring(0, 8)}...</span>
+                        <span className="font-mono">
+                          {event.aggregate_type}/{event.aggregate_id.substring(0, 8)}...
+                        </span>
                       </div>
                       <div>
                         <span className="font-medium">Time:</span>{" "}
@@ -346,6 +336,7 @@ export default function EventsPage() {
                     </div>
                   </div>
                   <button
+                    type="button"
                     onClick={() => toggleEventExpansion(event.id)}
                     className="ml-4 p-1 hover:bg-gray-100 rounded"
                   >

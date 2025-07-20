@@ -1,11 +1,23 @@
 "use client"
 
+import { gql, useQuery } from "@apollo/client"
+import { Activity, AlertCircle, CheckCircle2, Database, RefreshCw, XCircle } from "lucide-react"
 import { useEffect, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts"
 import { Badge } from "@/components/ui/badge"
-import { Database, Activity, CheckCircle2, XCircle, AlertCircle, RefreshCw } from "lucide-react"
-import { useQuery, gql } from "@apollo/client"
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 // GraphQL queries for database statistics
 const GET_EVENT_STORE_STATS = gql`
@@ -100,21 +112,21 @@ export default function DatabaseStatusPage() {
   const [lastRefreshed, setLastRefreshed] = useState(new Date())
 
   // Query Event Store statistics
-  const { 
-    data: eventStoreData, 
-    loading: eventStoreLoading, 
+  const {
+    data: eventStoreData,
+    loading: eventStoreLoading,
     error: eventStoreError,
-    refetch: refetchEventStore 
+    refetch: refetchEventStore,
   } = useQuery<{ eventStoreStats: EventStoreStats }>(GET_EVENT_STORE_STATS, {
     pollInterval: 10000, // Poll every 10 seconds
   })
 
   // Query System statistics
-  const { 
-    data: systemData, 
-    loading: systemLoading, 
+  const {
+    data: systemData,
+    loading: systemLoading,
     error: systemError,
-    refetch: refetchSystem 
+    refetch: refetchSystem,
   } = useQuery<{ systemStatistics: SystemStatistics }>(GET_SYSTEM_STATISTICS, {
     pollInterval: 10000,
   })
@@ -128,10 +140,7 @@ export default function DatabaseStatusPage() {
 
   const handleRefresh = async () => {
     setLastRefreshed(new Date())
-    await Promise.all([
-      refetchEventStore(),
-      refetchSystem()
-    ])
+    await Promise.all([refetchEventStore(), refetchSystem()])
   }
 
   const getSagaStatusData = () => {
@@ -141,8 +150,8 @@ export default function DatabaseStatusPage() {
       { name: "Active", value: active, color: "#3B82F6" },
       { name: "Completed", value: completed, color: "#10B981" },
       { name: "Failed", value: failed, color: "#EF4444" },
-      { name: "Compensated", value: compensated, color: "#F59E0B" }
-    ].filter(item => item.value > 0)
+      { name: "Compensated", value: compensated, color: "#F59E0B" },
+    ].filter((item) => item.value > 0)
   }
 
   const getQueryDbData = () => {
@@ -151,7 +160,7 @@ export default function DatabaseStatusPage() {
     return [
       { name: "Categories", value: categories },
       { name: "Products", value: products },
-      { name: "Orders", value: orders }
+      { name: "Orders", value: orders },
     ]
   }
 
@@ -171,7 +180,7 @@ export default function DatabaseStatusPage() {
             className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
             disabled={isLoading}
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
             Refresh
           </button>
         </div>
@@ -270,10 +279,11 @@ export default function DatabaseStatusPage() {
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600 dark:text-gray-400">Total Records</span>
                 <span className="font-semibold">
-                  {systemData?.systemStatistics?.queryDb ? 
-                    (systemData.systemStatistics.queryDb.categories + 
-                     systemData.systemStatistics.queryDb.products + 
-                     systemData.systemStatistics.queryDb.orders) : 0}
+                  {systemData?.systemStatistics?.queryDb
+                    ? systemData.systemStatistics.queryDb.categories +
+                      systemData.systemStatistics.queryDb.products +
+                      systemData.systemStatistics.queryDb.orders
+                    : 0}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -293,7 +303,8 @@ export default function DatabaseStatusPage() {
             <CardTitle>Event Store - Event Types Distribution</CardTitle>
           </CardHeader>
           <CardContent>
-            {eventStoreData?.eventStoreStats?.eventsByType && eventStoreData.eventStoreStats.eventsByType.length > 0 ? (
+            {eventStoreData?.eventStoreStats?.eventsByType &&
+            eventStoreData.eventStoreStats.eventsByType.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={eventStoreData.eventStoreStats.eventsByType}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -380,13 +391,14 @@ export default function DatabaseStatusPage() {
             <CardTitle>Event Store - Aggregate Types</CardTitle>
           </CardHeader>
           <CardContent>
-            {eventStoreData?.eventStoreStats?.eventsByAggregate && eventStoreData.eventStoreStats.eventsByAggregate.length > 0 ? (
+            {eventStoreData?.eventStoreStats?.eventsByAggregate &&
+            eventStoreData.eventStoreStats.eventsByAggregate.length > 0 ? (
               <div className="space-y-3">
                 {eventStoreData.eventStoreStats.eventsByAggregate.map((aggregate, index) => (
                   <div key={aggregate.aggregateType} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div 
-                        className="w-3 h-3 rounded-full" 
+                      <div
+                        className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: COLORS[index % COLORS.length] }}
                       />
                       <span className="font-medium">{aggregate.aggregateType}</span>

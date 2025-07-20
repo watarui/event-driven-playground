@@ -1,5 +1,5 @@
-import { initializeApp, getApps, getApp } from 'firebase/app'
-import { getAuth, GoogleAuthProvider } from 'firebase/auth'
+import { getApp, getApps, initializeApp } from "firebase/app"
+import { GoogleAuthProvider, getAuth } from "firebase/auth"
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -17,7 +17,7 @@ const googleProvider = new GoogleAuthProvider()
 
 // デフォルトで Google アカウント選択画面を表示
 googleProvider.setCustomParameters({
-  prompt: 'select_account'
+  prompt: "select_account",
 })
 
 export { app, auth, googleProvider }

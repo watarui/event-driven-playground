@@ -1,5 +1,5 @@
+import { Effect, Exit, Layer, ManagedRuntime, Runtime } from "effect"
 import { useEffect, useState } from "react"
-import { Effect, Runtime, Exit, Layer, ManagedRuntime } from "effect"
 import { AppLayer } from "@/lib/effects/monitoring"
 
 // Create runtime with our services
@@ -59,7 +59,7 @@ export function useEffectStream<A, E>(
 
     const runStream = async () => {
       setConnected(true)
-      
+
       fiber = await runtime.runFork(
         streamProgram.pipe(
           Effect.catchAll((e) => {

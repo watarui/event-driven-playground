@@ -1,11 +1,19 @@
-'use client'
+"use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { useQuery } from '@apollo/client'
-import { gql } from '@apollo/client'
-import { CheckCircle, AlertCircle, XCircle, Activity, Server, Database, Cpu, Zap } from 'lucide-react'
+import { gql, useQuery } from "@apollo/client"
+import {
+  Activity,
+  AlertCircle,
+  CheckCircle,
+  Cpu,
+  Database,
+  Server,
+  XCircle,
+  Zap,
+} from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
 
 const HEALTH_QUERY = gql`
   query GetHealth {
@@ -35,14 +43,14 @@ const HEALTH_QUERY = gql`
 
 interface HealthCheck {
   name: string
-  status: 'healthy' | 'degraded' | 'unhealthy'
+  status: "healthy" | "degraded" | "unhealthy"
   message: string
   details: Record<string, unknown>
   duration_ms: number
 }
 
 interface HealthReport {
-  status: 'healthy' | 'degraded' | 'unhealthy'
+  status: "healthy" | "degraded" | "unhealthy"
   timestamp: string
   version: string
   node: string
@@ -65,11 +73,11 @@ export default function HealthPage() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'healthy':
+      case "healthy":
         return <CheckCircle className="h-5 w-5 text-green-500" />
-      case 'degraded':
+      case "degraded":
         return <AlertCircle className="h-5 w-5 text-yellow-500" />
-      case 'unhealthy':
+      case "unhealthy":
         return <XCircle className="h-5 w-5 text-red-500" />
       default:
         return null
@@ -78,11 +86,11 @@ export default function HealthPage() {
 
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'healthy':
+      case "healthy":
         return <Badge className="bg-green-500 text-white">Healthy</Badge>
-      case 'degraded':
+      case "degraded":
         return <Badge className="bg-yellow-500 text-white">Degraded</Badge>
-      case 'unhealthy':
+      case "unhealthy":
         return <Badge className="bg-red-500 text-white">Unhealthy</Badge>
       default:
         return <Badge>Unknown</Badge>
@@ -91,13 +99,13 @@ export default function HealthPage() {
 
   const getCheckIcon = (name: string) => {
     switch (name) {
-      case 'database':
+      case "database":
         return <Database className="h-4 w-4" />
-      case 'memory':
+      case "memory":
         return <Cpu className="h-4 w-4" />
-      case 'services':
+      case "services":
         return <Server className="h-4 w-4" />
-      case 'circuit_breakers':
+      case "circuit_breakers":
         return <Zap className="h-4 w-4" />
       default:
         return <Activity className="h-4 w-4" />
@@ -182,7 +190,7 @@ export default function HealthPage() {
             <div>
               <p className="text-sm text-gray-600">Failed Checks</p>
               <p className="font-semibold text-red-600">
-                {health.checks.filter(c => c.status === 'unhealthy').length}
+                {health.checks.filter((c) => c.status === "unhealthy").length}
               </p>
             </div>
           </div>
@@ -234,18 +242,18 @@ export default function HealthPage() {
           <Card
             key={check.name}
             className={`border-l-4 ${
-              check.status.toLowerCase() === 'healthy'
-                ? 'border-l-green-500'
-                : check.status.toLowerCase() === 'degraded'
-                ? 'border-l-yellow-500'
-                : 'border-l-red-500'
+              check.status.toLowerCase() === "healthy"
+                ? "border-l-green-500"
+                : check.status.toLowerCase() === "degraded"
+                  ? "border-l-yellow-500"
+                  : "border-l-red-500"
             }`}
           >
             <CardHeader>
               <div className="flex justify-between items-start">
                 <CardTitle className="text-lg flex items-center gap-2">
                   {getCheckIcon(check.name)}
-                  {check.name.charAt(0).toUpperCase() + check.name.slice(1).replace('_', ' ')}
+                  {check.name.charAt(0).toUpperCase() + check.name.slice(1).replace("_", " ")}
                 </CardTitle>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-600">{check.duration_ms}ms</span>
@@ -257,30 +265,32 @@ export default function HealthPage() {
               <p className="text-sm mb-2">{check.message}</p>
               {check.details && (
                 <div className="bg-gray-50 dark:bg-gray-800 rounded p-3 mt-2">
-                  <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Details:</p>
+                  <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                    Details:
+                  </p>
                   <div className="overflow-x-auto">
                     <pre className="text-xs whitespace-pre-wrap break-words max-w-full">
                       {(() => {
                         // details が文字列の場合、JSON としてパースを試みる
-                        if (typeof check.details === 'string') {
+                        if (typeof check.details === "string") {
                           try {
-                            const parsed = JSON.parse(check.details);
-                            return JSON.stringify(parsed, null, 2);
+                            const parsed = JSON.parse(check.details)
+                            return JSON.stringify(parsed, null, 2)
                           } catch {
-                            return check.details;
+                            return check.details
                           }
                         }
                         // details がオブジェクトまたは配列の場合
-                        else if (typeof check.details === 'object') {
+                        else if (typeof check.details === "object") {
                           // 空オブジェクトの場合
                           if (Object.keys(check.details).length === 0) {
-                            return "No additional details available";
+                            return "No additional details available"
                           }
-                          return JSON.stringify(check.details, null, 2);
+                          return JSON.stringify(check.details, null, 2)
                         }
                         // その他の場合
                         else {
-                          return String(check.details);
+                          return String(check.details)
                         }
                       })()}
                     </pre>

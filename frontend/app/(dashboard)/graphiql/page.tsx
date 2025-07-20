@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect, useRef, useState } from 'react'
-import { useAuth } from '@/contexts/auth-context'
-import { AdminSetupButton } from '@/components/admin-setup-button'
-import { Shield, ShieldAlert, RefreshCw } from 'lucide-react'
+import { RefreshCw, Shield, ShieldAlert } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { AdminSetupButton } from "@/components/admin-setup-button"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function GraphiQLPage() {
   const { user, role, loading } = useAuth()
@@ -29,9 +29,9 @@ export default function GraphiQLPage() {
       // postMessage でトークンを送信
       iframeRef.current.contentWindow?.postMessage(
         {
-          type: 'AUTH_TOKEN',
+          type: "AUTH_TOKEN",
           token: token,
-          role: role
+          role: role,
         },
         window.location.origin
       )
@@ -43,9 +43,9 @@ export default function GraphiQLPage() {
     if (!isIframeLoading && iframeRef.current && token) {
       iframeRef.current.contentWindow?.postMessage(
         {
-          type: 'AUTH_TOKEN',
+          type: "AUTH_TOKEN",
           token: token,
-          role: role
+          role: role,
         },
         window.location.origin
       )
@@ -77,7 +77,7 @@ export default function GraphiQLPage() {
         <div className="flex items-center gap-4">
           <h1 className="text-lg font-semibold">GraphQL Explorer</h1>
           <div className="flex items-center gap-2">
-            {role === 'admin' ? (
+            {role === "admin" ? (
               <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs font-medium">
                 <Shield className="w-3 h-3" />
                 Admin Access
@@ -90,12 +90,11 @@ export default function GraphiQLPage() {
             )}
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2 text-sm">
-          <span className="text-gray-600 dark:text-gray-400">
-            {user?.email}
-          </span>
+          <span className="text-gray-600 dark:text-gray-400">{user?.email}</span>
           <button
+            type="button"
             onClick={refreshToken}
             className="flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             title="Refresh authentication token"
@@ -107,11 +106,12 @@ export default function GraphiQLPage() {
       </div>
 
       {/* 権限に関する情報表示 */}
-      {role === 'viewer' && (
+      {role === "viewer" && (
         <>
           <div className="bg-yellow-50 dark:bg-yellow-900/20 px-4 py-2 text-sm border-b border-yellow-200 dark:border-yellow-800">
             <span className="text-yellow-800 dark:text-yellow-200">
-              ⚠️ Viewer ロールではクエリのみ実行可能です。Mutation の実行には Writer または Admin 権限が必要です。
+              ⚠️ Viewer ロールではクエリのみ実行可能です。Mutation の実行には Writer または Admin
+              権限が必要です。
             </span>
           </div>
           <div className="p-4">
@@ -132,7 +132,7 @@ export default function GraphiQLPage() {
         )}
         <iframe
           ref={iframeRef}
-          src={`${process.env.NODE_ENV === 'production' ? 'https://client-service-yfmozh2e7a-an.a.run.app' : 'http://localhost:4000'}/graphiql`}
+          src={`${process.env.NODE_ENV === "production" ? "https://client-service-yfmozh2e7a-an.a.run.app" : "http://localhost:4000"}/graphiql`}
           className="w-full h-full border-0"
           onLoad={handleIframeLoad}
           title="GraphiQL Explorer"

@@ -1,8 +1,8 @@
 "use client"
 
-import Link from 'next/link'
-import { useAuth } from '@/contexts/auth-context'
-import { LogIn } from 'lucide-react'
+import { LogIn } from "lucide-react"
+import Link from "next/link"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function UnauthorizedPage() {
   const { user, role, signInWithGoogle } = useAuth()
@@ -20,13 +20,14 @@ export default function UnauthorizedPage() {
           </p>
           {user && (
             <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-              Your role: <span className="font-semibold">{role || 'viewer'}</span>
+              Your role: <span className="font-semibold">{role || "viewer"}</span>
             </p>
           )}
         </div>
         <div className="space-y-4">
           {!user && (
             <button
+              type="button"
               onClick={() => signInWithGoogle()}
               className="inline-flex items-center gap-2 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
             >

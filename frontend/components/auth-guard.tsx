@@ -1,9 +1,9 @@
 "use client"
 
-import { useAuth } from '@/contexts/auth-context'
-import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
-import type { UserRole } from '@/lib/firebase-admin'
+import { useRouter } from "next/navigation"
+import { useEffect } from "react"
+import { useAuth } from "@/contexts/auth-context"
+import type { UserRole } from "@/lib/firebase-admin"
 
 interface AuthGuardProps {
   children: React.ReactNode
@@ -12,38 +12,33 @@ interface AuthGuardProps {
   redirectTo?: string
 }
 
-export function AuthGuard({ 
-  children, 
-  requireRole,
-  fallback,
-  redirectTo
-}: AuthGuardProps) {
+export function AuthGuard({ children, requireRole, fallback, redirectTo }: AuthGuardProps) {
   const { user, role, loading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
     if (!loading && requireRole) {
       const requiredRoles = Array.isArray(requireRole) ? requireRole : [requireRole]
-      
+
       // 権限階層: admin > writer > viewer
       const roleHierarchy: Record<UserRole, number> = {
         viewer: 1,
         writer: 2,
-        admin: 3
+        admin: 3,
       }
-      
+
       const userLevel = roleHierarchy[role]
-      const requiredLevel = Math.min(...requiredRoles.map(r => roleHierarchy[r]))
-      
+      const requiredLevel = Math.min(...requiredRoles.map((r) => roleHierarchy[r]))
+
       if (userLevel < requiredLevel) {
         if (redirectTo) {
           router.push(redirectTo)
-        } else if (role === 'viewer' && requiredRoles.includes('writer')) {
+        } else if (role === "viewer" && requiredRoles.includes("writer")) {
           // viewer が writer 権限を必要とする場合は unauthorized ページへ
-          router.push('/unauthorized')
+          router.push("/unauthorized")
         } else {
           // その他の権限不足は unauthorized ページへ
-          router.push('/unauthorized')
+          router.push("/unauthorized")
         }
       }
     }
@@ -66,12 +61,12 @@ export function AuthGuard({
     const roleHierarchy: Record<UserRole, number> = {
       viewer: 1,
       writer: 2,
-      admin: 3
+      admin: 3,
     }
-    
+
     const userLevel = roleHierarchy[role]
-    const requiredLevel = Math.min(...requiredRoles.map(r => roleHierarchy[r]))
-    
+    const requiredLevel = Math.min(...requiredRoles.map((r) => roleHierarchy[r]))
+
     if (userLevel < requiredLevel) {
       return fallback || null
     }

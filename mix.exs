@@ -42,6 +42,7 @@ defmodule EventDrivenPlayground.MixProject do
       {:excoveralls, "~> 0.18", only: :test},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false},
+      {:ex_machina, "~> 2.7", only: :test},
 
       # OpenTelemetry
       {:opentelemetry_api, "~> 1.2"},
