@@ -72,14 +72,26 @@ jobs:
       - name: Setup test database
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost/event_driven_playground_test
+          MIX_ENV: test
         run: |
           # データベースを作成
-          mix ecto.create
+          echo "Creating databases..."
+          mix ecto.create -r Shared.Infrastructure.EventStore.Repo
+          mix ecto.create -r CommandService.Repo
+          mix ecto.create -r QueryService.Repo
           
           # 各アプリケーションのマイグレーションを実行
-          mix ecto.migrate -r Shared.Infrastructure.EventStore.Repo
-          mix ecto.migrate -r CommandService.Repo
-          mix ecto.migrate -r QueryService.Repo
+          echo ""
+          echo "Running Shared migrations..."
+          mix ecto.migrate -r Shared.Infrastructure.EventStore.Repo --log-migrations-sql
+          
+          echo ""
+          echo "Running CommandService migrations..."
+          mix ecto.migrate -r CommandService.Repo --log-migrations-sql
+          
+          echo ""
+          echo "Running QueryService migrations..."
+          mix ecto.migrate -r QueryService.Repo --log-migrations-sql
 
       - name: Run tests with coverage
         env:
