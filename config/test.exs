@@ -5,14 +5,16 @@ import Config
 # Print only warnings and errors during test
 config :logger, level: :warning
 
-# イベントストアのテスト設定
-config :shared, Shared.Infrastructure.EventStore.Repo,
-  pool: Ecto.Adapters.SQL.Sandbox
+# Phoenix エンドポイントのテスト設定
+config :client_service, ClientServiceWeb.Endpoint,
+  http: [ip: {127, 0, 0, 1}, port: 4002],
+  secret_key_base: "test-secret-key-base-at-least-64-bytes-long-for-testing-purposes-only",
+  server: false
 
-# Command Service のテスト設定
-config :command_service, CommandService.Repo,
-  pool: Ecto.Adapters.SQL.Sandbox
+# Guardian のテスト設定
+config :client_service, ClientService.Auth.Guardian,
+  issuer: "client_service",
+  secret_key: "test-secret-key-for-guardian"
 
-# Query Service のテスト設定
-config :query_service, QueryService.Repo,
-  pool: Ecto.Adapters.SQL.Sandbox
+# テスト環境では認証を無効化（任意）
+config :client_service, :auth_mode, :disabled
