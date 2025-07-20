@@ -2,7 +2,7 @@
 # このファイルはルートディレクトリから全サービスをビルドする場合に使用
 
 # ビルドステージ
-FROM elixir:1.18.1-otp-27-alpine AS builder
+FROM elixir:1.18.4-otp-28-alpine AS builder
 
 # ビルドに必要なパッケージをインストール
 RUN apk add --no-cache \

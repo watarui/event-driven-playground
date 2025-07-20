@@ -1,8 +1,8 @@
 # Base Dockerfile for all services
 # This creates a shared base image with common dependencies
 
-ARG ELIXIR_VERSION=1.17.3
-ARG ERLANG_VERSION=27.2
+ARG ELIXIR_VERSION=1.18.4
+ARG ERLANG_VERSION=28.0
 ARG ALPINE_VERSION=3.20.3
 
 FROM hexpm/elixir:${ELIXIR_VERSION}-erlang-${ERLANG_VERSION}-alpine-${ALPINE_VERSION} AS base

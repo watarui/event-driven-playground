@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # マイグレーション実行用 Dockerfile（最適化版）
-FROM elixir:1.18-alpine AS migrate
+FROM elixir:1.18.4-otp-28-alpine AS migrate
 
 # 必要なパッケージをインストール
 RUN apk add --no-cache \
