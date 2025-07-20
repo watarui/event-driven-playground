@@ -3,7 +3,7 @@ defmodule QueryService.Repo.Migrations.EnsureSchemaExists do
 
   def up do
     # 本番環境とテスト環境でスキーマが存在することを確認
-    execute "CREATE SCHEMA IF NOT EXISTS query_service"
+    execute "CREATE SCHEMA IF NOT EXISTS query"
   end
 
   def down do
