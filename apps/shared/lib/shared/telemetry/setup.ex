@@ -58,9 +58,8 @@ defmodule Shared.Telemetry.Setup do
 
   defp handle_event(event_name, measurements, metadata, _config) do
     # 単純なログ出力のみ（詳細なトレーシングは OpenTelemetry が自動的に処理）
-    Logger.debug("Telemetry event: #{inspect(event_name)}",
-      measurements: measurements,
-      metadata: metadata
+    Logger.debug(
+      "Telemetry event: #{inspect(event_name)} - measurements: #{inspect(measurements)} - metadata: #{inspect(metadata)}"
     )
 
     :ok

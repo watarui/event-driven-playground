@@ -12,7 +12,7 @@ defmodule ClientService.Auth.ContextPlug do
     context = %{
       current_user: conn.assigns[:current_user],
       is_authenticated: conn.assigns[:user_signed_in?] || false,
-      is_admin: is_admin?(conn.assigns[:current_user])
+      is_admin: admin?(conn.assigns[:current_user])
     }
 
     Logger.debug("GraphQL context: #{inspect(context)}")
@@ -21,7 +21,7 @@ defmodule ClientService.Auth.ContextPlug do
     Absinthe.Plug.put_options(conn, context: context)
   end
 
-  defp is_admin?(nil), do: false
-  defp is_admin?(%{is_admin: true}), do: true
-  defp is_admin?(_), do: false
+  defp admin?(nil), do: false
+  defp admin?(%{is_admin: true}), do: true
+  defp admin?(_), do: false
 end

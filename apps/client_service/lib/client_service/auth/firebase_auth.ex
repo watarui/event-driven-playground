@@ -82,9 +82,8 @@ defmodule ClientService.Auth.FirebaseAuth do
     with :ok <- validate_issuer(claims, project_id),
          :ok <- validate_audience(claims, project_id),
          :ok <- validate_expiration(claims, now),
-         :ok <- validate_issued_at(claims, now),
-         :ok <- validate_auth_time(claims, now) do
-      :ok
+         :ok <- validate_issued_at(claims, now) do
+      validate_auth_time(claims, now)
     end
   end
 

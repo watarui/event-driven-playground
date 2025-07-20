@@ -68,7 +68,7 @@ defmodule ClientServiceWeb.Endpoint do
       "If-Modified-Since",
       "X-CSRF-Token"
     ],
-    max_age: 86400
+    max_age: 86_400
   )
 
   plug(Plug.Parsers,
