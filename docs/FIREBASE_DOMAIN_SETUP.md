@@ -22,12 +22,18 @@ The requested action is invalid.
 1. [Google Cloud Console](https://console.cloud.google.com/) にアクセス
 2. プロジェクト `event-driven-playground-prod` を選択
 3. **APIs & Services** → **Credentials** を開く
-4. OAuth 2.0 Client ID をクリック
-5. **Authorized redirect URIs** に以下を追加:
+4. **Web application** タイプの OAuth 2.0 Client ID をクリック（通常は "Web client (auto created by Google Service)" という名前）
+5. **Authorized JavaScript origins** に以下を追加:
+   ```
+   https://event-driven-playground-prod.firebaseapp.com
+   https://event-driven-playground.vercel.app
+   ```
+6. **Authorized redirect URIs** に以下を追加:
    ```
    https://event-driven-playground-prod.firebaseapp.com/__/auth/handler
    https://event-driven-playground.vercel.app/__/auth/handler
    ```
+7. **Save** をクリック
 
 ### 3. 設定の確認
 

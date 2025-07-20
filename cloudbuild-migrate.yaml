@@ -27,7 +27,8 @@ steps:
       - 'run'
       - 'jobs'
       - 'replace'
-      - '--source=/workspace/cloud-run-job.yaml'
+      - 'database-migrate'
+      - '--image=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/migrate:latest'
       - '--region=asia-northeast1'
       - '--project=$PROJECT_ID'
 
