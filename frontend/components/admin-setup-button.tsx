@@ -55,10 +55,22 @@ export function AdminSetupButton() {
           window.location.reload()
         }
       } else {
-        setMessage({ type: "error", text: data.message })
+        console.error("Admin setup failed:", {
+          status: response.status,
+          statusText: response.statusText,
+          data,
+        })
+        setMessage({ 
+          type: "error", 
+          text: data.message || `Failed to setup admin role (${response.status})`
+        })
       }
-    } catch (_error) {
-      setMessage({ type: "error", text: "Failed to setup admin role" })
+    } catch (error) {
+      console.error("Admin setup error:", error)
+      setMessage({ 
+        type: "error", 
+        text: error instanceof Error ? error.message : "Failed to setup admin role"
+      })
     } finally {
       setIsLoading(false)
     }

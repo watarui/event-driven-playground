@@ -82,6 +82,11 @@ export default function GraphiQLPage() {
                 <Shield className="w-3 h-3" />
                 Admin Access
               </span>
+            ) : role === "writer" ? (
+              <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-medium">
+                <Shield className="w-3 h-3" />
+                Writer Access
+              </span>
             ) : (
               <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 text-xs font-medium">
                 <ShieldAlert className="w-3 h-3" />

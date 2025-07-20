@@ -5,10 +5,13 @@ import { getAdminAuth, setUserRole } from "@/lib/server/firebase-admin"
 // 初回管理者設定用のエンドポイント
 // 管理者が一人もいない場合のみ、自分自身を管理者に設定できる
 export async function POST(request: NextRequest) {
+  console.log("[init-admin] Request received")
+  
   try {
     // 認証トークンを検証
     const authHeader = request.headers.get("authorization")
     if (!authHeader?.startsWith("Bearer ")) {
+      console.log("[init-admin] No authorization token provided")
       return NextResponse.json(
         { success: false, message: "No authorization token provided" },
         { status: 401 }
@@ -16,12 +19,15 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.split("Bearer ")[1]
+    console.log("[init-admin] Initializing Firebase Admin...")
     const adminAuth = await getAdminAuth()
 
     // トークンを検証して現在のユーザー情報を取得
+    console.log("[init-admin] Verifying ID token...")
     const decodedToken = await adminAuth.verifyIdToken(token)
     const currentUserId = decodedToken.uid
     const currentUserEmail = decodedToken.email
+    console.log("[init-admin] Current user:", { uid: currentUserId, email: currentUserEmail })
 
     // 環境別の設定
     const { isProduction } = config.env
@@ -29,6 +35,7 @@ export async function POST(request: NextRequest) {
 
     // 本番環境では INITIAL_ADMIN_EMAIL が必須
     if (isProduction && !initialAdminEmail) {
+      console.log("[init-admin] ERROR: INITIAL_ADMIN_EMAIL not set in production")
       return NextResponse.json(
         {
           success: false,
@@ -37,10 +44,13 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
+    console.log("[init-admin] Environment:", { isProduction, initialAdminEmail })
 
     // すでに管理者が存在するかチェック
+    console.log("[init-admin] Checking for existing admins...")
     const allUsers = await adminAuth.listUsers()
     const adminExists = allUsers.users.some((user) => user.customClaims?.role === "admin")
+    console.log("[init-admin] Admin exists:", adminExists)
 
     if (adminExists) {
       return NextResponse.json(
@@ -54,6 +64,7 @@ export async function POST(request: NextRequest) {
 
     // 本番環境では指定されたメールアドレスのみ管理者になれる
     if (isProduction && currentUserEmail !== initialAdminEmail) {
+      console.log("[init-admin] User not authorized:", { currentUserEmail, initialAdminEmail })
       return NextResponse.json(
         {
           success: false,
@@ -64,7 +75,9 @@ export async function POST(request: NextRequest) {
     }
 
     // 管理者が存在しない場合、現在のユーザーを管理者に設定
+    console.log("[init-admin] Setting user as admin...")
     await setUserRole(currentUserId, "admin")
+    console.log("[init-admin] Admin role set successfully")
 
     return NextResponse.json({
       success: true,
@@ -72,7 +85,15 @@ export async function POST(request: NextRequest) {
       requiresTokenRefresh: true,
     })
   } catch (error) {
-    console.error("Error initializing admin:", error)
-    return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 })
+    console.error("[init-admin] Error:", error)
+    const errorMessage = error instanceof Error ? error.message : "Unknown error"
+    return NextResponse.json(
+      { 
+        success: false, 
+        message: "Internal server error",
+        error: process.env.NODE_ENV === "development" ? errorMessage : undefined
+      }, 
+      { status: 500 }
+    )
   }
 }
