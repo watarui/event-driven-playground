@@ -104,14 +104,14 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results-${{ matrix.elixir }}-${{ matrix.otp }}-${{ matrix.partition }}
           path: _build/test/lib/*/test-results.xml
 
       - name: Upload coverage reports
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ matrix.elixir }}-${{ matrix.otp }}-${{ matrix.partition }}
           path: cover/
@@ -127,7 +127,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download all coverage reports
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           pattern: coverage-*
           path: coverage-reports/
@@ -163,35 +163,34 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build base image
+      - name: Build all services
         run: |
+          # Build base/builder stage first
           docker build \
-            --target build \
-            --tag event-driven-playground-base:test \
-            --file build/docker/Dockerfile.base \
+            --target builder \
+            --tag event-driven-playground-builder:test \
+            --file build/docker/Dockerfile \
             .
-
-      - name: Build service images
-        run: |
+          
           # Client Service
           docker build \
+            --target client_service \
             --tag client-service:test \
-            --file apps/client_service/Dockerfile.optimized \
-            --build-arg SERVICE_NAME=client_service \
+            --file build/docker/Dockerfile \
             .
           
           # Command Service
           docker build \
+            --target command_service \
             --tag command-service:test \
-            --file apps/command_service/Dockerfile.optimized \
-            --build-arg SERVICE_NAME=command_service \
+            --file build/docker/Dockerfile \
             .
           
           # Query Service
           docker build \
+            --target query_service \
             --tag query-service:test \
-            --file apps/query_service/Dockerfile.optimized \
-            --build-arg SERVICE_NAME=query_service \
+            --file build/docker/Dockerfile \
             .
 
       - name: Test image sizes
@@ -211,12 +210,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
       - name: Install dependencies
         working-directory: ./frontend
-        run: npm ci
+        run: bun install
 
       - name: Run lint
         working-directory: ./frontend
