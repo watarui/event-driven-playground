@@ -89,8 +89,10 @@ defmodule Shared.Config do
     
     base_config = [
       server: true,
-      host: Map.get(phoenix_config, :host, "0.0.0.0"),
-      port: port,
+      http: [
+        ip: {0, 0, 0, 0},
+        port: port
+      ],
       url: [
         host: System.get_env("PHX_HOST") || "localhost",
         port: 443,
