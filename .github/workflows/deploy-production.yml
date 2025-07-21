@@ -79,17 +79,14 @@ jobs:
         run: |
           echo "🗄️ Running database migrations..."
           
-          # まず、マイグレーションジョブの環境変数を更新
-          echo "📝 Updating migration job with optimized connection pool settings..."
-          gcloud run jobs update database-migrate \
-            --region=${REGION} \
-            --project=${PROJECT_ID} \
-            --update-env-vars="POOL_SIZE=1,DB_QUEUE_TARGET=50,DB_QUEUE_INTERVAL=100,DB_TIMEOUT=30000,DB_CONNECT_TIMEOUT=30000" || {
-            echo "⚠️ Failed to update job configuration"
-          }
-          
-          # マイグレーションジョブを実行
-          echo "🚀 Executing migration job..."
+          # マイグレーションジョブを実行（Terraform で環境変数は設定済み）
+          echo "🚀 Executing migration job with optimized connection pool settings..."
+          echo "📋 Environment variables (set via Terraform):"
+          echo "   - POOL_SIZE=1"
+          echo "   - DB_QUEUE_TARGET=50ms"  
+          echo "   - DB_QUEUE_INTERVAL=100ms"
+          echo "   - DB_TIMEOUT=30s"
+          echo "   - DB_CONNECT_TIMEOUT=30s"
           if gcloud run jobs execute database-migrate \
             --region=${REGION} \
             --project=${PROJECT_ID} \

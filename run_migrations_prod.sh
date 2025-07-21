@@ -4,6 +4,14 @@ set -e
 echo "=== Starting production migration process ==="
 echo "Environment: ${MIX_ENV}"
 echo "Database URL is set: $(if [ -n "$DATABASE_URL" ]; then echo "YES"; else echo "NO"; fi)"
+echo ""
+echo "=== Connection Pool Settings ==="
+echo "POOL_SIZE: ${POOL_SIZE:-not set}"
+echo "DB_QUEUE_TARGET: ${DB_QUEUE_TARGET:-not set}"
+echo "DB_QUEUE_INTERVAL: ${DB_QUEUE_INTERVAL:-not set}"
+echo "DB_TIMEOUT: ${DB_TIMEOUT:-not set}"
+echo "DB_CONNECT_TIMEOUT: ${DB_CONNECT_TIMEOUT:-not set}"
+echo ""
 
 # DNS 解決のための環境変数を設定
 export ERL_INETRC="/etc/erl_inetrc"
