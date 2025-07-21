@@ -7,11 +7,7 @@ services:
   # Event Store 用 Firestore Emulator
   firestore-event-store:
     image: andreysenov/firebase-tools:latest
-    command: >
-      sh -c "
-      firebase setup:emulators:firestore &&
-      firebase emulators:start --only firestore --project event-store-local
-      "
+    command: firebase emulators:start --only firestore --project event-store-local
     ports:
       - "8080:8080"  # Firestore
       - "4000:4000"  # Emulator UI
@@ -26,11 +22,7 @@ services:
   # Command Service 用 Firestore Emulator
   firestore-command:
     image: andreysenov/firebase-tools:latest
-    command: >
-      sh -c "
-      firebase setup:emulators:firestore &&
-      firebase emulators:start --only firestore --project command-service-local
-      "
+    command: firebase emulators:start --only firestore --project command-service-local
     ports:
       - "8081:8080"  # Firestore
       - "4001:4000"  # Emulator UI
@@ -45,11 +37,7 @@ services:
   # Query Service 用 Firestore Emulator
   firestore-query:
     image: andreysenov/firebase-tools:latest
-    command: >
-      sh -c "
-      firebase setup:emulators:firestore &&
-      firebase emulators:start --only firestore --project query-service-local
-      "
+    command: firebase emulators:start --only firestore --project query-service-local
     ports:
       - "8082:8080"  # Firestore
       - "4002:4000"  # Emulator UI
