@@ -12,13 +12,13 @@ defmodule ClientService.Auth.Guardian do
   JWT からサブジェクトを取得
   """
   @impl Guardian
-  def subject_for_token(resource, claims) do
+  def subject_for_token(resource, _claims) do
     case resource do
       %{user_id: user_id} when not is_nil(user_id) ->
-        {:ok, to_string(user_id), claims}
+        {:ok, to_string(user_id)}
       
       %{id: id} when not is_nil(id) ->
-        {:ok, to_string(id), claims}
+        {:ok, to_string(id)}
       
       _ ->
         {:error, :invalid_resource}

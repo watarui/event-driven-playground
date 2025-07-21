@@ -16,7 +16,7 @@ defmodule ClientService.Auth.EnsureAdminPlug do
       is_nil(current_user) ->
         Logger.warning("Unauthenticated request to admin endpoint")
         
-        if error_handler do
+        if error_handler && is_atom(error_handler) do
           error_handler.auth_error(conn, {:unauthenticated, :unauthenticated}, opts)
         else
           conn
@@ -37,7 +37,7 @@ defmodule ClientService.Auth.EnsureAdminPlug do
           "Non-admin user attempted to access admin endpoint: #{current_user[:user_id] || current_user[:id]}"
         )
         
-        if error_handler do
+        if error_handler && is_atom(error_handler) do
           error_handler.auth_error(conn, {:unauthorized, :forbidden}, opts)
         else
           conn

@@ -10,19 +10,6 @@ defmodule ClientService.GraphQL.IntegrationTest do
   @endpoint ClientServiceWeb.Endpoint
 
   setup do
-    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Shared.Repo)
-    Ecto.Adapters.SQL.Sandbox.mode(Shared.Repo, {:shared, self()})
-    
-    # 他のRepoも必要に応じてチェックアウト
-    if Code.ensure_loaded?(CommandService.Repo) do
-      :ok = Ecto.Adapters.SQL.Sandbox.checkout(CommandService.Repo)
-      Ecto.Adapters.SQL.Sandbox.mode(CommandService.Repo, {:shared, self()})
-    end
-    
-    if Code.ensure_loaded?(QueryService.Repo) do
-      :ok = Ecto.Adapters.SQL.Sandbox.checkout(QueryService.Repo)
-      Ecto.Adapters.SQL.Sandbox.mode(QueryService.Repo, {:shared, self()})
-    end
     # テスト用の認証コンテキスト
     conn =
       build_conn()

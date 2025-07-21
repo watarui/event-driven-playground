@@ -16,7 +16,7 @@ defmodule ClientService.Auth.EnsureAuthenticatedPlug do
       
       error_handler = opts[:error_handler]
       
-      if error_handler do
+      if error_handler && is_atom(error_handler) do
         error_handler.auth_error(conn, {:unauthenticated, :unauthenticated}, opts)
       else
         conn
