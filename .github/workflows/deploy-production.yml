@@ -79,22 +79,42 @@ jobs:
         run: |
           echo "🗄️ Running database migrations..."
           
-          # マイグレーションジョブの実行（接続プール設定を調整）
-          gcloud run jobs execute database-migrate \
+          # まず、マイグレーションジョブの環境変数を更新
+          echo "📝 Updating migration job with optimized connection pool settings..."
+          gcloud run jobs update database-migrate \
             --region=${REGION} \
             --project=${PROJECT_ID} \
-            --wait \
-            --update-env-vars="POOL_SIZE=1,DB_QUEUE_TARGET=50,DB_QUEUE_INTERVAL=100,DB_TIMEOUT=30000,DB_CONNECT_TIMEOUT=30000" || {
-            echo "⚠️ Migration job failed. Checking job logs..."
-            gcloud logging read "resource.type=cloud_run_job AND resource.labels.job_name=database-migrate" \
-              --limit=50 \
+            --set-env-vars="POOL_SIZE=1,DB_QUEUE_TARGET=50,DB_QUEUE_INTERVAL=100,DB_TIMEOUT=30000,DB_CONNECT_TIMEOUT=30000" || {
+            echo "⚠️ Failed to update job configuration"
+          }
+          
+          # マイグレーションジョブを実行
+          echo "🚀 Executing migration job..."
+          if gcloud run jobs execute database-migrate \
+            --region=${REGION} \
+            --project=${PROJECT_ID} \
+            --wait; then
+            echo "✅ Migration completed successfully"
+          else
+            echo "⚠️ Migration job failed. Checking detailed logs..."
+            
+            # 詳細なログを取得
+            echo "📋 Recent error logs:"
+            gcloud logging read 'resource.type=cloud_run_job AND resource.labels.job_name=database-migrate AND severity>=ERROR' \
+              --limit=20 \
               --project=${PROJECT_ID} \
-              --format="table(timestamp,jsonPayload.message)" || true
+              --format="table(timestamp,textPayload)" | head -50 || true
+            
+            echo ""
+            echo "📋 Connection errors:"
+            gcloud logging read 'resource.type=cloud_run_job AND resource.labels.job_name=database-migrate AND textPayload:"DBConnection.ConnectionError"' \
+              --limit=10 \
+              --project=${PROJECT_ID} \
+              --format="table(timestamp,textPayload)" || true
+            
             echo "❌ Migration failed but continuing with deployment"
             echo "📝 Note: Database might already be up to date"
           }
-          
-          echo "✅ Migration job completed"
 
       # サービスのデプロイ（並列実行）
       - name: Deploy Services in Parallel
