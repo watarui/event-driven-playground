@@ -16,8 +16,7 @@ defmodule Shared.Infrastructure.Firestore.EventStoreRepository do
 
   alias Shared.Infrastructure.Firestore.Client
   alias GoogleApi.Firestore.V1.Api.Projects
-  alias GoogleApi.Firestore.V1.Model.{Document, Value, Write, CommitRequest}
-  alias Shared.Domain.Event
+  alias GoogleApi.Firestore.V1.Model.{Document, Value, Write}
 
   require Logger
 
@@ -29,7 +28,7 @@ defmodule Shared.Infrastructure.Firestore.EventStoreRepository do
     with {:ok, conn} <- Client.get_connection(:event_store),
          project_id <- Client.get_project_id(:event_store),
          writes <- build_event_writes(project_id, aggregate_id, events),
-         {:ok, response} <- commit_writes(conn, project_id, writes) do
+         {:ok, _response} <- commit_writes(conn, project_id, writes) do
       # 最新バージョンを返す
       version = length(events)
       {:ok, version}
@@ -54,10 +53,10 @@ defmodule Shared.Infrastructure.Firestore.EventStoreRepository do
   end
 
   @impl true
-  def stream_all_events(opts \\ []) do
+  def stream_all_events(_opts \\ []) do
     # TODO: 全イベントのストリーミング実装
     # バッチサイズやページネーションを考慮
-    Logger.warn("stream_all_events not implemented yet")
+    Logger.warning("stream_all_events not implemented yet")
     []
   end
 
@@ -113,8 +112,8 @@ defmodule Shared.Infrastructure.Firestore.EventStoreRepository do
   defp commit_writes(conn, project_id, writes) do
     database = "projects/#{project_id}/databases/(default)"
     
-    request = %CommitRequest{
-      database: database,
+    # CommitRequest を Map として作成
+    request = %{
       writes: writes
     }
     
@@ -149,7 +148,7 @@ defmodule Shared.Infrastructure.Firestore.EventStoreRepository do
   defp parse_event_document(document) do
     fields = document.fields
     
-    %Event{
+    %{
       aggregate_id: get_string_value(fields, "aggregate_id"),
       event_type: String.to_atom(get_string_value(fields, "event_type")),
       event_data: Jason.decode!(get_string_value(fields, "event_data")),

@@ -19,6 +19,8 @@ if Application.get_env(:shared, :database_adapter) == :firestore do
   System.put_env("FIRESTORE_PROJECT_ID_EVENT_STORE", "event-store-local")
   System.put_env("FIRESTORE_PROJECT_ID_COMMAND", "command-service-local")
   System.put_env("FIRESTORE_PROJECT_ID_QUERY", "query-service-local")
+  # Query Service のポート設定
+  System.put_env("PORT", "4082")
 else
   # PostgreSQL の設定（従来の設定）
   config :shared, Shared.Infrastructure.EventStore.Repo,
@@ -60,6 +62,16 @@ config :client_service, ClientServiceWeb.Endpoint,
 
 # 開発環境のルートを有効化
 config :client_service, dev_routes: true
+
+# Query Service エンドポイント設定
+config :query_service, QueryServiceWeb.Endpoint,
+  http: [ip: {127, 0, 0, 1}, port: 4082],
+  server: false
+
+# Command Service エンドポイント設定  
+config :command_service, CommandServiceWeb.Endpoint,
+  http: [ip: {127, 0, 0, 1}, port: 4081],
+  server: false
 
 # ログレベル
 config :logger, :console, format: "[$level] $message\n"

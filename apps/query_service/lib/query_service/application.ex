@@ -10,9 +10,8 @@ defmodule QueryService.Application do
     # クラスタリングの初期化
     connect_to_cluster()
 
+    # 基本的な子プロセス
     children = [
-      # Ecto リポジトリ
-      QueryService.Repo,
       # キャッシュ
       QueryService.Infrastructure.Cache,
       # クエリバス
@@ -22,6 +21,14 @@ defmodule QueryService.Application do
       # クエリリスナー（PubSub経由でクエリを受信）
       QueryService.Infrastructure.QueryListener
     ]
+
+    # PostgreSQL 使用時のみ Repo を起動
+    children =
+      if Shared.Config.database_adapter() != :firestore do
+        [{QueryService.Repo, []} | children]
+      else
+        children
+      end
 
     # テスト環境以外では HTTP エンドポイントを起動
     children =

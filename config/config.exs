@@ -37,6 +37,10 @@ config :logger, :console,
 # Elixir の JSON ライブラリ
 config :elixir, :json_library, Jason
 
+# Tesla の警告を抑制
+config :tesla, :adapter, {Tesla.Adapter.Hackney, [recv_timeout: 30_000]}
+config :tesla, disable_deprecated_builder_warning: true
+
 # OpenTelemetry 基本設定
 config :opentelemetry,
   resource: [

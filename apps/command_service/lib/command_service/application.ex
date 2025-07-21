@@ -10,9 +10,8 @@ defmodule CommandService.Application do
     # クラスタリングの初期化
     connect_to_cluster()
 
+    # 基本的な子プロセス
     children = [
-      # Ecto リポジトリ
-      CommandService.Repo,
       # コマンドバス
       CommandService.Infrastructure.CommandBus,
       # コマンドリスナー（PubSub経由でコマンドを受信）
@@ -20,6 +19,14 @@ defmodule CommandService.Application do
       # HTTP エンドポイント（ヘルスチェック用）
       CommandServiceWeb.Endpoint
     ]
+
+    # PostgreSQL 使用時のみ Repo を起動
+    children =
+      if Shared.Config.database_adapter() != :firestore do
+        [{CommandService.Repo, []} | children]
+      else
+        children
+      end
 
     opts = [strategy: :one_for_one, name: CommandService.Supervisor]
 

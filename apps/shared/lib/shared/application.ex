@@ -20,7 +20,7 @@ defmodule Shared.Application do
 
     # Goth (Google認証) - Firestore 使用時のみ
     children =
-      if Shared.Config.database_adapter() == :firestore && !Shared.Infrastructure.Firestore.Client.using_emulator?(:any) do
+      if Shared.Config.database_adapter() == :firestore && !using_firestore_emulator?() do
         children ++ [{Goth, name: Shared.Goth}]
       else
         children
@@ -65,5 +65,13 @@ defmodule Shared.Application do
 
     opts = [strategy: :one_for_one, name: Shared.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  # エミュレータ使用中かチェック（起動時に使用）
+  defp using_firestore_emulator? do
+    System.get_env("FIRESTORE_EMULATOR_HOST_EVENT_STORE") != nil ||
+      System.get_env("FIRESTORE_EMULATOR_HOST_COMMAND") != nil ||
+      System.get_env("FIRESTORE_EMULATOR_HOST_QUERY") != nil ||
+      System.get_env("FIRESTORE_EMULATOR_HOST") != nil
   end
 end

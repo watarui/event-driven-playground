@@ -12,9 +12,7 @@ defmodule Shared.Infrastructure.Firestore.Client do
   
   サービスごとに異なるプロジェクトID を使用可能にします。
   """
-  def get_connection(service \\ :shared) do
-    project_id = get_project_id(service)
-    
+  def get_connection(_service \\ :shared) do
     # Goth で認証トークンを取得
     case get_auth_token() do
       {:ok, token} ->
@@ -72,7 +70,7 @@ defmodule Shared.Infrastructure.Firestore.Client do
       {:ok, "emulator-token"}
     else
       # 本番環境では Goth で認証
-      case Goth.Token.for_scope("https://www.googleapis.com/auth/datastore") do
+      case Goth.fetch(Shared.Goth) do
         {:ok, %{token: token}} -> {:ok, token}
         error -> error
       end

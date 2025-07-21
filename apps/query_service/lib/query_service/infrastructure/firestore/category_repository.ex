@@ -288,7 +288,7 @@ defmodule QueryService.Infrastructure.Firestore.CategoryRepository do
 
   defp build_tree(categories) do
     # カテゴリを ID でグループ化
-    by_id = Enum.into(categories, %{}, fn cat -> {cat.id, cat} end)
+    _by_id = Enum.into(categories, %{}, fn cat -> {cat.id, cat} end)
     
     # 親子関係を構築
     categories

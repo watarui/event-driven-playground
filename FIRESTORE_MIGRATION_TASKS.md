@@ -2,39 +2,47 @@
 
 ## ユーザー作業リスト
 
-### 1. Google Cloud プロジェクトの設定（本番環境用）
-- [ ] Google Cloud Console で Firestore API を有効化
-  ```bash
-  gcloud services enable firestore.googleapis.com --project=event-driven-playground-prod
-  ```
-- [ ] Firestore データベースの作成（ネイティブモード）
+### 1. Google Cloud プロジェクトの設定（本番環境用）✅ 完了
+- [x] Google Cloud Console で Firestore データベースを作成
   - リージョン: `asia-northeast1` (東京)
-  - モード: **Native mode** を選択（Datastore mode ではない）
+  - モード: **Native mode** を選択
+  - データベース ID: `(default)`
 
-### 2. Firebase Tools のインストール（ローカル開発用）
-- [ ] Node.js がインストールされていることを確認
-- [ ] Firebase Tools をグローバルインストール
+### 2. Firebase Tools のインストール（ローカル開発用）✅ 完了
+- [x] Firebase Tools をインストール
+- [x] Firebase にログイン
+
+### 3. 開発環境のセットアップ
+- [ ] 依存関係のインストール
   ```bash
-  npm install -g firebase-tools
+  mix deps.get
   ```
-- [ ] Firebase にログイン
+- [ ] Docker ネットワークの作成（初回のみ）
   ```bash
-  firebase login
+  docker network create event-driven-network
+  ```
+- [ ] Firestore Emulator の起動
+  ```bash
+  docker-compose -f docker-compose.firestore.yml up -d
   ```
 
-### 3. 環境変数の設定
-- [ ] `.env.local` ファイルに以下を追加（ローカル開発用）
-  ```env
-  # Firestore Emulator
-  FIRESTORE_EMULATOR_HOST_EVENT_STORE=localhost:8080
-  FIRESTORE_EMULATOR_HOST_COMMAND=localhost:8081
-  FIRESTORE_EMULATOR_HOST_QUERY=localhost:8082
+### 4. 動作確認
+- [ ] ローカルで Firestore モードで起動
+  ```bash
+  # config/dev.exs の database_adapter を :firestore に設定済み
+  mix phx.server
   ```
+- [ ] ブラウザで http://localhost:4000 にアクセス
+- [ ] 基本的な操作（商品登録、注文作成など）をテスト
 
-### 4. サービスアカウントキーの準備（オプション）
-- [ ] 開発環境でエミュレータを使わない場合のみ
-  - Google Cloud Console からサービスアカウントキーをダウンロード
-  - `credentials/` フォルダに配置（.gitignore 済み）
+### 5. 本番環境へのデプロイ
+- [ ] Terraform で本番環境を更新
+  ```bash
+  cd terraform/environments/prod
+  terraform plan
+  terraform apply
+  ```
+- [ ] GitHub Actions でデプロイ（main ブランチにマージ後自動実行）
 
 ## AI が実行中の作業
 

@@ -15,7 +15,9 @@ defmodule CommandServiceWeb.Endpoint do
   end
 
   def start_link(_opts \\ []) do
-    port = System.get_env("PORT", "8080") |> String.to_integer()
+    # 開発環境用のポート設定
+    default_port = if Mix.env() == :dev, do: "4081", else: "8080"
+    port = System.get_env("COMMAND_SERVICE_PORT", default_port) |> String.to_integer()
 
     require Logger
     Logger.info("Starting CommandService HTTP endpoint on port #{port}")

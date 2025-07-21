@@ -58,14 +58,14 @@ defmodule Shared.Infrastructure.Firestore.Repository do
   def transaction(fun) do
     # Firestore トランザクションの実装
     # TODO: 実装が複雑なため、後で詳細実装
-    Logger.warn("Firestore transaction not fully implemented yet")
+    Logger.warning("Firestore transaction not fully implemented yet")
     fun.()
   end
 
   @impl true
-  def query(collection, filters, opts \\ []) do
+  def query(_collection, _filters, _opts \\ []) do
     # TODO: Firestore クエリの実装
-    Logger.warn("Firestore query not fully implemented yet")
+    Logger.warning("Firestore query not fully implemented yet")
     {:ok, []}
   end
 
