@@ -20,6 +20,11 @@ resource "google_cloud_run_v2_job" "database_migrate" {
             cpu    = "2"
             memory = "2Gi"
           }
+          # リクエストを追加してリソースを保証
+          requests = {
+            cpu    = "1"
+            memory = "1Gi"
+          }
         }
         
         # Environment variables
@@ -90,8 +95,8 @@ resource "google_cloud_run_v2_job" "database_migrate" {
         }
       }
       
-      timeout     = "600s"  # 10 minutes
-      max_retries = 1
+      timeout     = "900s"  # 15 minutes (マイグレーションに余裕を持たせる)
+      max_retries = 0      # リトライは無効（マイグレーションの重複実行を避ける）
     }
     
     parallelism = 1

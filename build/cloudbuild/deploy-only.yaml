@@ -1,0 +1,76 @@
+# デプロイ専用の Cloud Build 設定（マイグレーションイメージなし）
+steps:
+  # ============================================
+  # 並列ビルドステップ
+  # ============================================
+  
+  # Client Service のビルド
+  - id: 'build-client'
+    name: 'gcr.io/kaniko-project/executor:latest'
+    args:
+      - '--context=.'
+      - '--dockerfile=build/docker/Dockerfile.client'
+      - '--destination=${_REGISTRY}/client-service:${SHORT_SHA}'
+      - '--destination=${_REGISTRY}/client-service:latest'
+      - '--cache=true'
+      - '--cache-repo=${_REGISTRY}/client-service/cache'
+      - '--cache-ttl=168h'
+      - '--build-arg=MIX_ENV=prod'
+    waitFor: ['-']
+
+  # Command Service のビルド
+  - id: 'build-command'
+    name: 'gcr.io/kaniko-project/executor:latest'
+    args:
+      - '--context=.'
+      - '--dockerfile=build/docker/Dockerfile.command'
+      - '--destination=${_REGISTRY}/command-service:${SHORT_SHA}'
+      - '--destination=${_REGISTRY}/command-service:latest'
+      - '--cache=true'
+      - '--cache-repo=${_REGISTRY}/command-service/cache'
+      - '--cache-ttl=168h'
+      - '--build-arg=MIX_ENV=prod'
+    waitFor: ['-']
+
+  # Query Service のビルド
+  - id: 'build-query'
+    name: 'gcr.io/kaniko-project/executor:latest'
+    args:
+      - '--context=.'
+      - '--dockerfile=build/docker/Dockerfile.query'
+      - '--destination=${_REGISTRY}/query-service:${SHORT_SHA}'
+      - '--destination=${_REGISTRY}/query-service:latest'
+      - '--cache=true'
+      - '--cache-repo=${_REGISTRY}/query-service/cache'
+      - '--cache-ttl=168h'
+      - '--build-arg=MIX_ENV=prod'
+    waitFor: ['-']
+
+  # ============================================
+  # ビルド完了通知
+  # ============================================
+  - id: 'notify-completion'
+    name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "✅ All service images built successfully"
+        echo "Images:"
+        echo "  - ${_REGISTRY}/client-service:${SHORT_SHA}"
+        echo "  - ${_REGISTRY}/command-service:${SHORT_SHA}"
+        echo "  - ${_REGISTRY}/query-service:${SHORT_SHA}"
+    waitFor: ['build-client', 'build-command', 'build-query']
+
+# ビルド設定
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+  dynamic_substitutions: true
+
+# 置換変数
+substitutions:
+  _REGISTRY: 'asia-northeast1-docker.pkg.dev/${PROJECT_ID}/event-driven-playground'
+
+# タイムアウト設定（デプロイのみなので短めに設定）
+timeout: '900s' # 15分

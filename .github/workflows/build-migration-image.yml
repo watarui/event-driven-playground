@@ -1,0 +1,110 @@
+name: Build Migration Image
+
+# マイグレーションイメージのビルド専用ワークフロー
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Image tag (default: latest)'
+        required: false
+        default: 'latest'
+  # マイグレーション関連ファイルの変更時のみ自動ビルド
+  push:
+    branches:
+      - main
+    paths:
+      - 'run_migrations*.sh'
+      - 'build/docker/Dockerfile.migrate'
+      - 'apps/*/priv/repo/migrations/**'
+      - 'config/**'
+      - 'apps/shared/lib/shared/config.ex'
+      - '.github/workflows/build-migration-image.yml'
+
+env:
+  PROJECT_ID: event-driven-playground-prod
+  REGION: asia-northeast1
+  ARTIFACT_REGISTRY: asia-northeast1-docker.pkg.dev/event-driven-playground-prod/event-driven-playground
+
+jobs:
+  build-migration:
+    name: Build Migration Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker
+        run: |
+          gcloud auth configure-docker ${REGION}-docker.pkg.dev
+
+      - name: Set image tag
+        id: image
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          else
+            TAG="${GITHUB_SHA::7}"
+          fi
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "🏷️ Image tag: ${TAG}"
+
+      - name: Build Migration Image
+        run: |
+          echo "🔨 Building migration image..."
+          
+          # Docker build with cache
+          docker build \
+            -f build/docker/Dockerfile.migrate \
+            -t ${ARTIFACT_REGISTRY}/migrate:${{ steps.image.outputs.tag }} \
+            -t ${ARTIFACT_REGISTRY}/migrate:latest \
+            --cache-from ${ARTIFACT_REGISTRY}/migrate:latest \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            .
+          
+          echo "✅ Build completed"
+
+      - name: Push Migration Image
+        run: |
+          echo "📤 Pushing migration image..."
+          docker push ${ARTIFACT_REGISTRY}/migrate:${{ steps.image.outputs.tag }}
+          docker push ${ARTIFACT_REGISTRY}/migrate:latest
+          echo "✅ Push completed"
+
+      - name: Update Migration Job (if not manual)
+        if: github.event_name != 'workflow_dispatch'
+        run: |
+          echo "🔄 Updating migration job with new image..."
+          gcloud run jobs update database-migrate \
+            --image=${ARTIFACT_REGISTRY}/migrate:${{ steps.image.outputs.tag }} \
+            --region=${REGION} \
+            --project=${PROJECT_ID}
+          
+          echo "✅ Migration job updated"
+
+      - name: Summary
+        run: |
+          echo "📊 Build Summary"
+          echo "==============="
+          echo "Image: ${ARTIFACT_REGISTRY}/migrate:${{ steps.image.outputs.tag }}"
+          echo "Also tagged as: latest"
+          echo ""
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "⚠️ Manual build - migration job NOT automatically updated"
+            echo "To update the job, run:"
+            echo "gcloud run jobs update database-migrate --image=${ARTIFACT_REGISTRY}/migrate:${{ steps.image.outputs.tag }} --region=${REGION} --project=${PROJECT_ID}"
+          else
+            echo "✅ Migration job automatically updated"
+          fi

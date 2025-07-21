@@ -155,3 +155,59 @@ npm run build
 | `.env.local.example` | ローカル開発用のテンプレート | 開発環境 |
 | `.env.production.example` | 本番環境用のテンプレート | 本番デプロイ |
 | `.env.ci.example` | CI ビルド用のダミー値 | GitHub Actions 等 |
+
+## 本番環境へのデプロイ
+
+### デプロイフロー
+
+1. **通常のデプロイ**: main ブランチへの push で自動実行
+2. **データベースマイグレーション**: 手動実行（別ワークフロー）
+
+### データベースマイグレーション
+
+マイグレーションはデプロイと分離されており、必要な時に手動で実行します。
+
+#### GitHub Actions UI からの実行
+
+1. GitHub リポジトリの **Actions** タブを開く
+2. 左側のワークフロー一覧から **"Run Database Migration"** を選択
+3. **"Run workflow"** ボタンをクリック
+4. 以下を入力:
+   - **confirm**: `migrate` と入力（必須）
+   - **migration_type**: 
+     - `workaround`: SQL 直接実行（推奨、タイムアウト問題回避）
+     - `ecto`: 通常の Ecto マイグレーション
+   - **build_new_image**: 新しいイメージをビルドするか
+   - **dry_run**: `true` でテスト実行
+5. **"Run workflow"** をクリックして実行
+
+#### コマンドラインからの実行
+
+```bash
+# Dry run モードで確認
+./scripts/run-migration.sh --dry-run
+
+# デフォルト設定で実行（workaround モード）
+./scripts/run-migration.sh
+
+# 新しいイメージをビルドしてから実行
+./scripts/run-migration.sh --build
+
+# Ecto マイグレーションを実行（タイムアウト注意）
+./scripts/run-migration.sh --type ecto
+```
+
+#### マイグレーションイメージのビルド
+
+マイグレーション関連ファイルを変更した場合、自動的にイメージがビルドされます。
+手動でビルドする場合は GitHub Actions の **"Build Migration Image"** ワークフローを実行してください。
+
+### デプロイの流れ
+
+1. コードを main ブランチに push
+2. GitHub Actions が自動で以下を実行:
+   - サービスイメージのビルド
+   - Cloud Run へのデプロイ
+   - ヘルスチェック
+   - トラフィック切り替え
+3. マイグレーションが必要な場合は手動で実行

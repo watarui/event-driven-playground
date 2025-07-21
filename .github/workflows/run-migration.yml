@@ -11,11 +11,19 @@ on:
       migration_type:
         description: 'Migration type'
         required: true
-        default: 'ecto'
+        default: 'workaround'
         type: choice
         options:
+          - workaround    # SQL 直接実行の回避策（推奨）
           - ecto          # 通常の Ecto マイグレーション（タイムアウト問題あり）
-          - workaround    # SQL 直接実行の回避策
+      build_new_image:
+        description: 'Build new migration image before running'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
       dry_run:
         description: 'Dry run (check only, no changes)'
         required: false
@@ -54,6 +62,17 @@ jobs:
       # Cloud SDK のセットアップ
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
+
+      # 新しいイメージのビルド（オプション）
+      - name: Build New Migration Image
+        if: github.event.inputs.build_new_image == 'true'
+        run: |
+          echo "🔨 Building new migration image..."
+          gcloud builds submit \
+            --config=build/cloudbuild/migration-only.yaml \
+            --substitutions=SHORT_SHA=${GITHUB_SHA::7},_UPDATE_JOB=true \
+            --project=${PROJECT_ID}
+          echo "✅ New migration image built and job updated"
 
       # 現在のマイグレーション状態を確認
       - name: Check Current Migration Status

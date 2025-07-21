@@ -41,13 +41,13 @@ jobs:
         run: |
           gcloud auth configure-docker ${REGION}-docker.pkg.dev
 
-      # ビルドとプッシュ（Cloud Build を使用 - マイグレーションイメージも同時ビルド）
-      - name: Build and Push All Images
+      # ビルドとプッシュ（サービスイメージのみ）
+      - name: Build and Push Service Images
         run: |
-          echo "🔨 Building all images including migration..."
-          # Cloud Build を実行（ログのストリーミングエラーは無視）
+          echo "🔨 Building service images (excluding migration)..."
+          # Cloud Build を実行（デプロイ専用設定を使用）
           gcloud builds submit \
-            --config=build/cloudbuild/optimized.yaml \
+            --config=build/cloudbuild/deploy-only.yaml \
             --substitutions=SHORT_SHA=${GITHUB_SHA::7} \
             --project=${PROJECT_ID} || true
           
