@@ -20,14 +20,6 @@ defmodule CommandService.Application do
       CommandServiceWeb.Endpoint
     ]
 
-    # PostgreSQL 使用時のみ Repo を起動
-    children =
-      if Shared.Config.database_adapter() != :firestore do
-        [{CommandService.Repo, []} | children]
-      else
-        children
-      end
-
     opts = [strategy: :one_for_one, name: CommandService.Supervisor]
 
     require Logger

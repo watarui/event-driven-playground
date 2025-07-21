@@ -22,14 +22,6 @@ defmodule QueryService.Application do
       QueryService.Infrastructure.QueryListener
     ]
 
-    # PostgreSQL 使用時のみ Repo を起動
-    children =
-      if Shared.Config.database_adapter() != :firestore do
-        [{QueryService.Repo, []} | children]
-      else
-        children
-      end
-
     # テスト環境以外では HTTP エンドポイントを起動
     children =
       if Mix.env() != :test do

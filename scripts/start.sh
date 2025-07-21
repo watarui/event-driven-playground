@@ -167,9 +167,9 @@ pid=$!
 echo -n "  GraphQL API (Port: $GRAPHQL_PORT)"
 show_spinner $pid
 if wait $pid; then
-    # GraphQL エンドポイントの確認
+    # GraphQL エンドポイントの確認（専用のヘルスチェック関数を使用）
     sleep 2
-    check_service_health "http://localhost:$GRAPHQL_PORT/graphql" "GraphQL" &
+    check_graphql_health "http://localhost:$GRAPHQL_PORT/graphql" "GraphQL" &
     pid=$!
     echo -n "  GraphQL エンドポイント確認"
     show_spinner $pid
@@ -178,7 +178,7 @@ if wait $pid; then
         log_to_file "GraphQL API の起動が完了しました"
     else
         echo -e " ${YELLOW}!${NC} 起動中"
-        log_to_file "GraphQL API は起動中です"
+        log_to_file "GraphQL API は起動中です（ヘルスチェックは継続中）"
     fi
 else
     echo -e " ${RED}✗${NC} 起動失敗"

@@ -96,6 +96,31 @@ check_service_health() {
     return 1
 }
 
+# GraphQL サービス専用のヘルスチェック
+check_graphql_health() {
+    local url=$1
+    local service=$2
+    local max_attempts=10
+    local attempt=0
+    
+    while [ $attempt -lt $max_attempts ]; do
+        # GraphQL introspection クエリを送信
+        local response=$(curl -s -X POST "$url" \
+            -H "Content-Type: application/json" \
+            -d '{"query":"{ __schema { types { name } } }"}' \
+            -w "\n%{http_code}" 2>/dev/null)
+        
+        local http_code=$(echo "$response" | tail -n1)
+        
+        if [ "$http_code" = "200" ]; then
+            return 0
+        fi
+        sleep 1
+        ((attempt++))
+    done
+    return 1
+}
+
 check_port() {
     local port=$1
     nc -z localhost $port > /dev/null 2>&1
@@ -110,6 +135,20 @@ check_url() {
             return 1
         fi
     fi
+}
+
+# GraphQL サービスの接続確認
+check_graphql_connection() {
+    local url=$1
+    # シンプルな introspection クエリを送信
+    local response=$(curl -s -X POST "$url" \
+        -H "Content-Type: application/json" \
+        -d '{"query":"{ __schema { types { name } } }"}' \
+        -w "\n%{http_code}" 2>/dev/null)
+    
+    local http_code=$(echo "$response" | tail -n1)
+    
+    [ "$http_code" = "200" ]
 }
 
 # ==============================================================================

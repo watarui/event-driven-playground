@@ -2,15 +2,12 @@ import Config
 
 # 共通設定
 config :shared,
-  ecto_repos: [Shared.Infrastructure.EventStore.Repo],
   generators: [timestamp_type: :utc_datetime]
 
 config :command_service,
-  ecto_repos: [CommandService.Repo],
   generators: [timestamp_type: :utc_datetime]
 
 config :query_service,
-  ecto_repos: [QueryService.Repo],
   generators: [timestamp_type: :utc_datetime]
 
 # Phoenix 設定
