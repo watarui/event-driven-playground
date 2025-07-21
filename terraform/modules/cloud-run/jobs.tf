@@ -33,54 +33,16 @@ resource "google_cloud_run_v2_job" "database_migrate" {
           value = "prod"
         }
         
-        # Database URL from Secret Manager
-        env {
-          name = "DATABASE_URL"
-          value_source {
-            secret_key_ref {
-              secret  = var.secrets["supabase_url"]
-              version = "latest"
-            }
-          }
-        }
-        
-        # For production single DB setup, all services use the same URL
-        env {
-          name = "EVENT_STORE_DATABASE_URL"
-          value_source {
-            secret_key_ref {
-              secret  = var.secrets["supabase_url"]
-              version = "latest"
-            }
-          }
-        }
-        
-        env {
-          name = "COMMAND_SERVICE_DATABASE_URL"
-          value_source {
-            secret_key_ref {
-              secret  = var.secrets["supabase_url"]
-              version = "latest"
-            }
-          }
-        }
-        
-        env {
-          name = "QUERY_SERVICE_DATABASE_URL"
-          value_source {
-            secret_key_ref {
-              secret  = var.secrets["supabase_url"]
-              version = "latest"
-            }
-          }
-        }
-        
-        env {
-          name = "SECRET_KEY_BASE"
-          value_source {
-            secret_key_ref {
-              secret  = var.secrets["secret_key_base"]
-              version = "latest"
+        # Secrets from Secret Manager
+        dynamic "env" {
+          for_each = var.secrets
+          content {
+            name = env.key
+            value_source {
+              secret_key_ref {
+                secret  = env.value
+                version = "latest"
+              }
             }
           }
         }

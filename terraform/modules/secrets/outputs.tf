@@ -1,5 +1,27 @@
+# 環境変数名とシークレット ID のマッピング
+output "env_var_secrets" {
+  description = "Map of environment variable names to secret IDs for Cloud Run"
+  value = {
+    # データベース関連
+    DATABASE_URL               = google_secret_manager_secret.secrets["database_url"].id
+    EVENT_STORE_DATABASE_URL   = google_secret_manager_secret.secrets["database_url"].id
+    COMMAND_SERVICE_DATABASE_URL = google_secret_manager_secret.secrets["database_url"].id
+    QUERY_SERVICE_DATABASE_URL = google_secret_manager_secret.secrets["database_url"].id
+    
+    # Supabase サービスキー
+    SUPABASE_SERVICE_KEY = google_secret_manager_secret.secrets["supabase_service_key"].id
+    
+    # Firebase API キー
+    FIREBASE_API_KEY = google_secret_manager_secret.secrets["firebase_api_key"].id
+    
+    # アプリケーションシークレット
+    SECRET_KEY_BASE = google_secret_manager_secret.secrets["secret_key_base"].id
+  }
+}
+
+# 後方互換性のための出力（将来的に削除予定）
 output "secret_ids" {
-  description = "Map of secret names to their IDs"
+  description = "Map of secret names to their IDs (deprecated)"
   value = {
     for k, v in google_secret_manager_secret.secrets : k => v.id
   }
@@ -10,24 +32,4 @@ output "secret_names" {
   value = {
     for k, v in google_secret_manager_secret.secrets : k => v.secret_id
   }
-}
-
-output "DATABASE_URL" {
-  description = "Database URL secret ID for Cloud Run"
-  value       = google_secret_manager_secret.secrets["supabase_url"].id
-}
-
-output "SUPABASE_SERVICE_KEY" {
-  description = "Supabase service key secret ID for Cloud Run"
-  value       = google_secret_manager_secret.secrets["supabase_service_key"].id
-}
-
-output "FIREBASE_API_KEY" {
-  description = "Firebase API key secret ID for Cloud Run"
-  value       = google_secret_manager_secret.secrets["firebase_api_key"].id
-}
-
-output "SECRET_KEY_BASE" {
-  description = "Secret key base secret ID for Cloud Run"
-  value       = google_secret_manager_secret.secrets["secret_key_base"].id
 }

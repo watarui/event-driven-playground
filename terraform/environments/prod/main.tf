@@ -102,7 +102,7 @@ module "cloud_run" {
   
   env_vars = local.common_env_vars
   
-  secrets = module.secrets.secret_ids
+  secrets = module.secrets.env_var_secrets
   
   depends_on = [
     google_project_service.required_apis,

@@ -41,7 +41,7 @@ variable "env_vars" {
 }
 
 variable "secrets" {
-  description = "Secret Manager secrets to mount"
+  description = "Map of environment variable names to Secret Manager secret IDs"
   type        = map(string)
   default     = {}
 }
