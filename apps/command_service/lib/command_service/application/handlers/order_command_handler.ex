@@ -124,49 +124,18 @@ defmodule CommandService.Application.Handlers.OrderCommandHandler do
     end)
   end
 
-  defp reserve_all_items(order, items, repo) do
-    results =
-      Enum.map(items, fn item ->
-        reserve_single_item(order, item, repo)
-      end)
-
-    errors = Enum.filter(results, &match?({:error, _}, &1))
-
-    if Enum.empty?(errors) do
-      {:ok, Enum.map(results, fn {:ok, id} -> id end)}
-    else
-      error_details =
-        Enum.map(errors, fn {:error, {product_id, reason}} ->
-          %{product_id: product_id, reason: to_string(reason)}
-        end)
-
-      {:error, ValidationError, %{errors: %{items: error_details}}}
-    end
-  end
-
-  defp reserve_single_item(order, item, repo) do
-    case OrderAggregate.reserve_item(order, item.product_id, item.quantity) do
-      {:ok, updated_order} ->
-        repo.save(updated_order)
-        EventBus.publish_all(updated_order.uncommitted_events)
-        {:ok, item.product_id}
-
-      {:error, reason} ->
-        {:error, {item.product_id, reason}}
-    end
-  end
-
   def handle(%OrderCommands.ProcessPayment{} = command) do
     UnitOfWork.transaction(fn ->
       {:ok, repo} = RepositoryContext.get_repository(:order)
 
+      payment_id = UUID.uuid4()
+
       with {:ok, order} <- repo.find_by_id(command.order_id),
-           {:ok, updated_order} <-
-             OrderAggregate.process_payment(order, command.payment_id || UUID.uuid4()) do
+           {:ok, updated_order} <- OrderAggregate.process_payment(order, payment_id) do
         repo.save(updated_order)
         EventBus.publish_all(updated_order.uncommitted_events)
 
-        {:ok, %{payment_processed: true, payment_id: command.payment_id}}
+        {:ok, %{payment_processed: true, payment_id: payment_id}}
       else
         {:error, :not_found} ->
           {:error, NotFoundError, %{resource: "Order", id: command.order_id}}
@@ -184,8 +153,6 @@ defmodule CommandService.Application.Handlers.OrderCommandHandler do
       end
     end)
   end
-
-  # 以下、補償用コマンドハンドラー
 
   def handle(%OrderCommands.ReleaseInventory{} = command) do
     Logger.info("Releasing inventory for order #{command.order_id}")
@@ -237,4 +204,36 @@ defmodule CommandService.Application.Handlers.OrderCommandHandler do
   end
 
   # Private functions
+
+  defp reserve_all_items(order, items, repo) do
+    results =
+      Enum.map(items, fn item ->
+        reserve_single_item(order, item, repo)
+      end)
+
+    errors = Enum.filter(results, &match?({:error, _}, &1))
+
+    if Enum.empty?(errors) do
+      {:ok, Enum.map(results, fn {:ok, id} -> id end)}
+    else
+      error_details =
+        Enum.map(errors, fn {:error, {product_id, reason}} ->
+          %{product_id: product_id, reason: to_string(reason)}
+        end)
+
+      {:error, ValidationError, %{errors: %{items: error_details}}}
+    end
+  end
+
+  defp reserve_single_item(order, item, repo) do
+    case OrderAggregate.reserve_item(order, item.product_id, item.quantity) do
+      {:ok, updated_order} ->
+        repo.save(updated_order)
+        EventBus.publish_all(updated_order.uncommitted_events)
+        {:ok, item.product_id}
+
+      {:error, reason} ->
+        {:error, {item.product_id, reason}}
+    end
+  end
 end

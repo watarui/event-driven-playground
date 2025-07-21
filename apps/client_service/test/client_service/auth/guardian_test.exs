@@ -105,7 +105,7 @@ defmodule ClientService.Auth.GuardianTest do
 
   describe "revoke/2" do
     test "revokes a token" do
-      {:ok, token, claims} = Guardian.encode_and_sign(@user)
+      {:ok, token, _claims} = Guardian.encode_and_sign(@user)
       assert {:ok, _claims} = Guardian.revoke(token)
 
       # In a real implementation, you would check if the token is blacklisted

@@ -10,11 +10,12 @@ defmodule CommandService.Application.Commands.CategoryCommands do
     use CommandService.Application.Commands.BaseCommand
 
     @enforce_keys [:name]
-    defstruct [:name, :description, :metadata]
+    defstruct [:name, :description, :parent_id, :metadata]
 
     @type t :: %__MODULE__{
             name: String.t(),
             description: String.t() | nil,
+            parent_id: String.t() | nil,
             metadata: map() | nil
           }
 
@@ -25,6 +26,7 @@ defmodule CommandService.Application.Commands.CategoryCommands do
          %__MODULE__{
            name: name,
            description: params["description"] || params[:description],
+           parent_id: params["parent_id"] || params[:parent_id],
            metadata: params["metadata"] || params[:metadata]
          }}
       end
@@ -45,12 +47,13 @@ defmodule CommandService.Application.Commands.CategoryCommands do
     use CommandService.Application.Commands.BaseCommand
 
     @enforce_keys [:id, :name]
-    defstruct [:id, :name, :description, :metadata]
+    defstruct [:id, :name, :description, :parent_id, :metadata]
 
     @type t :: %__MODULE__{
             id: String.t(),
             name: String.t(),
             description: String.t() | nil,
+            parent_id: String.t() | nil,
             metadata: map() | nil
           }
 
@@ -63,6 +66,7 @@ defmodule CommandService.Application.Commands.CategoryCommands do
            id: id,
            name: name,
            description: params["description"] || params[:description],
+           parent_id: params["parent_id"] || params[:parent_id],
            metadata: params["metadata"] || params[:metadata]
          }}
       end

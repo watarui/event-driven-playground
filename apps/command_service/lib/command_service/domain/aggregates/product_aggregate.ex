@@ -380,4 +380,44 @@ defmodule CommandService.Domain.Aggregates.ProductAggregate do
       {:ok, updated_aggregate, [event]}
     end
   end
+
+  def execute(aggregate, %ProductCommands.ReserveStock{} = command) do
+    if aggregate.deleted do
+      {:error, "Cannot reserve stock of deleted product"}
+    else
+      new_quantity = aggregate.stock_quantity - command.quantity
+
+      if new_quantity < 0 do
+        {:error, "Insufficient stock"}
+      else
+        event =
+          ProductUpdated.new(%{
+            id: aggregate.id,
+            stock_quantity: new_quantity,
+            updated_at: DateTime.utc_now()
+          })
+
+        updated_aggregate = apply_and_record_event(aggregate, event)
+        {:ok, updated_aggregate, [event]}
+      end
+    end
+  end
+
+  def execute(aggregate, %ProductCommands.ReleaseStock{} = command) do
+    if aggregate.deleted do
+      {:error, "Cannot release stock of deleted product"}
+    else
+      new_quantity = aggregate.stock_quantity + command.quantity
+
+      event =
+        ProductUpdated.new(%{
+          id: aggregate.id,
+          stock_quantity: new_quantity,
+          updated_at: DateTime.utc_now()
+        })
+
+      updated_aggregate = apply_and_record_event(aggregate, event)
+      {:ok, updated_aggregate, [event]}
+    end
+  end
 end

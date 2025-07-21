@@ -113,7 +113,7 @@ defmodule CommandService.Infrastructure.Repositories.CategoryRepository do
   @doc """
   カテゴリに商品が存在するかチェック
   """
-  def has_products?(category_id) do
+  def has_products?(_category_id) do
     # ProductRepository が実装されたら使用
     # query = from p in ProductSchema, where: p.category_id == ^category_id
     # Repo.exists?(query)

@@ -45,7 +45,7 @@ defmodule ClientService.Auth.FirebaseAuthTest do
     end
 
     test "returns error for expired token" do
-      expired_payload = %{@valid_token_payload | "exp" => System.system_time(:second) - 100}
+      _expired_payload = %{@valid_token_payload | "exp" => System.system_time(:second) - 100}
       mock_firebase_error(:token_expired)
 
       assert {:error, :token_expired} = FirebaseAuth.verify_token("expired.token")
@@ -142,7 +142,7 @@ defmodule ClientService.Auth.FirebaseAuthTest do
   end
 
   # Helper functions for mocking
-  defp mock_firebase_response(payload) do
+  defp mock_firebase_response(_payload) do
     # In a real implementation, you would mock the HTTP client
     # or use a test double for the Firebase SDK
     # For now, we'll use a simple stub approach
@@ -151,7 +151,7 @@ defmodule ClientService.Auth.FirebaseAuthTest do
     # on how FirebaseAuth is implemented
   end
 
-  defp mock_firebase_error(error_type) do
+  defp mock_firebase_error(_error_type) do
     # Mock error responses from Firebase
   end
 end

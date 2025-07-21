@@ -144,7 +144,7 @@ defmodule CommandService.Domain.Services.PricingService do
     end
   end
 
-  defp apply_coupon_discount(price, %{code: code, rules: rules}) do
+  defp apply_coupon_discount(price, %{code: _code, rules: _rules}) do
     # クーポンルールに基づく複雑な割引ロジック
     # 実際の実装では、クーポンサービスと連携
     {:ok, price}

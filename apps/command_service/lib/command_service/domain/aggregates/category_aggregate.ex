@@ -9,7 +9,6 @@ defmodule CommandService.Domain.Aggregates.CategoryAggregate do
 
   alias Shared.Domain.ValueObjects.{CategoryName, EntityId}
   alias Shared.Domain.Events.CategoryEvents.{CategoryCreated, CategoryDeleted, CategoryUpdated}
-  alias CommandService.Application.Commands.CategoryCommands
 
   @enforce_keys [:id]
   defstruct [
@@ -126,7 +125,7 @@ defmodule CommandService.Domain.Aggregates.CategoryAggregate do
           id: aggregate.id,
           name: CategoryName.new!(command.name),
           description: command.description,
-          parent_id: Map.get(command, :parent_id),
+          parent_id: command.parent_id,
           created_at: DateTime.utc_now()
         })
 
@@ -147,7 +146,7 @@ defmodule CommandService.Domain.Aggregates.CategoryAggregate do
           id: aggregate.id,
           name: command.name && CategoryName.new!(command.name),
           description: command.description,
-          parent_id: command.parent_id && EntityId.new!(command.parent_id),
+          parent_id: command.parent_id,
           updated_at: DateTime.utc_now()
         })
 

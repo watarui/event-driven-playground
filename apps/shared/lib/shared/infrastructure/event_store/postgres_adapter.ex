@@ -231,29 +231,24 @@ defmodule Shared.Infrastructure.EventStore.PostgresAdapter do
   end
 
   @impl true
-  def subscribe(subscriber, opts) do
-    event_types = Keyword.get(opts, :event_types, :all)
+  def subscribe(stream_id, subscriber_pid) when is_pid(subscriber_pid) do
     event_bus = Config.event_bus_module()
 
-    if event_types == :all do
+    if stream_id == :all do
       event_bus.subscribe_all()
     else
-      Enum.each(event_types, &event_bus.subscribe/1)
+      event_bus.subscribe(stream_id)
     end
 
-    {:ok, {subscriber, event_types}}
+    # Generate a unique subscription reference
+    subscription_ref = make_ref()
+    {:ok, subscription_ref}
   end
 
   @impl true
-  def unsubscribe({_subscriber, event_types}) do
-    event_bus = Config.event_bus_module()
-
-    if event_types == :all do
-      event_bus.unsubscribe_all()
-    else
-      Enum.each(event_types, &event_bus.unsubscribe/1)
-    end
-
+  def unsubscribe(subscription_ref) when is_reference(subscription_ref) do
+    # In a real implementation, we would track subscriptions
+    # For now, we just return :ok
     :ok
   end
 

@@ -6,7 +6,6 @@ defmodule CommandService.Domain.Services.BusinessRulesService do
   """
 
   alias Shared.Domain.Errors.{BusinessRuleError, ValidationError}
-  alias CommandService.Domain.Services.{PricingService, InventoryService}
 
   # 注文関連のビジネスルール
 
@@ -181,7 +180,7 @@ defmodule CommandService.Domain.Services.BusinessRulesService do
     end
   end
 
-  defp validate_customer_status(customer_id) do
+  defp validate_customer_status(_customer_id) do
     # 実際の実装では顧客サービスと連携
     :ok
   end
@@ -228,7 +227,8 @@ defmodule CommandService.Domain.Services.BusinessRulesService do
     :ok
   end
 
-  defp validate_discount_period(%{valid_from: from, valid_to: to}) do
+  defp validate_discount_period(%{valid_from: from, valid_to: to})
+       when is_struct(from, DateTime) and is_struct(to, DateTime) do
     now = DateTime.utc_now()
 
     if DateTime.compare(now, from) >= 0 && DateTime.compare(now, to) <= 0 do
@@ -240,6 +240,11 @@ defmodule CommandService.Domain.Services.BusinessRulesService do
          context: %{valid_from: from, valid_to: to, current: now}
        }}
     end
+  end
+
+  defp validate_discount_period(_) do
+    {:error, BusinessRuleError,
+     %{rule: "invalid_discount_period", context: %{reason: "Invalid date format"}}}
   end
 
   defp validate_discount_usage_limit(%{usage_limit: limit, usage_count: count}) do
@@ -278,17 +283,17 @@ defmodule CommandService.Domain.Services.BusinessRulesService do
     false
   end
 
-  defp check_daily_order_limit(customer_id) do
+  defp check_daily_order_limit(_customer_id) do
     # 実際の実装では本日の注文数をチェック
     :ok
   end
 
-  defp check_monthly_spending_limit(customer_id, %{total_amount: amount}) do
+  defp check_monthly_spending_limit(_customer_id, %{total_amount: _amount}) do
     # 実際の実装では月間購入額をチェック
     :ok
   end
 
-  defp check_blacklist_status(customer_id) do
+  defp check_blacklist_status(_customer_id) do
     # 実際の実装ではブラックリストをチェック
     :ok
   end

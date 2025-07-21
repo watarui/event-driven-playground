@@ -4,6 +4,7 @@ defmodule ClientService.TestHelpers do
   """
 
   import ExUnit.Assertions
+  require Phoenix.ConnTest
   alias ClientService.Auth.Guardian
 
   @doc """
@@ -26,8 +27,8 @@ defmodule ClientService.TestHelpers do
     {:ok, token, _claims} = Guardian.encode_and_sign(user, extra_claims)
 
     Phoenix.ConnTest.build_conn()
-    |> Phoenix.ConnTest.put_req_header("authorization", "Bearer #{token}")
-    |> Phoenix.ConnTest.put_req_header("content-type", "application/json")
+    |> Plug.Conn.put_req_header("authorization", "Bearer #{token}")
+    |> Plug.Conn.put_req_header("content-type", "application/json")
   end
 
   @doc """
@@ -58,7 +59,8 @@ defmodule ClientService.TestHelpers do
   """
   def execute_query(conn, query, variables \\ %{}) do
     conn =
-      Phoenix.ConnTest.post(conn, "/graphql", %{
+      conn
+      |> Phoenix.ConnTest.post("/graphql", %{
         "query" => query,
         "variables" => variables
       })

@@ -7,7 +7,6 @@ defmodule QueryService.Infrastructure.Projections.OrderProjection do
 
   alias QueryService.Infrastructure.Repositories.OrderRepository
   alias QueryService.Infrastructure.Cache
-  alias Shared.Domain.ValueObjects.EntityId
 
   alias Shared.Domain.Events.OrderEvents.{
     OrderCreated,
@@ -152,16 +151,10 @@ defmodule QueryService.Infrastructure.Projections.OrderProjection do
   すべての注文プロジェクションをクリアする
   """
   def clear_all do
-    case OrderRepository.delete_all() do
-      {:ok, _} ->
-        Logger.info("All order projections cleared")
-        Cache.delete_pattern("orders:*")
-        :ok
-
-      {:error, reason} ->
-        Logger.error("Failed to clear order projections: #{inspect(reason)}")
-        {:error, reason}
-    end
+    {:ok, _count} = OrderRepository.delete_all()
+    Logger.info("All order projections cleared")
+    Cache.delete_pattern("orders:*")
+    :ok
   end
 
   # Private functions
@@ -173,16 +166,20 @@ defmodule QueryService.Infrastructure.Projections.OrderProjection do
   defp get_id_value(value), do: to_string(value)
 
   defp transform_item(item) do
+    unit_price = 
+      case item.unit_price do
+        %Decimal{} = price -> price
+        price -> Decimal.new(to_string(price))
+      end
+
+    quantity_decimal = Decimal.new(to_string(item.quantity))
+
     %{
       product_id: item.product_id,
       product_name: item.product_name,
       quantity: item.quantity,
-      unit_price: Decimal.new(to_string(item.unit_price)),
-      subtotal:
-        Decimal.mult(
-          Decimal.new(to_string(item.unit_price)),
-          Decimal.new(to_string(item.quantity))
-        )
+      unit_price: unit_price,
+      subtotal: Decimal.mult(unit_price, quantity_decimal)
     }
   end
 

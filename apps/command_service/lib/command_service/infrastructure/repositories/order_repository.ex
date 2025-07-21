@@ -63,9 +63,64 @@ defmodule CommandService.Infrastructure.Repositories.OrderRepository do
   end
 
   @impl true
-  def delete(id) do
+  def aggregate_type, do: :order
+
+  @impl true
+  def delete(_id) do
     # イベントソーシングでは論理削除を使用
     {:error, "Delete not supported for event-sourced aggregates"}
+  end
+
+  @impl true
+  def find_by_ids(ids) when is_list(ids) do
+    results =
+      ids
+      |> Enum.map(&find_by_id/1)
+      |> Enum.reduce({[], []}, fn
+        {:ok, aggregate}, {aggregates, errors} ->
+          {[aggregate | aggregates], errors}
+
+        {:error, error}, {aggregates, errors} ->
+          {aggregates, [error | errors]}
+      end)
+
+    case results do
+      {aggregates, []} -> {:ok, Enum.reverse(aggregates)}
+      {_, errors} -> {:error, {:partial_failure, errors}}
+    end
+  end
+
+  @impl true
+  def find_by(_criteria) do
+    {:error, :not_supported}
+  end
+
+  @impl true
+  def all(_opts \\ []) do
+    {:error, :not_supported}
+  end
+
+  @impl true
+  def count(_opts \\ []) do
+    {:error, :not_supported}
+  end
+
+  @impl true
+  def exists?(id) do
+    case find_by_id(id) do
+      {:ok, _} -> true
+      _ -> false
+    end
+  end
+
+  @impl true
+  def transaction(fun) do
+    # EventStore already handles transactions
+    try do
+      {:ok, fun.()}
+    rescue
+      e -> {:error, e}
+    end
   end
 
   # Private functions

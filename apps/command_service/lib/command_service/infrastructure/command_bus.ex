@@ -14,7 +14,6 @@ defmodule CommandService.Infrastructure.CommandBus do
     SagaCommandHandler
   }
 
-  alias Shared.Telemetry.Span
   alias Shared.Infrastructure.Retry.{RetryStrategy, RetryPolicy}
   alias Shared.Telemetry.Tracing.MessagePropagator
 

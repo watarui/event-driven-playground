@@ -118,7 +118,7 @@ defmodule Shared.Infrastructure.Retry.RetryStrategy do
 
         success
 
-      {:error, error} = failure ->
+      {:error, error} = _failure ->
         Logger.warning("Attempt #{attempt} failed: #{inspect(error)}")
         errors = [{attempt, error} | errors]
 

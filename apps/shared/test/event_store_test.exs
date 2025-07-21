@@ -16,6 +16,15 @@ defmodule Shared.Infrastructure.EventStore.EventStoreTest do
   setup do
     # テストデータをクリーンアップ
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Repo)
+    
+    # CircuitBreakerプロセスに接続を許可
+    case Registry.lookup(Shared.CircuitBreakerRegistry, :event_store) do
+      [{pid, _}] -> 
+        Ecto.Adapters.SQL.Sandbox.allow(Repo, self(), pid)
+      [] -> 
+        :ok
+    end
+    
     :ok
   end
 

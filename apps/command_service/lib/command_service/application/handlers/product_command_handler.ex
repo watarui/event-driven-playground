@@ -46,9 +46,6 @@ defmodule CommandService.Application.Handlers.ProductCommandHandler do
     end)
   end
 
-  @doc """
-  商品更新コマンドを処理する
-  """
   def handle(%UpdateProduct{} = command) do
     UnitOfWork.transaction_with_events(fn ->
       # 既存の商品を取得
@@ -70,9 +67,6 @@ defmodule CommandService.Application.Handlers.ProductCommandHandler do
     end)
   end
 
-  @doc """
-  商品削除コマンドを処理する
-  """
   def handle(%DeleteProduct{} = command) do
     UnitOfWork.transaction_with_events(fn ->
       # 既存の商品を取得
@@ -94,9 +88,6 @@ defmodule CommandService.Application.Handlers.ProductCommandHandler do
     end)
   end
 
-  @doc """
-  商品価格を変更する
-  """
   def handle(%ChangeProductPrice{} = command) do
     UnitOfWork.transaction_with_events(fn ->
       with {:ok, aggregate} <- ProductRepository.get(command.id),
@@ -111,9 +102,6 @@ defmodule CommandService.Application.Handlers.ProductCommandHandler do
     end)
   end
 
-  @doc """
-  在庫更新コマンドを処理する
-  """
   def handle(%UpdateStock{} = command) do
     UnitOfWork.transaction_with_events(fn ->
       with {:ok, aggregate} <- ProductRepository.get(command.product_id),
@@ -128,9 +116,6 @@ defmodule CommandService.Application.Handlers.ProductCommandHandler do
     end)
   end
 
-  @doc """
-  在庫予約コマンドを処理する
-  """
   def handle(%ReserveStock{} = command) do
     UnitOfWork.transaction_with_events(fn ->
       with {:ok, aggregate} <- ProductRepository.get(command.product_id),
@@ -145,9 +130,6 @@ defmodule CommandService.Application.Handlers.ProductCommandHandler do
     end)
   end
 
-  @doc """
-  在庫解放コマンドを処理する
-  """
   def handle(%ReleaseStock{} = command) do
     UnitOfWork.transaction_with_events(fn ->
       with {:ok, aggregate} <- ProductRepository.get(command.product_id),

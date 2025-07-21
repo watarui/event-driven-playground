@@ -118,7 +118,7 @@ defmodule Shared.Infrastructure.EventStore.ArchiveScheduler do
 
     start_time = DateTime.utc_now()
 
-    result = EventArchiver.archive_old_events(state.archive_after_days)
+    result = EventArchiver.archive_now(state.archive_after_days)
 
     end_time = DateTime.utc_now()
     duration_ms = DateTime.diff(end_time, start_time, :millisecond)

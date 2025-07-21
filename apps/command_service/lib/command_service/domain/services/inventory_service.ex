@@ -179,7 +179,7 @@ defmodule CommandService.Domain.Services.InventoryService do
 
   # Private functions
 
-  defp get_available_quantity(product_id) do
+  defp get_available_quantity(_product_id) do
     # 実際の実装では、データベースから取得
     # ここではモック実装
     {:ok, 100}
@@ -212,7 +212,7 @@ defmodule CommandService.Domain.Services.InventoryService do
 
   defp validate_warehouses(_, _), do: {:ok, true}
 
-  defp check_warehouse_stock(product_id, warehouse_id, quantity) do
+  defp check_warehouse_stock(_product_id, _warehouse_id, _quantity) do
     # 実際の実装では、特定倉庫の在庫をチェック
     {:ok, true}
   end

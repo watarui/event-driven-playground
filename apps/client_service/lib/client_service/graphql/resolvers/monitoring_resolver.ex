@@ -573,17 +573,24 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
         nil ->
           %{}
 
-        json_string ->
+        json_string when is_binary(json_string) ->
           case Jason.decode(json_string) do
             {:ok, decoded} -> decoded
             _ -> %{}
           end
+
+        _ ->
+          %{}
       end
 
     %{
       id:
         case row["id"] do
-          <<_::128>> = binary -> Ecto.UUID.load(binary) |> elem(1)
+          <<_::128>> = binary -> 
+            case Ecto.UUID.load(binary) do
+              {:ok, uuid} -> uuid
+              _ -> binary
+            end
           id -> id
         end,
       saga_type: row["saga_type"],
@@ -608,10 +615,6 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
     div(memory[:total], 1024 * 1024)
   end
 
-  defp check_pubsub_connection do
-    # PubSub 接続は常にアクティブ（Cloud Run環境）
-    "active"
-  end
 
   defp determine_system_health do
     # TODO: より詳細なヘルスチェック
