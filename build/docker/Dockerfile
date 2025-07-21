@@ -45,17 +45,11 @@ RUN mix release client_service && \
     mix release command_service && \
     mix release query_service
 
-# ランタイムステージ（各サービス用に分ける場合は個別の Dockerfile を使用）
-FROM alpine:3.19 AS runtime-base
+# ランタイムステージ - Elixir イメージをベースに使用
+FROM elixir:1.18.4-otp-28-alpine AS runtime-base
 
-# ランタイムに必要なパッケージをインストール
+# ランタイムに必要な最小限のパッケージをインストール
 RUN apk add --no-cache \
-    openssl \
-    libssl3 \
-    libcrypto3 \
-    ncurses-libs \
-    libstdc++ \
-    libgcc \
     ca-certificates
 
 # アプリケーション用のユーザーを作成
