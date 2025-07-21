@@ -9,21 +9,9 @@ export const config = {
     wsEndpoint: process.env.NEXT_PUBLIC_WS_ENDPOINT || "ws://localhost:4000/socket/websocket",
   },
 
-  // 外部サービス (ローカル開発環境用)
-  external: {
-    jaeger: process.env.NEXT_PUBLIC_JAEGER_URL || "http://localhost:16686",
-  },
-
   // メトリクスエンドポイント (GraphQL 経由で取得)
   metrics: {
     endpoint: process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || "http://localhost:4000/graphql",
-  },
-
-  // データベース表示用 URL (pgweb - ローカル開発環境のみ)
-  databases: {
-    eventStore: "http://localhost:5050",
-    commandDb: "http://localhost:5051",
-    queryDb: "http://localhost:5052",
   },
 
   // その他の設定

@@ -199,7 +199,7 @@ if [ "$WITH_FRONTEND" = true ]; then
     log_to_file "Frontend を起動: PORT=$FRONTEND_PORT"
     
     # Next.js の出力をそのまま表示
-    npm run dev &
+    bun run dev &
     FRONTEND_PID=$!
     log "  PID: $FRONTEND_PID (Port: $FRONTEND_PORT)"
     log_to_file "Frontend PID: $FRONTEND_PID"

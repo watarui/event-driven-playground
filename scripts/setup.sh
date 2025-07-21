@@ -65,8 +65,8 @@ fi
 # フロントエンドの依存関係
 if [ -d "$PROJECT_ROOT/frontend" ]; then
     cd "$PROJECT_ROOT/frontend"
-    info "npm install を実行しています..."
-    if npm install >> "$SETUP_LOG" 2>&1; then
+    info "bun install を実行しています..."
+    if bun install >> "$SETUP_LOG" 2>&1; then
         success "フロントエンドの依存関係を取得しました"
     else
         warning "フロントエンドの依存関係の取得に失敗しました。詳細は $SETUP_LOG を確認してください"

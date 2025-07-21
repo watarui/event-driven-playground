@@ -66,7 +66,7 @@ defmodule Shared.Infrastructure.EventStore.EventStore do
           Application.get_env(
             :shared,
             :event_store_adapter,
-            Shared.Infrastructure.EventStore.PostgresAdapter
+            Shared.Infrastructure.Firestore.EventStoreAdapter
           )
       end
 

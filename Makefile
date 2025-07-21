@@ -86,7 +86,7 @@ backend: docker-up
 .PHONY: frontend
 frontend:
 	@echo -e "$(BLUE)💻 フロントエンドを起動します$(NC)"
-	@cd frontend && npm run dev
+	@cd frontend && bun run dev
 
 ## シードデータ投入
 .PHONY: seed

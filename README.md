@@ -143,7 +143,7 @@ CI/CD 環境では、Firebase の実際の認証情報は不要です。ビル�
 # CI でのビルド前に実行
 cd frontend
 cp .env.ci.example .env.local
-npm run build
+bun run build
 ```
 
 `.env.ci.example` にはビルドに必要な最小限のダミー値が含まれています。本番環境へのデプロイ時は、実際の環境変数を設定してください。
