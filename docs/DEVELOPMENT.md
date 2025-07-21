@@ -32,14 +32,11 @@ cp .env.local.example .env.local
 ### サービスの起動
 
 ```bash
-# バックエンドサービスのみ起動
+# 全サービスを起動（フロントエンド含む、初回はシードデータも投入）
 make start
 
-# フロントエンドも含めて起動
-make start-with-frontend
-
-# 初回起動時にサンプルデータを投入
-make start-with-frontend-and-seed
+# バックエンドサービスのみ起動
+make backend
 ```
 
 起動後、以下のURLでアクセスできます：
@@ -200,7 +197,8 @@ mix compile
 
 ```bash
 make help              # 利用可能なコマンドを表示
-make start             # サービスを起動
+make start             # 全サービスを起動（フロントエンド含む）
+make backend           # バックエンドのみ起動
 make stop              # サービスを停止
 make restart           # サービスを再起動
 make test              # テストを実行
