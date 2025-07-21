@@ -191,23 +191,24 @@ fi
 echo ""
 echo "=== Running migrations ==="
 
+# マイグレーション前に runtime 設定を明示的に読み込み
+echo ""
+echo "--- Loading runtime configuration ---"
+cd /app
+
+# runtime.exs を明示的に読み込んで設定を確認
+echo "Loading config/runtime.exs..."
+MIX_ENV=prod mix run -e "Code.eval_file('config/runtime.exs'); IO.inspect(Application.get_env(:shared, Shared.Infrastructure.EventStore.Repo)[:timeout], label: 'EventStore timeout')" || echo "Failed to load runtime config"
+
 # Shared (EventStore) のマイグレーション
 echo ""
 echo "--- Running Shared (EventStore) migrations ---"
 cd /app/apps/shared
-
-# デバッグ: マイグレーション前に設定を確認
-echo "Debug: Checking Ecto configuration before migration..."
-cd /app
-if [ -f /app/debug_config.exs ]; then
-    MIX_ENV=prod mix run /app/debug_config.exs || echo "Debug script failed, continuing..."
-fi
-cd /app/apps/shared
 echo "Migration files:"
 ls -la priv/repo/migrations/ 2>/dev/null || echo "No migrations directory"
 
-echo "Running migration..."
-MIX_ENV=prod mix ecto.migrate -r Shared.Infrastructure.EventStore.Repo --log-migrations-sql || {
+echo "Running migration with explicit timeouts..."
+DB_TIMEOUT=30000 DB_CONNECT_TIMEOUT=30000 DB_QUEUE_TARGET=50 DB_QUEUE_INTERVAL=100 POOL_SIZE=2 MIX_ENV=prod mix ecto.migrate -r Shared.Infrastructure.EventStore.Repo --log-migrations-sql --pool-size 2 || {
     echo "ERROR: Shared migration failed"
     echo "Attempting to get more details..."
     MIX_ENV=prod mix ecto.migrations -r Shared.Infrastructure.EventStore.Repo || true
@@ -221,8 +222,8 @@ cd /app/apps/command_service
 echo "Migration files:"
 ls -la priv/repo/migrations/ 2>/dev/null || echo "No migrations directory"
 
-echo "Running migration..."
-MIX_ENV=prod mix ecto.migrate -r CommandService.Repo --log-migrations-sql || {
+echo "Running migration with explicit timeouts..."
+DB_TIMEOUT=30000 DB_CONNECT_TIMEOUT=30000 DB_QUEUE_TARGET=50 DB_QUEUE_INTERVAL=100 POOL_SIZE=2 MIX_ENV=prod mix ecto.migrate -r CommandService.Repo --log-migrations-sql --pool-size 2 || {
     echo "ERROR: CommandService migration failed"
     echo "Attempting to get more details..."
     MIX_ENV=prod mix ecto.migrations -r CommandService.Repo || true
@@ -236,8 +237,8 @@ cd /app/apps/query_service
 echo "Migration files:"
 ls -la priv/repo/migrations/ 2>/dev/null || echo "No migrations directory"
 
-echo "Running migration..."
-MIX_ENV=prod mix ecto.migrate -r QueryService.Repo --log-migrations-sql || {
+echo "Running migration with explicit timeouts..."
+DB_TIMEOUT=30000 DB_CONNECT_TIMEOUT=30000 DB_QUEUE_TARGET=50 DB_QUEUE_INTERVAL=100 POOL_SIZE=2 MIX_ENV=prod mix ecto.migrate -r QueryService.Repo --log-migrations-sql --pool-size 2 || {
     echo "ERROR: QueryService migration failed"
     echo "Attempting to get more details..."
     MIX_ENV=prod mix ecto.migrations -r QueryService.Repo || true
