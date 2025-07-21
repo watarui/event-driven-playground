@@ -7,16 +7,15 @@ echo "Database URL is set: $(if [ -n "$DATABASE_URL" ]; then echo "YES"; else ec
 
 # DNS 解決のための環境変数を設定
 export ERL_INETRC="/etc/erl_inetrc"
-export ELIXIR_ERL_OPTIONS="+inet_backend inet"
+# inet_backend オプションは削除（互換性の問題のため）
+# export ELIXIR_ERL_OPTIONS="+inet_backend inet"
 
 # カスタム inet 設定ファイルを作成
 cat > /etc/erl_inetrc << EOF
 {lookup, [dns, file]}.
 {nameserver, {8, 8, 8, 8}}.
 {nameserver, {8, 8, 4, 4}}.
-{nameserver, {1, 1, 1, 1}}.
 {cache_size, 2000}.
-{cache_refresh, 3600}.
 {timeout, 2000}.
 {retry, 3}.
 {inet6, false}.
