@@ -9,7 +9,10 @@ RUN apk add --no-cache \
     postgresql-client \
     postgresql-dev \
     curl \
-    bash
+    bash \
+    bind-tools \
+    iputils \
+    busybox-extras
 
 # 作業ディレクトリ
 WORKDIR /app

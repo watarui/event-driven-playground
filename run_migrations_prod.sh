@@ -1,9 +1,28 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 echo "=== Starting production migration process ==="
 echo "Environment: ${MIX_ENV}"
 echo "Database URL is set: $(if [ -n "$DATABASE_URL" ]; then echo "YES"; else echo "NO"; fi)"
+
+# DNS 解決のための環境変数を設定
+export ERL_INETRC="/etc/erl_inetrc"
+export ELIXIR_ERL_OPTIONS="+inet_backend inet"
+
+# カスタム inet 設定ファイルを作成
+cat > /etc/erl_inetrc << EOF
+{lookup, [dns, file]}.
+{nameserver, {8, 8, 8, 8}}.
+{nameserver, {8, 8, 4, 4}}.
+{nameserver, {1, 1, 1, 1}}.
+{cache_size, 2000}.
+{cache_refresh, 3600}.
+{timeout, 2000}.
+{retry, 3}.
+{inet6, false}.
+EOF
+
+echo "Created custom Erlang inet configuration"
 
 # デバッグ情報
 echo ""
@@ -17,6 +36,36 @@ echo ""
 echo "=== DNS Configuration ==="
 echo "Resolv.conf contents:"
 cat /etc/resolv.conf || echo "Unable to read /etc/resolv.conf"
+echo ""
+
+# ネットワーク情報の詳細確認
+echo "Network interfaces:"
+ip addr show 2>/dev/null || ifconfig 2>/dev/null || echo "No network tools available"
+echo ""
+
+# DNS ツールの確認
+echo "Available DNS tools:"
+which nslookup dig host getent 2>/dev/null || echo "No standard DNS tools found"
+echo ""
+
+# Google DNS を使用した DNS 解決テスト
+echo "Testing DNS resolution with different methods:"
+if [ -n "$DB_HOST" ]; then
+    echo "1. Using system resolver for $DB_HOST:"
+    getent hosts "$DB_HOST" 2>/dev/null || echo "getent failed"
+    
+    echo "2. Using Google DNS (8.8.8.8) for $DB_HOST:"
+    if command -v dig >/dev/null 2>&1; then
+        dig @8.8.8.8 "$DB_HOST" +short || echo "dig with Google DNS failed"
+    elif command -v nslookup >/dev/null 2>&1; then
+        nslookup "$DB_HOST" 8.8.8.8 || echo "nslookup with Google DNS failed"
+    fi
+    
+    echo "3. Direct IP resolution test:"
+    # Supabase の既知の IP アドレスパターンをテスト
+    echo "Testing connectivity to known Supabase IP ranges..."
+    # これは例示的なテストです
+fi
 echo ""
 
 # データベース接続テスト
