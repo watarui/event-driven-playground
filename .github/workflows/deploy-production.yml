@@ -162,19 +162,32 @@ jobs:
             
             # ヘルスチェック（リトライ付き）
             HEALTHY=false
-            # 初回の待機（サービス起動待ち）
-            sleep 15
+            # 初回の待機（サービス起動待ち - Cloud Run のコールドスタート対応）
+            echo "⏳ Initial wait for ${SERVICE} cold start..."
+            sleep 30
             
             for i in {1..5}; do
               # 公開エンドポイントにアクセス（認証なし）
-              if curl -f -s -o /dev/null -w "%{http_code}" "${SERVICE_URL}/health" | grep -q "200"; then
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${SERVICE_URL}/health" 2>&1 || echo "000")
+              
+              if [ "$HTTP_CODE" = "200" ]; then
                 echo "✅ ${SERVICE} is healthy"
                 HEALTHY=true
                 break
               else
-                echo "⏳ Waiting for ${SERVICE} to be ready (attempt $i/5)..."
+                echo "⏳ Waiting for ${SERVICE} to be ready (attempt $i/5, HTTP code: $HTTP_CODE)..."
+                
+                # 最後の試行でない場合は詳細ログを確認
+                if [ $i -eq 3 ]; then
+                  echo "📋 Checking ${SERVICE} logs for errors..."
+                  gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=${SERVICE}" \
+                    --limit=20 \
+                    --project=${PROJECT_ID} \
+                    --format="table(timestamp,jsonPayload.message,textPayload)" | head -30 || true
+                fi
+                
                 if [ $i -lt 5 ]; then
-                  sleep 5  # 10秒から5秒に短縮
+                  sleep 10
                 fi
               fi
             done
