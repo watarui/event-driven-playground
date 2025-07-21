@@ -10,28 +10,48 @@ defmodule Shared.Application do
     # OpenTelemetry を初期化
     Shared.Telemetry.Setup.init()
 
+    # 基本的な子プロセス
     children = [
       # HTTPクライアント
       {Finch, name: Shared.Finch},
       # PubSub (Cloud Run では必須)
-      {Phoenix.PubSub, name: :event_bus_pubsub},
-      # イベントストアのリポジトリ
-      Shared.Infrastructure.EventStore.Repo,
-      # イベントバス（環境に応じて自動選択）
-      # get_event_bus_module(), # PubSub を直接起動するためコメントアウト
-      # アグリゲートバージョンキャッシュ
-      Shared.Infrastructure.EventStore.AggregateVersionCache,
+      {Phoenix.PubSub, name: :event_bus_pubsub}
+    ]
+
+    # Goth (Google認証) - Firestore 使用時のみ
+    children =
+      if Shared.Config.database_adapter() == :firestore && !Shared.Infrastructure.Firestore.Client.using_emulator?(:any) do
+        children ++ [{Goth, name: Shared.Goth}]
+      else
+        children
+      end
+
+    # PostgreSQL 使用時のみ起動するプロセス
+    children =
+      if Shared.Config.database_adapter() != :firestore do
+        children ++ [
+          # イベントストアのリポジトリ
+          Shared.Infrastructure.EventStore.Repo,
+          # アグリゲートバージョンキャッシュ
+          Shared.Infrastructure.EventStore.AggregateVersionCache,
+          # べき等性ストア
+          Shared.Infrastructure.Idempotency.IdempotencyStore,
+          # Event Sourcing 改善
+          {Shared.Infrastructure.EventStore.EventArchiver,
+           [archive_interval: :timer.hours(24), retention_days: 90]}
+        ]
+      else
+        children
+      end
+
+    # 共通のプロセス
+    children = children ++ [
       # デッドレターキュー
       Shared.Infrastructure.DeadLetterQueue,
-      # べき等性ストア
-      Shared.Infrastructure.Idempotency.IdempotencyStore,
       # Sagaコンポーネント
       Shared.Infrastructure.Saga.SagaExecutor,
       # サガメトリクス
-      Shared.Telemetry.SagaMetrics,
-      # Event Sourcing 改善
-      {Shared.Infrastructure.EventStore.EventArchiver,
-       [archive_interval: :timer.hours(24), retention_days: 90]}
+      Shared.Telemetry.SagaMetrics
     ]
 
     # サーキットブレーカーをテスト環境では起動しない

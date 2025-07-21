@@ -24,7 +24,8 @@ resource "google_project_service" "required_apis" {
     "cloudbuild.googleapis.com",
     "secretmanager.googleapis.com",
     "firebase.googleapis.com",
-    "identitytoolkit.googleapis.com"
+    "identitytoolkit.googleapis.com",
+    "firestore.googleapis.com"
   ])
   
   project = var.project_id
@@ -58,7 +59,8 @@ resource "google_project_iam_member" "cloud_run_roles" {
     "roles/logging.logWriter",
     "roles/monitoring.metricWriter",
     "roles/cloudtrace.agent",
-    "roles/secretmanager.secretAccessor"
+    "roles/secretmanager.secretAccessor",
+    "roles/datastore.user"
   ])
   
   project = var.project_id
