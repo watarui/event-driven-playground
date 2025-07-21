@@ -18,20 +18,7 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: event_driven_playground_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+    # Firestore エミュレータは Docker Compose で起動するため、ここでは不要
 
     steps:
       - name: Checkout code
@@ -59,57 +46,27 @@ jobs:
           mix local.rebar --force
           mix deps.get
 
-      - name: Setup test database
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost/event_driven_playground_test
-          MIX_ENV: test
+      - name: Setup Firestore Emulator
         run: |
-          # 既存のデータベースを削除（エラーは無視）
-          echo "Dropping existing databases..."
-          mix ecto.drop -r Shared.Infrastructure.EventStore.Repo || true
-          mix ecto.drop -r CommandService.Repo || true
-          mix ecto.drop -r QueryService.Repo || true
+          # Docker Compose を使用して Firestore エミュレータを起動
+          docker compose up -d firestore
           
-          # 念のため、psql で直接データベースを削除
-          echo ""
-          echo "Force dropping databases via psql..."
-          PGPASSWORD=postgres psql -h localhost -U postgres -c "DROP DATABASE IF EXISTS event_driven_playground_event_store_test;" || true
-          PGPASSWORD=postgres psql -h localhost -U postgres -c "DROP DATABASE IF EXISTS event_driven_playground_command_test;" || true
-          PGPASSWORD=postgres psql -h localhost -U postgres -c "DROP DATABASE IF EXISTS event_driven_playground_query_test;" || true
-          
-          # データベースを作成
-          echo ""
-          echo "Creating databases..."
-          mix ecto.create -r Shared.Infrastructure.EventStore.Repo
-          mix ecto.create -r CommandService.Repo
-          mix ecto.create -r QueryService.Repo
-          
-          # スキーマを作成（マイグレーション前に実行）
-          echo ""
-          echo "Creating database schemas..."
-          mix db.create_schemas
-          
-          # 各アプリケーションのマイグレーションを実行
-          echo ""
-          echo "Running Shared migrations..."
-          mix ecto.migrate -r Shared.Infrastructure.EventStore.Repo --log-migrations-sql
-          
-          echo ""
-          echo "Running CommandService migrations..."
-          mix ecto.migrate -r CommandService.Repo --log-migrations-sql
-          
-          echo ""
-          echo "Checking QueryService migration status..."
-          mix ecto.migrations -r QueryService.Repo
-          
-          echo ""
-          echo "Running QueryService migrations..."
-          mix ecto.migrate -r QueryService.Repo --log-migrations-sql
+          # エミュレータの起動を待つ
+          echo "Waiting for Firestore emulator to start..."
+          for i in {1..30}; do
+            if curl -s http://localhost:8090 > /dev/null; then
+              echo "Firestore emulator is ready"
+              break
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 1
+          done
 
       - name: Run tests with coverage
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost/event_driven_playground_test
           MIX_ENV: test
+          FIRESTORE_EMULATOR_HOST: localhost:8090
+          FIRESTORE_PROJECT_ID: demo-project
         run: |
           # Run tests with warnings as errors (without coverage check)
           mix test --warnings-as-errors
