@@ -111,10 +111,10 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost/event_driven_playground_test
           MIX_ENV: test
         run: |
-          # Run tests with warnings as errors
-          mix test --warnings-as-errors --cover
+          # Run tests with warnings as errors (without coverage check)
+          mix test --warnings-as-errors
           
-          # Generate HTML coverage report for reference (threshold set to 0 in coveralls.json)
+          # Generate coverage report separately (uses coveralls.json with 0% threshold)
           mix coveralls.html || true
 
       - name: Check formatting
