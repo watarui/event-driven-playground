@@ -5,7 +5,12 @@ defmodule CommandService.Repo do
 
   @impl true
   def init(_type, config) do
-    config = Keyword.put(config, :migration_default_prefix, "command")
+    # Merge defaults with provided config to preserve runtime values
+    defaults = [
+      migration_default_prefix: "command"
+    ]
+    
+    config = Keyword.merge(defaults, config)
     {:ok, config}
   end
 end

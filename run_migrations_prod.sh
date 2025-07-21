@@ -136,9 +136,29 @@ echo ""
 echo "=== Creating database schemas (if not exists) ==="
 cd /app
 
+# Elixir の起動時オプションを設定して接続プールを最適化
+export ERL_FLAGS="+K true +A 10"
+export ELIXIR_ERL_OPTIONS="+sbwt none +sbwtdcpu none +sbwtdio none"
+
+# 接続プール設定を明示的にエクスポート（Elixir が確実に読み込むため）
+export MIX_ENV=prod
+export POOL_SIZE=${POOL_SIZE:-2}
+export DB_QUEUE_TARGET=${DB_QUEUE_TARGET:-50}
+export DB_QUEUE_INTERVAL=${DB_QUEUE_INTERVAL:-100}
+export DB_TIMEOUT=${DB_TIMEOUT:-30000}
+export DB_CONNECT_TIMEOUT=${DB_CONNECT_TIMEOUT:-30000}
+
+echo "=== Exported Environment Variables ==="
+echo "MIX_ENV=$MIX_ENV"
+echo "POOL_SIZE=$POOL_SIZE"
+echo "DB_QUEUE_TARGET=$DB_QUEUE_TARGET"
+echo "DB_QUEUE_INTERVAL=$DB_QUEUE_INTERVAL"
+echo "DB_TIMEOUT=$DB_TIMEOUT"
+echo "DB_CONNECT_TIMEOUT=$DB_CONNECT_TIMEOUT"
+
 # Mix環境でスキーマを作成
 echo "Creating schemas using Mix task..."
-mix db.create_schemas || {
+MIX_ENV=prod mix db.create_schemas || {
     echo "Mix task failed, attempting direct SQL..."
     # フォールバック: 直接SQLでスキーマを作成
     PGPASSWORD=$DATABASE_URL psql "$DATABASE_URL" <<EOF || true
@@ -160,10 +180,10 @@ echo "Migration files:"
 ls -la priv/repo/migrations/ 2>/dev/null || echo "No migrations directory"
 
 echo "Running migration..."
-mix ecto.migrate -r Shared.Infrastructure.EventStore.Repo --log-migrations-sql || {
+MIX_ENV=prod mix ecto.migrate -r Shared.Infrastructure.EventStore.Repo --log-migrations-sql || {
     echo "ERROR: Shared migration failed"
     echo "Attempting to get more details..."
-    mix ecto.migrations -r Shared.Infrastructure.EventStore.Repo || true
+    MIX_ENV=prod mix ecto.migrations -r Shared.Infrastructure.EventStore.Repo || true
     exit 1
 }
 
@@ -175,10 +195,10 @@ echo "Migration files:"
 ls -la priv/repo/migrations/ 2>/dev/null || echo "No migrations directory"
 
 echo "Running migration..."
-mix ecto.migrate -r CommandService.Repo --log-migrations-sql || {
+MIX_ENV=prod mix ecto.migrate -r CommandService.Repo --log-migrations-sql || {
     echo "ERROR: CommandService migration failed"
     echo "Attempting to get more details..."
-    mix ecto.migrations -r CommandService.Repo || true
+    MIX_ENV=prod mix ecto.migrations -r CommandService.Repo || true
     exit 1
 }
 
@@ -190,10 +210,10 @@ echo "Migration files:"
 ls -la priv/repo/migrations/ 2>/dev/null || echo "No migrations directory"
 
 echo "Running migration..."
-mix ecto.migrate -r QueryService.Repo --log-migrations-sql || {
+MIX_ENV=prod mix ecto.migrate -r QueryService.Repo --log-migrations-sql || {
     echo "ERROR: QueryService migration failed"
     echo "Attempting to get more details..."
-    mix ecto.migrations -r QueryService.Repo || true
+    MIX_ENV=prod mix ecto.migrations -r QueryService.Repo || true
     exit 1
 }
 
@@ -205,15 +225,15 @@ echo "Checking final migration status..."
 cd /app
 echo ""
 echo "Shared migrations:"
-mix ecto.migrations -r Shared.Infrastructure.EventStore.Repo || echo "Failed to get status"
+MIX_ENV=prod mix ecto.migrations -r Shared.Infrastructure.EventStore.Repo || echo "Failed to get status"
 
 echo ""
 echo "CommandService migrations:"
-mix ecto.migrations -r CommandService.Repo || echo "Failed to get status"
+MIX_ENV=prod mix ecto.migrations -r CommandService.Repo || echo "Failed to get status"
 
 echo ""
 echo "QueryService migrations:"
-mix ecto.migrations -r QueryService.Repo || echo "Failed to get status"
+MIX_ENV=prod mix ecto.migrations -r QueryService.Repo || echo "Failed to get status"
 
 echo ""
 echo "=== All migrations completed successfully! ==="
