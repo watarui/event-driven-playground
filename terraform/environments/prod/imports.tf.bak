@@ -19,9 +19,10 @@ import {
 }
 
 import {
-  to = module.secrets.google_secret_manager_secret.secrets["supabase_url"]
-  id = "projects/event-driven-playground-prod/secrets/supabase-url"
+  to = module.secrets.google_secret_manager_secret.secrets["database_url"]
+  id = "projects/event-driven-playground-prod/secrets/database-url"
 }
+
 
 import {
   to = module.secrets.google_secret_manager_secret.secrets["firebase_api_key"]
