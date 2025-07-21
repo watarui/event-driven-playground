@@ -114,7 +114,7 @@ jobs:
             
             echo "❌ Migration failed but continuing with deployment"
             echo "📝 Note: Database might already be up to date"
-          }
+          fi
 
       # サービスのデプロイ（並列実行）
       - name: Deploy Services in Parallel
