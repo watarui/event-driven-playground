@@ -1,0 +1,206 @@
+# Import existing resources
+
+# Artifact Registry
+import {
+  to = google_artifact_registry_repository.event_driven_playground
+  id = "projects/event-driven-playground-prod/locations/asia-northeast1/repositories/event-driven-playground"
+}
+
+# Service Account
+import {
+  to = google_service_account.cloud_run_sa
+  id = "projects/event-driven-playground-prod/serviceAccounts/event-driven-playground-runner@event-driven-playground-prod.iam.gserviceaccount.com"
+}
+
+# Secrets
+import {
+  to = module.secrets.google_secret_manager_secret.secrets["secret_key_base"]
+  id = "projects/event-driven-playground-prod/secrets/secret-key-base"
+}
+
+import {
+  to = module.secrets.google_secret_manager_secret.secrets["supabase_url"]
+  id = "projects/event-driven-playground-prod/secrets/supabase-url"
+}
+
+import {
+  to = module.secrets.google_secret_manager_secret.secrets["firebase_api_key"]
+  id = "projects/event-driven-playground-prod/secrets/firebase-api-key"
+}
+
+import {
+  to = module.secrets.google_secret_manager_secret.secrets["supabase_service_key"]
+  id = "projects/event-driven-playground-prod/secrets/supabase-service-key"
+}
+
+# Pub/Sub Topics
+import {
+  to = module.pubsub.google_pubsub_topic.event_topics["all-events"]
+  id = "projects/event-driven-playground-prod/topics/all-events-prod"
+}
+
+import {
+  to = module.pubsub.google_pubsub_topic.event_topics["order-events"]
+  id = "projects/event-driven-playground-prod/topics/order-events-prod"
+}
+
+import {
+  to = module.pubsub.google_pubsub_topic.event_topics["product-events"]
+  id = "projects/event-driven-playground-prod/topics/product-events-prod"
+}
+
+import {
+  to = module.pubsub.google_pubsub_topic.event_topics["category-events"]
+  id = "projects/event-driven-playground-prod/topics/category-events-prod"
+}
+
+import {
+  to = module.pubsub.google_pubsub_topic.event_topics["saga-events"]
+  id = "projects/event-driven-playground-prod/topics/saga-events-prod"
+}
+
+import {
+  to = module.pubsub.google_pubsub_topic.command_topics["command-requests"]
+  id = "projects/event-driven-playground-prod/topics/command-requests-prod"
+}
+
+import {
+  to = module.pubsub.google_pubsub_topic.command_topics["command-responses"]
+  id = "projects/event-driven-playground-prod/topics/command-responses-prod"
+}
+
+import {
+  to = module.pubsub.google_pubsub_topic.query_topics["query-requests"]
+  id = "projects/event-driven-playground-prod/topics/query-requests-prod"
+}
+
+import {
+  to = module.pubsub.google_pubsub_topic.query_topics["query-responses"]
+  id = "projects/event-driven-playground-prod/topics/query-responses-prod"
+}
+
+import {
+  to = module.pubsub.google_pubsub_topic.dead_letter
+  id = "projects/event-driven-playground-prod/topics/dead-letter-prod"
+}
+
+# Cloud Run Job
+import {
+  to = module.cloud_run.google_cloud_run_v2_job.database_migrate
+  id = "projects/event-driven-playground-prod/locations/asia-northeast1/jobs/database-migrate"
+}
+
+# Firebase Identity Platform
+import {
+  to = module.firebase.google_identity_platform_config.default
+  id = "projects/event-driven-playground-prod/config"
+}
+
+# Firebase Google IDP
+import {
+  to = module.firebase.google_identity_platform_default_supported_idp_config.google
+  id = "projects/event-driven-playground-prod/defaultSupportedIdpConfigs/google.com"
+}
+
+# Pub/Sub Subscriptions - Event Topics
+import {
+  to = module.pubsub.google_pubsub_subscription.event_subscriptions["client-service-all-events"]
+  id = "projects/event-driven-playground-prod/subscriptions/client-service-all-events-sub-prod"
+}
+
+import {
+  to = module.pubsub.google_pubsub_subscription.event_subscriptions["client-service-order-events"]
+  id = "projects/event-driven-playground-prod/subscriptions/client-service-order-events-sub-prod"
+}
+
+import {
+  to = module.pubsub.google_pubsub_subscription.event_subscriptions["client-service-product-events"]
+  id = "projects/event-driven-playground-prod/subscriptions/client-service-product-events-sub-prod"
+}
+
+import {
+  to = module.pubsub.google_pubsub_subscription.event_subscriptions["client-service-category-events"]
+  id = "projects/event-driven-playground-prod/subscriptions/client-service-category-events-sub-prod"
+}
+
+import {
+  to = module.pubsub.google_pubsub_subscription.event_subscriptions["client-service-saga-events"]
+  id = "projects/event-driven-playground-prod/subscriptions/client-service-saga-events-sub-prod"
+}
+
+import {
+  to = module.pubsub.google_pubsub_subscription.event_subscriptions["command-service-all-events"]
+  id = "projects/event-driven-playground-prod/subscriptions/command-service-all-events-sub-prod"
+}
+
+import {
+  to = module.pubsub.google_pubsub_subscription.event_subscriptions["command-service-order-events"]
+  id = "projects/event-driven-playground-prod/subscriptions/command-service-order-events-sub-prod"
+}
+
+import {
+  to = module.pubsub.google_pubsub_subscription.event_subscriptions["command-service-product-events"]
+  id = "projects/event-driven-playground-prod/subscriptions/command-service-product-events-sub-prod"
+}
+
+import {
+  to = module.pubsub.google_pubsub_subscription.event_subscriptions["command-service-category-events"]
+  id = "projects/event-driven-playground-prod/subscriptions/command-service-category-events-sub-prod"
+}
+
+import {
+  to = module.pubsub.google_pubsub_subscription.event_subscriptions["command-service-saga-events"]
+  id = "projects/event-driven-playground-prod/subscriptions/command-service-saga-events-sub-prod"
+}
+
+import {
+  to = module.pubsub.google_pubsub_subscription.event_subscriptions["query-service-all-events"]
+  id = "projects/event-driven-playground-prod/subscriptions/query-service-all-events-sub-prod"
+}
+
+import {
+  to = module.pubsub.google_pubsub_subscription.event_subscriptions["query-service-order-events"]
+  id = "projects/event-driven-playground-prod/subscriptions/query-service-order-events-sub-prod"
+}
+
+import {
+  to = module.pubsub.google_pubsub_subscription.event_subscriptions["query-service-product-events"]
+  id = "projects/event-driven-playground-prod/subscriptions/query-service-product-events-sub-prod"
+}
+
+import {
+  to = module.pubsub.google_pubsub_subscription.event_subscriptions["query-service-category-events"]
+  id = "projects/event-driven-playground-prod/subscriptions/query-service-category-events-sub-prod"
+}
+
+import {
+  to = module.pubsub.google_pubsub_subscription.event_subscriptions["query-service-saga-events"]
+  id = "projects/event-driven-playground-prod/subscriptions/query-service-saga-events-sub-prod"
+}
+
+# Command/Query Subscriptions
+import {
+  to = module.pubsub.google_pubsub_subscription.command_subscriptions
+  id = "projects/event-driven-playground-prod/subscriptions/command-service-requests-sub-prod"
+}
+
+import {
+  to = module.pubsub.google_pubsub_subscription.query_subscriptions
+  id = "projects/event-driven-playground-prod/subscriptions/query-service-requests-sub-prod"
+}
+
+# Cloud Run Services
+import {
+  to = module.cloud_run.google_cloud_run_v2_service.services["client-service"]
+  id = "projects/event-driven-playground-prod/locations/asia-northeast1/services/client-service"
+}
+
+import {
+  to = module.cloud_run.google_cloud_run_v2_service.services["command-service"]
+  id = "projects/event-driven-playground-prod/locations/asia-northeast1/services/command-service"
+}
+
+import {
+  to = module.cloud_run.google_cloud_run_v2_service.services["query-service"]
+  id = "projects/event-driven-playground-prod/locations/asia-northeast1/services/query-service"
+}

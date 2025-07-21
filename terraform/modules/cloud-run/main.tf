@@ -6,7 +6,7 @@ locals {
 resource "google_cloud_run_v2_service" "services" {
   for_each = var.services
   
-  name     = "${each.key}-${var.environment}"
+  name     = each.key
   location = var.region
   
   template {

@@ -66,30 +66,17 @@ resource "google_project_iam_member" "cloud_run_roles" {
   member  = "serviceAccount:${google_service_account.cloud_run_sa.email}"
 }
 
-# Secret Manager for sensitive data
-resource "google_secret_manager_secret" "app_secrets" {
-  for_each = {
-    supabase_url         = var.supabase_url
-    supabase_service_key = var.supabase_service_key
-    firebase_api_key     = var.firebase_config.api_key
-    secret_key_base      = var.secret_key_base
-  }
+# Secret Manager module
+module "secrets" {
+  source = "../../modules/secrets"
   
-  project   = var.project_id
-  secret_id = replace(each.key, "_", "-")
-  
-  replication {
-    auto {}
-  }
+  project_id           = var.project_id
+  supabase_url         = var.supabase_url
+  supabase_service_key = var.supabase_service_key
+  firebase_api_key     = var.firebase_config.api_key
+  secret_key_base      = var.secret_key_base
   
   depends_on = [google_project_service.required_apis]
-}
-
-resource "google_secret_manager_secret_version" "app_secrets_version" {
-  for_each = google_secret_manager_secret.app_secrets
-  
-  secret      = each.value.id
-  secret_data = each.key == "supabase_url" ? var.supabase_url : each.key == "supabase_service_key" ? var.supabase_service_key : each.key == "firebase_api_key" ? var.firebase_config.api_key : var.secret_key_base
 }
 
 # Cloud Pub/Sub module
@@ -109,28 +96,17 @@ module "cloud_run" {
   project_id           = var.project_id
   region              = var.region
   environment         = var.environment
-  services            = var.services
+  services            = local.services
   service_account     = google_service_account.cloud_run_sa.email
   artifact_registry   = google_artifact_registry_repository.event_driven_playground.repository_id
   
-  env_vars = {
-    MIX_ENV              = "prod"
-    GOOGLE_CLOUD_PROJECT = var.project_id
-    PUBSUB_EMULATOR_HOST = ""
-    FIREBASE_PROJECT_ID  = var.firebase_config.project_id
-    FIREBASE_AUTH_DOMAIN = var.firebase_config.auth_domain
-  }
+  env_vars = local.common_env_vars
   
-  secrets = {
-    DATABASE_URL         = google_secret_manager_secret.app_secrets["supabase_url"].id
-    SUPABASE_SERVICE_KEY = google_secret_manager_secret.app_secrets["supabase_service_key"].id
-    FIREBASE_API_KEY     = google_secret_manager_secret.app_secrets["firebase_api_key"].id
-    SECRET_KEY_BASE      = google_secret_manager_secret.app_secrets["secret_key_base"].id
-  }
+  secrets = module.secrets.secret_ids
   
   depends_on = [
     google_project_service.required_apis,
-    google_secret_manager_secret_version.app_secrets_version,
+    module.secrets,
     module.pubsub
   ]
 }

@@ -1,12 +1,6 @@
 # Event topics
 resource "google_pubsub_topic" "event_topics" {
-  for_each = toset([
-    "category-events",
-    "product-events",
-    "order-events",
-    "saga-events",
-    "all-events"
-  ])
+  for_each = local.event_topics
   
   project = var.project_id
   name = "${each.value}-${var.environment}"
@@ -16,10 +10,7 @@ resource "google_pubsub_topic" "event_topics" {
 
 # Command topics
 resource "google_pubsub_topic" "command_topics" {
-  for_each = toset([
-    "command-requests",
-    "command-responses"
-  ])
+  for_each = local.command_topics
   
   project = var.project_id
   name = "${each.value}-${var.environment}"
@@ -29,10 +20,7 @@ resource "google_pubsub_topic" "command_topics" {
 
 # Query topics
 resource "google_pubsub_topic" "query_topics" {
-  for_each = toset([
-    "query-requests",
-    "query-responses"
-  ])
+  for_each = local.query_topics
   
   project = var.project_id
   name = "${each.value}-${var.environment}"
@@ -50,15 +38,7 @@ resource "google_pubsub_topic" "dead_letter" {
 
 # Subscriptions for event topics
 resource "google_pubsub_subscription" "event_subscriptions" {
-  for_each = {
-    for pair in setproduct(
-      ["command-service", "query-service", "client-service"],
-      keys(google_pubsub_topic.event_topics)
-    ) : "${pair[0]}-${pair[1]}" => {
-      service = pair[0]
-      topic   = pair[1]
-    }
-  }
+  for_each = local.event_subscriptions
   
   project = var.project_id
   name  = "${each.value.service}-${each.value.topic}-sub-${var.environment}"

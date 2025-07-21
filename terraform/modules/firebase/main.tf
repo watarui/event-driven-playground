@@ -38,6 +38,11 @@ resource "google_identity_platform_default_supported_idp_config" "google" {
   client_secret = var.google_oauth_client_secret
   
   depends_on = [google_identity_platform_config.default]
+  
+  lifecycle {
+    # Ignore changes if already exists
+    ignore_changes = [client_id, client_secret]
+  }
 }
 
 # Firebase Web App

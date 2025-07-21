@@ -12,27 +12,58 @@ echo "Current directory: $(pwd)"
 echo "Hostname: $(hostname)"
 echo "Date: $(date)"
 
+# DNS デバッグ
+echo ""
+echo "=== DNS Configuration ==="
+echo "Resolv.conf contents:"
+cat /etc/resolv.conf || echo "Unable to read /etc/resolv.conf"
+echo ""
+
 # データベース接続テスト
 echo ""
 echo "=== Testing database connection ==="
 if [ -n "$DATABASE_URL" ]; then
-    # Extract connection details from DATABASE_URL
-    DB_HOST=$(echo $DATABASE_URL | sed -E 's/.*@([^:\/]+).*/\1/')
-    DB_PORT=$(echo $DATABASE_URL | sed -E 's/.*:([0-9]+)\/.*/\1/' || echo "5432")
-    DB_NAME=$(echo $DATABASE_URL | sed -E 's/.*\/([^?]+).*/\1/')
-    
-    echo "Database host: $DB_HOST"
-    echo "Database port: $DB_PORT"
-    echo "Database name: $DB_NAME"
-    
-    # Test connection using psql
-    echo "Testing connection..."
-    if PGPASSWORD=$DATABASE_URL psql "$DATABASE_URL" -c "SELECT version();" > /dev/null 2>&1; then
-        echo "✓ Database connection successful"
+    # Parse DATABASE_URL properly using bash regex
+    if [[ "$DATABASE_URL" =~ postgres(ql)?://([^:]+):([^@]+)@([^:/]+):?([0-9]+)?/([^?]+) ]]; then
+        DB_USER="${BASH_REMATCH[2]}"
+        DB_PASS="${BASH_REMATCH[3]}"
+        DB_HOST="${BASH_REMATCH[4]}"
+        DB_PORT="${BASH_REMATCH[5]:-5432}"
+        DB_NAME="${BASH_REMATCH[6]}"
+        
+        echo "Parsed connection details:"
+        echo "  Host: $DB_HOST"
+        echo "  Port: $DB_PORT"
+        echo "  Database: $DB_NAME"
+        echo "  User: $DB_USER"
+        
+        # DNS 解決テスト
+        echo ""
+        echo "Testing DNS resolution for $DB_HOST..."
+        if command -v nslookup >/dev/null 2>&1; then
+            nslookup "$DB_HOST" || echo "nslookup failed"
+        elif command -v dig >/dev/null 2>&1; then
+            dig "$DB_HOST" +short || echo "dig failed"
+        elif command -v getent >/dev/null 2>&1; then
+            getent hosts "$DB_HOST" || echo "getent failed"
+        else
+            echo "No DNS tools available, trying ping..."
+            ping -c 1 "$DB_HOST" || echo "ping failed"
+        fi
+        
+        echo ""
+        echo "Testing connection..."
+        if PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "SELECT version();" > /dev/null 2>&1; then
+            echo "✓ Database connection successful"
+        else
+            echo "✗ Database connection failed"
+            echo "Attempting detailed connection test..."
+            PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "SELECT 1;" 2>&1 || true
+        fi
     else
-        echo "✗ Database connection failed"
-        echo "Attempting detailed connection test..."
-        PGPASSWORD=$DATABASE_URL psql "$DATABASE_URL" -c "SELECT 1;" || true
+        echo "✗ Failed to parse DATABASE_URL"
+        echo "URL format should be: postgresql://user:pass@host:port/dbname"
+        exit 1
     fi
 else
     echo "ERROR: DATABASE_URL not set"
