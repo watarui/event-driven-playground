@@ -1,66 +1,96 @@
 # デプロイ専用の Cloud Build 設定（マイグレーションイメージなし）
 steps:
   # ============================================
-  # 並列ビルドステップ
+  # 共通のビルダーイメージを作成
+  # ============================================
+  - id: 'build-base'
+    name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--target=builder'
+      - '--tag=event-driven-playground-builder:latest'
+      - '--file=build/docker/Dockerfile'
+      - '--cache-from=${_REGISTRY}/builder-cache:latest'
+      - '.'
+    waitFor: ['-']
+
+  # ============================================
+  # 並列ビルドステップ（マルチステージビルドのターゲットを使用）
   # ============================================
   
   # Client Service のビルド
   - id: 'build-client'
-    name: 'gcr.io/kaniko-project/executor:latest'
+    name: 'gcr.io/cloud-builders/docker'
     args:
-      - '--dockerfile=build/docker/Dockerfile.client'
-      - '--context=.'
-      - '--destination=${_REGISTRY}/client-service:${SHORT_SHA}'
-      - '--destination=${_REGISTRY}/client-service:latest'
-      - '--cache=true'
-      - '--cache-repo=${_REGISTRY}/client-service/cache'
-      - '--cache-ttl=168h'
-      - '--build-arg=MIX_ENV=prod'
-    waitFor: ['-']
+      - 'build'
+      - '--target=client_service'
+      - '--tag=${_REGISTRY}/client-service:${SHORT_SHA}'
+      - '--tag=${_REGISTRY}/client-service:latest'
+      - '--file=build/docker/Dockerfile'
+      - '--cache-from=event-driven-playground-builder:latest'
+      - '.'
+    waitFor: ['build-base']
 
   # Command Service のビルド
   - id: 'build-command'
-    name: 'gcr.io/kaniko-project/executor:latest'
+    name: 'gcr.io/cloud-builders/docker'
     args:
-      - '--dockerfile=build/docker/Dockerfile.command'
-      - '--context=.'
-      - '--destination=${_REGISTRY}/command-service:${SHORT_SHA}'
-      - '--destination=${_REGISTRY}/command-service:latest'
-      - '--cache=true'
-      - '--cache-repo=${_REGISTRY}/command-service/cache'
-      - '--cache-ttl=168h'
-      - '--build-arg=MIX_ENV=prod'
-    waitFor: ['-']
+      - 'build'
+      - '--target=command_service'
+      - '--tag=${_REGISTRY}/command-service:${SHORT_SHA}'
+      - '--tag=${_REGISTRY}/command-service:latest'
+      - '--file=build/docker/Dockerfile'
+      - '--cache-from=event-driven-playground-builder:latest'
+      - '.'
+    waitFor: ['build-base']
 
   # Query Service のビルド
   - id: 'build-query'
-    name: 'gcr.io/kaniko-project/executor:latest'
+    name: 'gcr.io/cloud-builders/docker'
     args:
-      - '--dockerfile=build/docker/Dockerfile.query'
-      - '--context=.'
-      - '--destination=${_REGISTRY}/query-service:${SHORT_SHA}'
-      - '--destination=${_REGISTRY}/query-service:latest'
-      - '--cache=true'
-      - '--cache-repo=${_REGISTRY}/query-service/cache'
-      - '--cache-ttl=168h'
-      - '--build-arg=MIX_ENV=prod'
-    waitFor: ['-']
+      - 'build'
+      - '--target=query_service'
+      - '--tag=${_REGISTRY}/query-service:${SHORT_SHA}'
+      - '--tag=${_REGISTRY}/query-service:latest'
+      - '--file=build/docker/Dockerfile'
+      - '--cache-from=event-driven-playground-builder:latest'
+      - '.'
+    waitFor: ['build-base']
 
   # ============================================
-  # ビルド完了通知
+  # イメージのプッシュ
   # ============================================
-  - id: 'notify-completion'
-    name: 'gcr.io/cloud-builders/gcloud'
+  - id: 'push-images'
+    name: 'gcr.io/cloud-builders/docker'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        echo "✅ All service images built successfully"
-        echo "Images:"
-        echo "  - ${_REGISTRY}/client-service:${SHORT_SHA}"
-        echo "  - ${_REGISTRY}/command-service:${SHORT_SHA}"
-        echo "  - ${_REGISTRY}/query-service:${SHORT_SHA}"
+        docker push ${_REGISTRY}/client-service:${SHORT_SHA}
+        docker push ${_REGISTRY}/client-service:latest
+        docker push ${_REGISTRY}/command-service:${SHORT_SHA}
+        docker push ${_REGISTRY}/command-service:latest
+        docker push ${_REGISTRY}/query-service:${SHORT_SHA}
+        docker push ${_REGISTRY}/query-service:latest
     waitFor: ['build-client', 'build-command', 'build-query']
+
+  # ============================================
+  # ビルダーキャッシュの更新
+  # ============================================
+  - id: 'push-builder-cache'
+    name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'tag'
+      - 'event-driven-playground-builder:latest'
+      - '${_REGISTRY}/builder-cache:latest'
+    waitFor: ['build-base']
+
+  - id: 'push-builder-cache-2'
+    name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '${_REGISTRY}/builder-cache:latest'
+    waitFor: ['push-builder-cache']
 
 # ビルド設定
 options:
