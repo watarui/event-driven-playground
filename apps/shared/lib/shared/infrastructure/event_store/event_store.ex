@@ -59,11 +59,16 @@ defmodule Shared.Infrastructure.EventStore.EventStore do
   """
   def adapter do
     adapter_module =
-      Application.get_env(
-        :shared,
-        :event_store_adapter,
-        Shared.Infrastructure.EventStore.PostgresAdapter
-      )
+      case Shared.Config.database_adapter() do
+        :firestore ->
+          Shared.Infrastructure.Firestore.EventStoreAdapter
+        _ ->
+          Application.get_env(
+            :shared,
+            :event_store_adapter,
+            Shared.Infrastructure.EventStore.PostgresAdapter
+          )
+      end
 
     require Logger
     Logger.debug("EventStore using adapter: #{inspect(adapter_module)}")
