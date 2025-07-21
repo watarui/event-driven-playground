@@ -51,6 +51,8 @@ FROM alpine:3.19 AS runtime-base
 # ランタイムに必要なパッケージをインストール
 RUN apk add --no-cache \
     openssl \
+    libssl3 \
+    libcrypto3 \
     ncurses-libs \
     libstdc++ \
     libgcc \
