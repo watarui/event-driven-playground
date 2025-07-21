@@ -18,7 +18,7 @@ resource "google_cloud_run_v2_service" "services" {
     }
     
     containers {
-      image = "${local.image_base}/${each.key}:latest"
+      image = "${local.image_base}/${each.key}:8efcfb7"
       
       # ports ブロックを削除 - Cloud Run が自動的に PORT 環境変数を設定する
       # ports {
@@ -156,5 +156,9 @@ resource "google_secret_manager_secret_version" "service_urls_version" {
   for_each = google_secret_manager_secret.service_urls
   
   secret      = each.value.id
-  secret_data = google_cloud_run_v2_service.services[each.key].uri
+  secret_data = coalesce(google_cloud_run_v2_service.services[each.key].uri, "https://placeholder-url.run.app")
+  
+  lifecycle {
+    ignore_changes = [secret_data]
+  }
 }

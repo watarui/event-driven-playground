@@ -8,6 +8,11 @@ variable "environment" {
   type        = string
 }
 
+variable "region" {
+  description = "GCP region"
+  type        = string
+}
+
 variable "services" {
   description = "List of service names to monitor"
   type        = list(string)
