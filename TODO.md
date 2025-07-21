@@ -2,7 +2,9 @@
 
 緊急度：高
 
-- command-service と query-service がポート設定エラーで起動失敗（PORT=8080）
+- ~~command-service と query-service がポート設定エラーで起動失敗（PORT=8080）~~ ✅ 解決済み
+  - Cloud Run のベストプラクティスに従い、EXPOSE ディレクティブを削除
+  - terraform の不要な port 設定を削除
 - Firestore データベースの本番環境構築が未完了
 - Ecto 依存関係がまだ shared/mix.exs に残っている
 

@@ -7,23 +7,20 @@ locals {
     client-service = {
       cpu       = "1"
       memory    = "512Mi"
-      min_scale = 1
+      min_scale = 0  # コスト削減のため0に設定（デモアプリ）
       max_scale = 100
-      port      = 8080
     }
     command-service = {
       cpu       = "1"
       memory    = "512Mi"
-      min_scale = 1
+      min_scale = 0  # コスト削減のため0に設定（デモアプリ）
       max_scale = 50
-      port      = 8081
     }
     query-service = {
       cpu       = "1"
       memory    = "512Mi"
-      min_scale = 1
+      min_scale = 0  # コスト削減のため0に設定（デモアプリ）
       max_scale = 50
-      port      = 8082
     }
   }
   

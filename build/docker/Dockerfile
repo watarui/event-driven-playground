@@ -67,14 +67,12 @@ WORKDIR /app
 FROM runtime-base AS client_service
 COPY --from=builder --chown=elixir:elixir /app/_build/prod/rel/client_service ./
 USER elixir
-EXPOSE 4000
 CMD ["/app/bin/client_service", "start"]
 
 # Command Service
 FROM runtime-base AS command_service
 COPY --from=builder --chown=elixir:elixir /app/_build/prod/rel/command_service ./
 USER elixir
-EXPOSE 8080
 CMD ["/app/bin/command_service", "start"]
 
 # Query Service
