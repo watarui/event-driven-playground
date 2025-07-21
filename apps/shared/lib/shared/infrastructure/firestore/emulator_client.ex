@@ -18,7 +18,8 @@ defmodule Shared.Infrastructure.Firestore.EmulatorClient do
       middleware = [
         {Tesla.Middleware.BaseUrl, "http://#{emulator_host}/v1"},
         Tesla.Middleware.JSON,
-        {Tesla.Middleware.Headers, [{"authorization", "Bearer owner"}]}
+        {Tesla.Middleware.Headers, [{"authorization", "Bearer owner"}]},
+        Tesla.Middleware.Logger
       ]
       
       Tesla.client(middleware)

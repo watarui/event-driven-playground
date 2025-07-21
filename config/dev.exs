@@ -4,52 +4,12 @@ import Config
 config :shared,
   environment: :dev,
   # Firestore を使用する場合は :firestore に変更
-  database_adapter: :firestore,
-  database: %{
-    pool_size: 10,
-    show_sensitive_data_on_connection_error: true,
-    ssl: false
-  }
+  database_adapter: :firestore
 
 # Firestore Emulator の設定（開発環境）
-if Application.get_env(:shared, :database_adapter) == :firestore do
-  System.put_env("FIRESTORE_EMULATOR_HOST_EVENT_STORE", "localhost:8080")
-  System.put_env("FIRESTORE_EMULATOR_HOST_COMMAND", "localhost:8081")
-  System.put_env("FIRESTORE_EMULATOR_HOST_QUERY", "localhost:8082")
-  System.put_env("FIRESTORE_PROJECT_ID_EVENT_STORE", "event-store-local")
-  System.put_env("FIRESTORE_PROJECT_ID_COMMAND", "command-service-local")
-  System.put_env("FIRESTORE_PROJECT_ID_QUERY", "query-service-local")
-  # Query Service のポート設定
-  System.put_env("PORT", "4082")
-else
-  # PostgreSQL の設定（従来の設定）
-  config :shared, Shared.Infrastructure.EventStore.Repo,
-    username: "postgres",
-    password: "postgres",
-    hostname: "localhost",
-    database: "event_driven_playground_event_dev",
-    port: 5432,
-    pool_size: 10,
-    show_sensitive_data_on_connection_error: true
-
-  config :command_service, CommandService.Repo,
-    username: "postgres",
-    password: "postgres",
-    hostname: "localhost",
-    database: "event_driven_playground_command_dev",
-    port: 5433,
-    pool_size: 10,
-    show_sensitive_data_on_connection_error: true
-
-  config :query_service, QueryService.Repo,
-    username: "postgres",
-    password: "postgres",
-    hostname: "localhost",
-    database: "event_driven_playground_query_dev",
-    port: 5434,
-    pool_size: 10,
-    show_sensitive_data_on_connection_error: true
-end
+# 単一の Firestore エミュレータを使用
+System.put_env("FIRESTORE_EMULATOR_HOST", "localhost:8090")
+System.put_env("FIRESTORE_PROJECT_ID", "demo-project")
 
 # Phoenix エンドポイント設定
 config :client_service, ClientServiceWeb.Endpoint,

@@ -28,31 +28,15 @@ defmodule Shared.Infrastructure.Firestore.Client do
   @doc """
   プロジェクトID を取得
   """
-  def get_project_id(service) do
-    env_key = 
-      case service do
-        :event_store -> "FIRESTORE_PROJECT_ID_EVENT_STORE"
-        :command -> "FIRESTORE_PROJECT_ID_COMMAND"
-        :query -> "FIRESTORE_PROJECT_ID_QUERY"
-        _ -> "FIRESTORE_PROJECT_ID"
-      end
-    
-    System.get_env(env_key) || default_project_id(service)
+  def get_project_id(_service) do
+    System.get_env("FIRESTORE_PROJECT_ID") || "demo-project"
   end
 
   @doc """
   Emulator のホストを取得
   """
-  def get_emulator_host(service) do
-    env_key = 
-      case service do
-        :event_store -> "FIRESTORE_EMULATOR_HOST_EVENT_STORE"
-        :command -> "FIRESTORE_EMULATOR_HOST_COMMAND"
-        :query -> "FIRESTORE_EMULATOR_HOST_QUERY"
-        _ -> "FIRESTORE_EMULATOR_HOST"
-      end
-    
-    System.get_env(env_key)
+  def get_emulator_host(_service) do
+    System.get_env("FIRESTORE_EMULATOR_HOST")
   end
 
   @doc """
@@ -77,17 +61,4 @@ defmodule Shared.Infrastructure.Firestore.Client do
     end
   end
 
-  defp default_project_id(service) do
-    if Mix.env() == :prod do
-      "event-driven-playground-prod"
-    else
-      # 開発環境では各サービスごとのプロジェクトID
-      case service do
-        :event_store -> "event-store-local"
-        :command -> "command-service-local"
-        :query -> "query-service-local"
-        _ -> "shared-local"
-      end
-    end
-  end
 end
