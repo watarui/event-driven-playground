@@ -31,7 +31,7 @@ resource "google_cloud_run_v2_job" "database_migrate" {
           name = "DATABASE_URL"
           value_source {
             secret_key_ref {
-              secret  = var.secrets["supabase_url"]
+              secret  = var.secrets["DATABASE_URL"]
               version = "latest"
             }
           }
@@ -42,7 +42,7 @@ resource "google_cloud_run_v2_job" "database_migrate" {
           name = "EVENT_STORE_DATABASE_URL"
           value_source {
             secret_key_ref {
-              secret  = var.secrets["supabase_url"]
+              secret  = var.secrets["DATABASE_URL"]
               version = "latest"
             }
           }
@@ -52,7 +52,7 @@ resource "google_cloud_run_v2_job" "database_migrate" {
           name = "COMMAND_SERVICE_DATABASE_URL"
           value_source {
             secret_key_ref {
-              secret  = var.secrets["supabase_url"]
+              secret  = var.secrets["DATABASE_URL"]
               version = "latest"
             }
           }
@@ -62,7 +62,7 @@ resource "google_cloud_run_v2_job" "database_migrate" {
           name = "QUERY_SERVICE_DATABASE_URL"
           value_source {
             secret_key_ref {
-              secret  = var.secrets["supabase_url"]
+              secret  = var.secrets["DATABASE_URL"]
               version = "latest"
             }
           }
@@ -72,7 +72,7 @@ resource "google_cloud_run_v2_job" "database_migrate" {
           name = "SECRET_KEY_BASE"
           value_source {
             secret_key_ref {
-              secret  = var.secrets["secret_key_base"]
+              secret  = var.secrets["SECRET_KEY_BASE"]
               version = "latest"
             }
           }
@@ -110,8 +110,8 @@ output "database_migrate_job_name" {
   description = "The name of the database migration job"
 }
 
-# Output the job URI for monitoring
-output "database_migrate_job_uri" {
-  value       = google_cloud_run_v2_job.database_migrate.uri
-  description = "The URI of the database migration job"
+# Output the job ID for monitoring
+output "database_migrate_job_id" {
+  value       = google_cloud_run_v2_job.database_migrate.id
+  description = "The ID of the database migration job"
 }
