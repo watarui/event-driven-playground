@@ -9,7 +9,8 @@ resource "google_project_service" "required_apis" {
     "cloudbuild.googleapis.com",
     "secretmanager.googleapis.com",
     "firebase.googleapis.com",
-    "identitytoolkit.googleapis.com"
+    "identitytoolkit.googleapis.com",
+    "firestore.googleapis.com"
   ])
   
   service = each.value
@@ -40,7 +41,8 @@ resource "google_project_iam_member" "cloud_run_roles" {
     "roles/logging.logWriter",
     "roles/monitoring.metricWriter",
     "roles/cloudtrace.agent",
-    "roles/secretmanager.secretAccessor"
+    "roles/secretmanager.secretAccessor",
+    "roles/datastore.user"
   ])
   
   project = var.project_id
@@ -51,9 +53,7 @@ resource "google_project_iam_member" "cloud_run_roles" {
 # Secret Manager for sensitive data
 resource "google_secret_manager_secret" "app_secrets" {
   for_each = {
-    supabase_url         = var.supabase_url
-    supabase_service_key = var.supabase_service_key
-    firebase_api_key     = var.firebase_config.api_key
+    firebase_api_key = var.firebase_config.api_key
   }
   
   secret_id = replace(each.key, "_", "-")
@@ -69,7 +69,7 @@ resource "google_secret_manager_secret_version" "app_secrets_version" {
   for_each = google_secret_manager_secret.app_secrets
   
   secret      = each.value.id
-  secret_data = each.key == "supabase_url" ? var.supabase_url : each.key == "supabase_service_key" ? var.supabase_service_key : var.firebase_config.api_key
+  secret_data = var.firebase_config.api_key
 }
 
 # Cloud Pub/Sub module
@@ -99,12 +99,12 @@ module "pubsub" {
 #     PUBSUB_EMULATOR_HOST = ""
 #     FIREBASE_PROJECT_ID  = var.firebase_config.project_id
 #     FIREBASE_AUTH_DOMAIN = var.firebase_config.auth_domain
+#     DATABASE_ADAPTER     = "firestore"
+#     FIRESTORE_PROJECT_ID = var.project_id
 #   }
 #   
 #   secrets = {
-#     DATABASE_URL         = google_secret_manager_secret.app_secrets["supabase_url"].id
-#     SUPABASE_SERVICE_KEY = google_secret_manager_secret.app_secrets["supabase_service_key"].id
-#     FIREBASE_API_KEY     = google_secret_manager_secret.app_secrets["firebase_api_key"].id
+#     FIREBASE_API_KEY = google_secret_manager_secret.app_secrets["firebase_api_key"].id
 #   }
 #   
 #   depends_on = [
