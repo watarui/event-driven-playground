@@ -156,28 +156,36 @@ echo "DB_QUEUE_INTERVAL=$DB_QUEUE_INTERVAL"
 echo "DB_TIMEOUT=$DB_TIMEOUT"
 echo "DB_CONNECT_TIMEOUT=$DB_CONNECT_TIMEOUT"
 
-# デバッグ: 詳細な設定確認
+# 直接SQLでスキーマを作成（Mixタスクでのタイムアウトを回避）
 echo ""
-echo "=== Debugging: Checking database configuration ==="
-cp /debug_config.exs /app/debug_config.exs 2>/dev/null || true
-if [ -f /app/debug_config.exs ]; then
-    MIX_ENV=prod mix run /app/debug_config.exs || true
-else
-    echo "Debug script not found, skipping detailed config check"
-fi
-
-# Mix環境でスキーマを作成
-echo ""
-echo "Creating schemas using Mix task..."
-MIX_ENV=prod mix db.create_schemas || {
-    echo "Mix task failed, attempting direct SQL..."
-    # フォールバック: 直接SQLでスキーマを作成
-    PGPASSWORD=$DATABASE_URL psql "$DATABASE_URL" <<EOF || true
+echo "=== Creating database schemas using direct SQL ==="
+if [ -n "$DATABASE_URL" ]; then
+    # Parse DATABASE_URL for psql command
+    if [[ "$DATABASE_URL" =~ postgres(ql)?://([^:]+):([^@]+)@([^:/]+):?([0-9]+)?/([^?]+) ]]; then
+        DB_USER="${BASH_REMATCH[2]}"
+        DB_PASS="${BASH_REMATCH[3]}"
+        DB_HOST="${BASH_REMATCH[4]}"
+        DB_PORT="${BASH_REMATCH[5]:-5432}"
+        DB_NAME="${BASH_REMATCH[6]}"
+        
+        echo "Creating schemas directly via psql..."
+        PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" <<EOF || echo "Schema creation may have failed, but continuing..."
 CREATE SCHEMA IF NOT EXISTS event_store;
 CREATE SCHEMA IF NOT EXISTS command;
 CREATE SCHEMA IF NOT EXISTS query;
+\dt event_store.*
+\dt command.*
+\dt query.*
 EOF
-}
+        echo "Schema creation completed"
+    else
+        echo "ERROR: Failed to parse DATABASE_URL for schema creation"
+        exit 1
+    fi
+else
+    echo "ERROR: DATABASE_URL not set for schema creation"
+    exit 1
+fi
 
 # マイグレーションの実行
 echo ""
@@ -186,6 +194,14 @@ echo "=== Running migrations ==="
 # Shared (EventStore) のマイグレーション
 echo ""
 echo "--- Running Shared (EventStore) migrations ---"
+cd /app/apps/shared
+
+# デバッグ: マイグレーション前に設定を確認
+echo "Debug: Checking Ecto configuration before migration..."
+cd /app
+if [ -f /app/debug_config.exs ]; then
+    MIX_ENV=prod mix run /app/debug_config.exs || echo "Debug script failed, continuing..."
+fi
 cd /app/apps/shared
 echo "Migration files:"
 ls -la priv/repo/migrations/ 2>/dev/null || echo "No migrations directory"

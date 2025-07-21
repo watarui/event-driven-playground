@@ -66,13 +66,16 @@ defmodule Shared.Config do
       config = Ecto.Repo.Supervisor.parse_url(url)
       db_config = get_env_config(:database, %{})
 
-      Keyword.merge(config,
+      # マージする設定を構築
+      pool_size = String.to_integer(
+        System.get_env("POOL_SIZE") || to_string(Map.get(db_config, :pool_size, 2))
+      )
+      
+      merge_config = [
         ssl: Map.get(db_config, :ssl, default_ssl()),
         ssl_opts: Map.get(db_config, :ssl_opts, ssl_opts()),
-        pool_size:
-          String.to_integer(
-            System.get_env("POOL_SIZE") || to_string(Map.get(db_config, :pool_size, 2))
-          ),
+        pool_size: pool_size,
+        init_pool_size: pool_size,  # 初期プールサイズを明示的に設定
         socket_options: [:inet6],
         show_sensitive_data_on_connection_error:
           Map.get(db_config, :show_sensitive_data_on_connection_error, false),
@@ -94,8 +97,13 @@ defmodule Shared.Config do
           String.to_integer(
             System.get_env("DB_CONNECT_TIMEOUT") ||
               to_string(Map.get(db_config, :connect_timeout, 15_000))
-          )
-      )
+          ),
+        backoff_type: :stop,  # リトライしない
+        backoff_min: 1000,
+        backoff_max: 5000
+      ]
+      
+      Keyword.merge(config, merge_config)
     else
       raise """
       Database URL not configured for service: #{service}
