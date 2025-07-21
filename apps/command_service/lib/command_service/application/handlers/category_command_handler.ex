@@ -98,8 +98,9 @@ defmodule CommandService.Application.Handlers.CategoryCommandHandler do
         # Note: has_products? は現在常に false を返す実装のため、
         # 実際の商品チェックが必要な場合は実装を更新する必要があります
         case CategoryRepository.has_products?(category_id) do
-          false -> :ok
-          # true -> {:error, "Cannot delete category with products"}
+          false ->
+            :ok
+            # true -> {:error, "Cannot delete category with products"}
         end
 
       true ->

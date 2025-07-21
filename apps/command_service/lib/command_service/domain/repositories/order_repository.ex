@@ -112,6 +112,4 @@ defmodule CommandService.Domain.Repositories.OrderRepository do
   def delete(_id) do
     {:error, :not_allowed}
   end
-
-
 end

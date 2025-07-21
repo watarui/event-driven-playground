@@ -16,17 +16,19 @@ defmodule Shared.Infrastructure.EventStore.EventStoreTest do
   setup do
     # テストデータをクリーンアップ
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Repo)
+
     # 共有モードに設定して、他のプロセスからもアクセスできるようにする
     Ecto.Adapters.SQL.Sandbox.mode(Repo, {:shared, self()})
-    
+
     # CircuitBreakerプロセスに接続を許可
     case Registry.lookup(Shared.CircuitBreakerRegistry, :event_store) do
-      [{pid, _}] -> 
+      [{pid, _}] ->
         Ecto.Adapters.SQL.Sandbox.allow(Repo, self(), pid)
-      [] -> 
+
+      [] ->
         :ok
     end
-    
+
     :ok
   end
 
@@ -136,15 +138,17 @@ defmodule Shared.Infrastructure.EventStore.EventStoreTest do
         })
       ]
 
-      result = EventStore.append_events(
-                 aggregate_id,
-                 "CategoryAggregate",
-                 events2,
-                 # 期待されるバージョンが間違っている
-                 0
-               )
-               
-      assert {:error, %Shared.Infrastructure.EventStore.VersionConflictError{
+      result =
+        EventStore.append_events(
+          aggregate_id,
+          "CategoryAggregate",
+          events2,
+          # 期待されるバージョンが間違っている
+          0
+        )
+
+      assert {:error,
+              %Shared.Infrastructure.EventStore.VersionConflictError{
                 aggregate_id: ^aggregate_id,
                 expected_version: 0,
                 actual_version: 1

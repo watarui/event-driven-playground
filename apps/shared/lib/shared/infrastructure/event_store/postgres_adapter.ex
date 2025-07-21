@@ -306,7 +306,6 @@ defmodule Shared.Infrastructure.EventStore.PostgresAdapter do
     end
   end
 
-
   defp encode_event_data(event) do
     event
     |> Map.from_struct()

@@ -586,12 +586,14 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
     %{
       id:
         case row["id"] do
-          <<_::128>> = binary -> 
+          <<_::128>> = binary ->
             case Ecto.UUID.load(binary) do
               {:ok, uuid} -> uuid
               _ -> binary
             end
-          id -> id
+
+          id ->
+            id
         end,
       saga_type: row["saga_type"],
       status: row["status"],
@@ -614,7 +616,6 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
     memory = :erlang.memory()
     div(memory[:total], 1024 * 1024)
   end
-
 
   defp determine_system_health do
     # TODO: より詳細なヘルスチェック

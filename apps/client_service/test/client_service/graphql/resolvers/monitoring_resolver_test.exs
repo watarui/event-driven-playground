@@ -9,20 +9,21 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolverTest do
   setup do
     # EventStore.Repo のサンドボックスをチェックアウト
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Shared.Infrastructure.EventStore.Repo)
+
     # 共有モードに設定して、他のプロセスからもアクセスできるようにする
     Ecto.Adapters.SQL.Sandbox.mode(Shared.Infrastructure.EventStore.Repo, {:shared, self()})
-    
+
     # 他のRepoも必要に応じてチェックアウト
     if Code.ensure_loaded?(CommandService.Repo) do
       :ok = Ecto.Adapters.SQL.Sandbox.checkout(CommandService.Repo)
       Ecto.Adapters.SQL.Sandbox.mode(CommandService.Repo, {:shared, self()})
     end
-    
+
     if Code.ensure_loaded?(QueryService.Repo) do
       :ok = Ecto.Adapters.SQL.Sandbox.checkout(QueryService.Repo)
       Ecto.Adapters.SQL.Sandbox.mode(QueryService.Repo, {:shared, self()})
     end
-    
+
     :ok
   end
 

@@ -34,12 +34,13 @@ defmodule Shared.Config do
   """
   @spec database_url(atom()) :: String.t() | nil
   def database_url(service) when is_atom(service) do
-    service_env = case service do
-      :shared -> "EVENT_STORE_DATABASE_URL"
-      :event_store -> "EVENT_STORE_DATABASE_URL"
-      _ -> "#{String.upcase(to_string(service))}_DATABASE_URL"
-    end
-    
+    service_env =
+      case service do
+        :shared -> "EVENT_STORE_DATABASE_URL"
+        :event_store -> "EVENT_STORE_DATABASE_URL"
+        _ -> "#{String.upcase(to_string(service))}_DATABASE_URL"
+      end
+
     System.get_env(service_env) || System.get_env("DATABASE_URL")
   end
 

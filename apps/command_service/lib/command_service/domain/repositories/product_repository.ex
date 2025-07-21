@@ -30,7 +30,8 @@ defmodule CommandService.Domain.Repositories.ProductRepository do
   @doc """
   在庫を更新する
   """
-  @callback update_stock(String.t() | binary(), integer()) :: {:ok, ProductAggregate.t()} | {:error, term()}
+  @callback update_stock(String.t() | binary(), integer()) ::
+              {:ok, ProductAggregate.t()} | {:error, term()}
 
   @doc """
   在庫をチェックする

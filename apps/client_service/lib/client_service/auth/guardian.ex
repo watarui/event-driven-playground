@@ -16,10 +16,10 @@ defmodule ClientService.Auth.Guardian do
     case resource do
       %{user_id: user_id} when not is_nil(user_id) ->
         {:ok, to_string(user_id)}
-      
+
       %{id: id} when not is_nil(id) ->
         {:ok, to_string(id)}
-      
+
       _ ->
         {:error, :invalid_resource}
     end
@@ -58,6 +58,7 @@ defmodule ClientService.Auth.Guardian do
       case decode_and_verify(token) do
         {:ok, claims} ->
           {:ok, FirebaseAuth.build_user_info(claims)}
+
         {:error, _} ->
           {:error, :unauthorized}
       end
@@ -89,31 +90,36 @@ defmodule ClientService.Auth.Guardian do
   @impl Guardian
   def build_claims(claims, resource, opts) do
     Logger.info("Guardian.build_claims called with resource: #{inspect(resource)}")
-    
+
     # 基本的なクレームを構築
     new_claims = %{
       "aud" => "client_service",
-      "typ" => (if is_list(opts), do: Keyword.get(opts, :token_type, "access"), else: Map.get(opts, :token_type, "access")),
+      "typ" =>
+        if(is_list(opts),
+          do: Keyword.get(opts, :token_type, "access"),
+          else: Map.get(opts, :token_type, "access")
+        ),
       "iss" => "client_service",
       "iat" => DateTime.to_unix(DateTime.utc_now()),
       "nbf" => DateTime.to_unix(DateTime.utc_now()) - 1,
-      "exp" => DateTime.to_unix(DateTime.utc_now()) + (30 * 24 * 60 * 60) # 30 days
+      # 30 days
+      "exp" => DateTime.to_unix(DateTime.utc_now()) + 30 * 24 * 60 * 60
     }
-    
+
     # リソースから追加のクレームを抽出
-    resource_claims = 
+    resource_claims =
       case resource do
         %{email: email, role: role} when not is_nil(email) ->
           %{
             "email" => email,
             "role" => to_string(role)
           }
+
         _ ->
           %{}
       end
-    
+
     # すべてのクレームをマージ
     {:ok, Map.merge(claims, Map.merge(new_claims, resource_claims))}
   end
-  
 end

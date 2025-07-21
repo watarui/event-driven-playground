@@ -95,7 +95,6 @@ defmodule CommandService.Infrastructure.Repositories.OrderRepository do
     {:error, :not_supported}
   end
 
-
   @impl true
   def all(_opts \\ []) do
     # イベントソーシングでは全件取得は非効率

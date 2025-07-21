@@ -291,22 +291,27 @@ defmodule Shared.Health.HealthCheckRouter do
     # 簡易的な CPU 使用率の推定
     schedulers = :erlang.system_info(:schedulers_online)
     # スケジューラーの統計情報から使用率を推定
-    scheduler_wall_time = 
+    scheduler_wall_time =
       case :erlang.statistics(:scheduler_wall_time) do
-        :undefined -> 
+        :undefined ->
           # 初回は有効化が必要
           :erlang.system_flag(:scheduler_wall_time, true)
           []
-        data -> 
+
+        data ->
           data
       end
-    
-    avg_utilization = 
+
+    avg_utilization =
       if scheduler_wall_time == [] do
         0.0
       else
-        total_active = Enum.reduce(scheduler_wall_time, 0, fn {_, active, _total}, acc -> acc + active end)
-        total_time = Enum.reduce(scheduler_wall_time, 0, fn {_, _active, total}, acc -> acc + total end)
+        total_active =
+          Enum.reduce(scheduler_wall_time, 0, fn {_, active, _total}, acc -> acc + active end)
+
+        total_time =
+          Enum.reduce(scheduler_wall_time, 0, fn {_, _active, total}, acc -> acc + total end)
+
         if total_time > 0, do: total_active / total_time, else: 0.0
       end
 

@@ -39,12 +39,14 @@ defmodule ClientService.Auth.AuthPlug do
 
             {:error, reason} ->
               Logger.error("Token verification failed: #{inspect(reason)}")
+
               conn
               |> assign(:current_user, nil)
               |> assign(:user_signed_in?, false)
           end
         else
           Logger.info("No token found in header or cookie")
+
           conn
           |> assign(:current_user, nil)
           |> assign(:user_signed_in?, false)
@@ -72,6 +74,7 @@ defmodule ClientService.Auth.AuthPlug do
 
           {:error, reason} ->
             Logger.error("Token verification failed: #{inspect(reason)}")
+
             conn
             |> assign(:current_user, nil)
             |> assign(:user_signed_in?, false)
@@ -82,7 +85,9 @@ defmodule ClientService.Auth.AuthPlug do
   defp get_token(conn) do
     # First try header
     case get_req_header(conn, "authorization") do
-      ["Bearer " <> token] -> token
+      ["Bearer " <> token] ->
+        token
+
       _ ->
         # Then try cookie
         # fetch_cookies/2 を呼び出して cookies を取得
@@ -90,5 +95,4 @@ defmodule ClientService.Auth.AuthPlug do
         Map.get(conn.req_cookies, "auth_token")
     end
   end
-
 end

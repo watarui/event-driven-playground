@@ -197,6 +197,7 @@ defmodule CommandService.Domain.Services.BusinessRulesService do
     case order.created_at do
       %DateTime{} = created_at ->
         DateTime.diff(DateTime.utc_now(), created_at, :hour)
+
       _ ->
         0
     end
@@ -206,6 +207,7 @@ defmodule CommandService.Domain.Services.BusinessRulesService do
     case order.delivered_at do
       %DateTime{} = delivered_at ->
         DateTime.diff(DateTime.utc_now(), delivered_at, :day)
+
       _ ->
         0
     end

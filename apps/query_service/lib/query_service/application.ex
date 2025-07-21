@@ -22,9 +22,9 @@ defmodule QueryService.Application do
       # クエリリスナー（PubSub経由でクエリを受信）
       QueryService.Infrastructure.QueryListener
     ]
-    
+
     # テスト環境以外では HTTP エンドポイントを起動
-    children = 
+    children =
       if Mix.env() != :test do
         children ++ [QueryServiceWeb.Endpoint]
       else

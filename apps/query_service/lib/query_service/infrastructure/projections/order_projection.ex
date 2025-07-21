@@ -166,7 +166,7 @@ defmodule QueryService.Infrastructure.Projections.OrderProjection do
   defp get_id_value(value), do: to_string(value)
 
   defp transform_item(item) do
-    unit_price = 
+    unit_price =
       case item.unit_price do
         %Decimal{} = price -> price
         price -> Decimal.new(to_string(price))

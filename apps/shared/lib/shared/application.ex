@@ -35,7 +35,7 @@ defmodule Shared.Application do
     ]
 
     # サーキットブレーカーをテスト環境では起動しない
-    children = 
+    children =
       if Application.get_env(:shared, :start_circuit_breaker, true) do
         # サーキットブレーカー
         children ++ [Shared.Infrastructure.Resilience.CircuitBreakerSupervisor]

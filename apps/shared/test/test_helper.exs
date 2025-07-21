@@ -8,6 +8,7 @@ case Process.whereis(Shared.Infrastructure.Resilience.CircuitBreakerSupervisor) 
   nil ->
     # CircuitBreakerSupervisorを手動で起動
     {:ok, _} = Shared.Infrastructure.Resilience.CircuitBreakerSupervisor.start_link([])
+
   _ ->
     :ok
 end
