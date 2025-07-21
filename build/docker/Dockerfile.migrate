@@ -6,7 +6,10 @@ FROM elixir:1.18.4-otp-28-alpine AS migrate
 RUN apk add --no-cache \
     build-base \
     git \
-    postgresql-client
+    postgresql-client \
+    postgresql-dev \
+    curl \
+    bash
 
 # 作業ディレクトリ
 WORKDIR /app
@@ -31,7 +34,13 @@ RUN mix deps.get --only prod
 # アプリケーションコードをコピー
 COPY config config
 COPY apps apps
+
+# Mix タスクをコピー（db.create_schemas タスクを含む）
+COPY apps/shared/lib/mix/tasks apps/shared/lib/mix/tasks
+
+# マイグレーションスクリプトをコピー
 COPY run_migrations.sh /app/run_migrations.sh
+COPY run_migrations_prod.sh /app/run_migrations_prod.sh
 
 # 依存関係をコンパイル
 RUN mix deps.compile
@@ -40,7 +49,11 @@ RUN mix deps.compile
 RUN mix compile
 
 # スクリプトに実行権限を付与
-RUN chmod +x /app/run_migrations.sh
+RUN chmod +x /app/run_migrations.sh /app/run_migrations_prod.sh
 
-# エントリーポイント
-ENTRYPOINT ["/app/run_migrations.sh"]
+# ヘルスチェックスクリプトを作成
+RUN echo '#!/bin/sh\npsql "$DATABASE_URL" -c "SELECT 1;" > /dev/null 2>&1' > /app/healthcheck.sh && \
+    chmod +x /app/healthcheck.sh
+
+# 本番環境用のエントリーポイント
+ENTRYPOINT ["/app/run_migrations_prod.sh"]

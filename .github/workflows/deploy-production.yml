@@ -78,7 +78,18 @@ jobs:
       - name: Run Database Migrations
         run: |
           echo "🗄️ Running database migrations..."
-          # Job のリソースを一時的に増やす
+          
+          # ジョブの存在確認
+          if ! gcloud run jobs describe database-migrate \
+            --region=${REGION} \
+            --project=${PROJECT_ID} > /dev/null 2>&1; then
+            echo "❌ Error: database-migrate job not found"
+            echo "Please ensure the job is created via Terraform"
+            exit 1
+          fi
+          
+          # Job のリソースを確認・更新
+          echo "📋 Updating job configuration..."
           gcloud run jobs update database-migrate \
             --cpu=2 \
             --memory=2Gi \
@@ -88,12 +99,55 @@ jobs:
             --region=${REGION} \
             --project=${PROJECT_ID}
           
-          # マイグレーションを実行
-          gcloud run jobs execute database-migrate \
+          # マイグレーションを実行（ログ出力付き）
+          echo "🚀 Starting migration execution..."
+          EXECUTION_NAME=$(gcloud run jobs execute database-migrate \
             --region=${REGION} \
             --project=${PROJECT_ID} \
-            --wait
-          echo "✅ Migrations completed"
+            --format="value(metadata.name)")
+          
+          echo "📝 Execution started: ${EXECUTION_NAME}"
+          echo "⏳ Waiting for completion..."
+          
+          # 実行状況を監視
+          MAX_WAIT=600  # 10分
+          ELAPSED=0
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            STATUS=$(gcloud run jobs executions describe ${EXECUTION_NAME} \
+              --region=${REGION} \
+              --project=${PROJECT_ID} \
+              --format="value(status.conditions[0].type)")
+            
+            if [ "$STATUS" = "Completed" ]; then
+              # 成功/失敗の判定
+              RESULT=$(gcloud run jobs executions describe ${EXECUTION_NAME} \
+                --region=${REGION} \
+                --project=${PROJECT_ID} \
+                --format="value(status.conditions[0].status)")
+              
+              if [ "$RESULT" = "True" ]; then
+                echo "✅ Migrations completed successfully"
+                break
+              else
+                echo "❌ Migration failed"
+                echo "Fetching logs..."
+                gcloud logging read "resource.type=cloud_run_job AND resource.labels.job_name=database-migrate AND labels.\"run.googleapis.com/execution_name\"=\"${EXECUTION_NAME}\"" \
+                  --limit=100 \
+                  --project=${PROJECT_ID} \
+                  --format="table(timestamp,textPayload,jsonPayload)"
+                exit 1
+              fi
+            else
+              echo "Status: ${STATUS} (${ELAPSED}s/${MAX_WAIT}s)"
+              sleep 10
+              ELAPSED=$((ELAPSED + 10))
+            fi
+          done
+          
+          if [ $ELAPSED -ge $MAX_WAIT ]; then
+            echo "❌ Migration timed out after ${MAX_WAIT} seconds"
+            exit 1
+          fi
 
       # サービスのデプロイ（並列実行）
       - name: Deploy Services in Parallel
