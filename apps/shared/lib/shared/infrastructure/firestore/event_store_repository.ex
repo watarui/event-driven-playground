@@ -112,7 +112,7 @@ defmodule Shared.Infrastructure.Firestore.EventStoreRepository do
   end
 
   defp commit_writes(conn, project_id, writes) do
-    if is_emulator_client?(conn) do
+    if emulator_client?(conn) do
       # エミュレータクライアントの場合
       Shared.Infrastructure.Firestore.EmulatorClient.commit_writes(conn, project_id, writes)
     else
@@ -131,7 +131,7 @@ defmodule Shared.Infrastructure.Firestore.EventStoreRepository do
   defp query_events(conn, project_id, aggregate_id, from_version) do
     {aggregate_type, aggregate_uuid} = parse_aggregate_id(aggregate_id)
 
-    if is_emulator_client?(conn) do
+    if emulator_client?(conn) do
       # エミュレータクライアントの場合
       collection_path = "event_store/#{aggregate_type}/#{aggregate_uuid}/#{@events_collection}"
 
@@ -218,7 +218,7 @@ defmodule Shared.Infrastructure.Firestore.EventStoreRepository do
   defp save_snapshot_document(conn, project_id, aggregate_id, version, document) do
     {aggregate_type, aggregate_uuid} = parse_aggregate_id(aggregate_id)
 
-    if is_emulator_client?(conn) do
+    if emulator_client?(conn) do
       # エミュレータクライアントの場合
       collection_path = "event_store/#{aggregate_type}/#{aggregate_uuid}/#{@snapshots_collection}"
       fields = document.fields
@@ -247,7 +247,7 @@ defmodule Shared.Infrastructure.Firestore.EventStoreRepository do
   defp get_latest_snapshot_document(conn, project_id, aggregate_id) do
     {aggregate_type, aggregate_uuid} = parse_aggregate_id(aggregate_id)
 
-    if is_emulator_client?(conn) do
+    if emulator_client?(conn) do
       # エミュレータクライアントの場合
       collection_path = "event_store/#{aggregate_type}/#{aggregate_uuid}/#{@snapshots_collection}"
 
@@ -336,8 +336,8 @@ defmodule Shared.Infrastructure.Firestore.EventStoreRepository do
     datetime
   end
 
-  defp is_emulator_client?(conn) do
+  defp emulator_client?(conn) do
     # エミュレータクライアントは Map で base_url を持つ
-    is_map(conn) && Map.has_key?(conn, :base_url)
+    is_map(conn) && is_map_key(conn, :base_url)
   end
 end

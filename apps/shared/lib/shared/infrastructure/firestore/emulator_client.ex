@@ -94,8 +94,7 @@ defmodule Shared.Infrastructure.Firestore.EmulatorClient do
     query_params =
       opts
       |> Keyword.take([:pageSize, :orderBy, :pageToken])
-      |> Enum.map(fn {k, v} -> "#{k}=#{v}" end)
-      |> Enum.join("&")
+      |> Enum.map_join("&", fn {k, v} -> "#{k}=#{v}" end)
 
     query_string = if query_params == "", do: "", else: "?#{query_params}"
 
@@ -202,7 +201,7 @@ defmodule Shared.Infrastructure.Firestore.EmulatorClient do
   # Elixir の値を Firestore のフィールド形式に変換
   defp convert_to_firestore_fields(map) when is_map(map) do
     # すでに Firestore 形式の場合はそのまま返す
-    if is_firestore_format?(map) do
+    if firestore_format?(map) do
       map
     else
       Map.new(map, fn {key, value} ->
@@ -213,7 +212,7 @@ defmodule Shared.Infrastructure.Firestore.EmulatorClient do
 
   defp convert_to_firestore_value(value) when is_map(value) do
     # すでに Firestore 形式の場合はそのまま返す
-    if is_firestore_value?(value) do
+    if firestore_value?(value) do
       value
     else
       %{mapValue: %{fields: convert_to_firestore_fields(value)}}
@@ -232,11 +231,11 @@ defmodule Shared.Infrastructure.Firestore.EmulatorClient do
     end
   end
 
-  defp is_firestore_format?(map) do
-    Enum.all?(map, fn {_key, value} -> is_firestore_value?(value) end)
+  defp firestore_format?(map) do
+    Enum.all?(map, fn {_key, value} -> firestore_value?(value) end)
   end
 
-  defp is_firestore_value?(value) when is_map(value) do
+  defp firestore_value?(value) when is_map(value) do
     Map.keys(value) --
       [
         "stringValue",
@@ -253,5 +252,5 @@ defmodule Shared.Infrastructure.Firestore.EmulatorClient do
       ] == []
   end
 
-  defp is_firestore_value?(_), do: false
+  defp firestore_value?(_), do: false
 end

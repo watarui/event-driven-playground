@@ -111,7 +111,7 @@ defmodule QueryService.Infrastructure.Firestore.OrderRepository do
   # Private functions
 
   defp create_document(conn, project_id, id, document) do
-    if is_emulator_client?(conn) do
+    if emulator_client?(conn) do
       # エミュレータクライアントの場合
       fields = document.fields
 
@@ -137,7 +137,7 @@ defmodule QueryService.Infrastructure.Firestore.OrderRepository do
   end
 
   defp update_document(conn, project_id, id, document) do
-    if is_emulator_client?(conn) do
+    if emulator_client?(conn) do
       # エミュレータクライアントの場合
       fields = document.fields
 
@@ -162,7 +162,7 @@ defmodule QueryService.Infrastructure.Firestore.OrderRepository do
   end
 
   defp get_document(conn, project_id, id) do
-    if is_emulator_client?(conn) do
+    if emulator_client?(conn) do
       # エミュレータクライアントの場合
       Shared.Infrastructure.Firestore.EmulatorClient.get_document(
         conn,
@@ -178,7 +178,7 @@ defmodule QueryService.Infrastructure.Firestore.OrderRepository do
   end
 
   defp delete_document(conn, project_id, id) do
-    if is_emulator_client?(conn) do
+    if emulator_client?(conn) do
       # エミュレータクライアントの場合
       Shared.Infrastructure.Firestore.EmulatorClient.delete_document(
         conn,
@@ -194,7 +194,7 @@ defmodule QueryService.Infrastructure.Firestore.OrderRepository do
   end
 
   defp list_all_documents(conn, project_id) do
-    if is_emulator_client?(conn) do
+    if emulator_client?(conn) do
       # エミュレータクライアントの場合
       case Shared.Infrastructure.Firestore.EmulatorClient.list_documents(
              conn,
@@ -226,7 +226,7 @@ defmodule QueryService.Infrastructure.Firestore.OrderRepository do
   end
 
   defp run_query(conn, project_id, query) do
-    if is_emulator_client?(conn) do
+    if emulator_client?(conn) do
       # エミュレータクライアントの場合
       # 簡易的な実装：全件取得してフィルタリング
       case Shared.Infrastructure.Firestore.EmulatorClient.list_documents(
@@ -448,9 +448,9 @@ defmodule QueryService.Infrastructure.Firestore.OrderRepository do
     |> List.last()
   end
 
-  defp is_emulator_client?(conn) do
+  defp emulator_client?(conn) do
     # エミュレータクライアントは Map で base_url を持つ
-    is_map(conn) && Map.has_key?(conn, :base_url)
+    is_map(conn) && is_map_key(conn, :base_url)
   end
 
   defp apply_query_filters(documents, query) do
