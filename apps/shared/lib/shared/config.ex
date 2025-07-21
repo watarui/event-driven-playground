@@ -211,7 +211,7 @@ defmodule Shared.Config do
   @spec default_ssl() :: boolean()
   defp default_ssl do
     # テスト環境では SSL を無効化
-    Mix.env() != :test
+    System.get_env("MIX_ENV") != "test"
   end
 
   @spec secret_key_base() :: String.t() | no_return()

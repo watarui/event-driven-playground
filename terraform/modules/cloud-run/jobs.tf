@@ -20,11 +20,6 @@ resource "google_cloud_run_v2_job" "database_migrate" {
             cpu    = "2"
             memory = "2Gi"
           }
-          # リクエストを追加してリソースを保証
-          requests = {
-            cpu    = "1"
-            memory = "1Gi"
-          }
         }
         
         # Environment variables
