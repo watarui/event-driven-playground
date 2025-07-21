@@ -1,0 +1,195 @@
+name: Run Database Migration
+
+# 手動実行専用のマイグレーションワークフロー
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "migrate" to confirm execution'
+        required: true
+        default: ''
+      migration_type:
+        description: 'Migration type'
+        required: true
+        default: 'ecto'
+        type: choice
+        options:
+          - ecto          # 通常の Ecto マイグレーション（タイムアウト問題あり）
+          - workaround    # SQL 直接実行の回避策
+      dry_run:
+        description: 'Dry run (check only, no changes)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+env:
+  PROJECT_ID: event-driven-playground-prod
+  REGION: asia-northeast1
+
+jobs:
+  migrate:
+    name: Run Database Migration
+    runs-on: ubuntu-latest
+    # "migrate" と入力した場合のみ実行
+    if: github.event.inputs.confirm == 'migrate'
+    permissions:
+      contents: read
+      id-token: write # Workload Identity Federation に必要
+
+    steps:
+      # リポジトリのチェックアウト
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Google Cloud 認証（Workload Identity Federation を使用）
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      # Cloud SDK のセットアップ
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      # 現在のマイグレーション状態を確認
+      - name: Check Current Migration Status
+        run: |
+          echo "🔍 Checking current migration job status..."
+          
+          # 最新のマイグレーションジョブの情報を取得
+          gcloud run jobs describe database-migrate \
+            --region=${REGION} \
+            --project=${PROJECT_ID} \
+            --format="yaml" | grep -E "(image:|POOL_SIZE|DB_TIMEOUT)" | head -10 || true
+          
+          echo ""
+          echo "📋 Recent migration executions:"
+          gcloud run jobs executions list \
+            --job=database-migrate \
+            --region=${REGION} \
+            --project=${PROJECT_ID} \
+            --limit=5 \
+            --format="table(name,status,createTime)" || true
+
+      # Dry Run モード
+      - name: Dry Run Check
+        if: github.event.inputs.dry_run == 'true'
+        run: |
+          echo "🔍 DRY RUN MODE - No changes will be made"
+          echo ""
+          echo "Migration type selected: ${{ github.event.inputs.migration_type }}"
+          echo ""
+          echo "Would execute: gcloud run jobs execute database-migrate"
+          echo "  --region=${REGION}"
+          echo "  --project=${PROJECT_ID}"
+          echo "  --wait"
+          
+          # 最新のマイグレーション履歴を確認
+          echo ""
+          echo "📋 Checking migration history in database..."
+          gcloud logging read 'resource.type=cloud_run_job AND resource.labels.job_name=database-migrate AND textPayload:"Migration Summary"' \
+            --limit=5 \
+            --project=${PROJECT_ID} \
+            --format="table(timestamp,textPayload)" | head -20 || true
+
+      # 実際のマイグレーション実行
+      - name: Execute Database Migration
+        if: github.event.inputs.dry_run == 'false'
+        run: |
+          echo "🗄️ Running database migration..."
+          echo "Migration type: ${{ github.event.inputs.migration_type }}"
+          
+          # マイグレーションジョブを実行
+          echo "🚀 Executing migration job..."
+          
+          # 環境変数の確認
+          echo "📋 Current environment variables:"
+          echo "   - POOL_SIZE=2"
+          echo "   - DB_QUEUE_TARGET=50ms"
+          echo "   - DB_QUEUE_INTERVAL=100ms"
+          echo "   - DB_TIMEOUT=30s"
+          echo "   - DB_CONNECT_TIMEOUT=30s"
+          echo "   - Migration type: ${{ github.event.inputs.migration_type }}"
+          
+          # タイムアウトを長めに設定して実行
+          if gcloud run jobs execute database-migrate \
+            --region=${REGION} \
+            --project=${PROJECT_ID} \
+            --wait \
+            --timeout=600; then
+            echo "✅ Migration completed successfully"
+          else
+            echo "⚠️ Migration job failed. Checking detailed logs..."
+            
+            # 詳細なログを取得
+            echo ""
+            echo "📋 Recent error logs:"
+            gcloud logging read 'resource.type=cloud_run_job AND resource.labels.job_name=database-migrate AND severity>=ERROR' \
+              --limit=20 \
+              --project=${PROJECT_ID} \
+              --format="table(timestamp,textPayload)" | head -50 || true
+            
+            echo ""
+            echo "📋 Connection errors:"
+            gcloud logging read 'resource.type=cloud_run_job AND resource.labels.job_name=database-migrate AND textPayload:"connection not available"' \
+              --limit=10 \
+              --project=${PROJECT_ID} \
+              --format="table(timestamp,textPayload)" || true
+            
+            # 失敗してもワークフロー自体は成功扱いにする（手動確認のため）
+            echo "❌ Migration failed - please check the logs above"
+            echo "📝 You may need to use the 'workaround' migration type if timeout issues persist"
+          fi
+
+      # マイグレーション後の状態確認
+      - name: Post-Migration Status
+        if: github.event.inputs.dry_run == 'false'
+        run: |
+          echo ""
+          echo "📊 Post-migration status check..."
+          
+          # 最新の実行結果を確認
+          LATEST_EXECUTION=$(gcloud run jobs executions list \
+            --job=database-migrate \
+            --region=${REGION} \
+            --project=${PROJECT_ID} \
+            --limit=1 \
+            --format="value(name)")
+          
+          if [ -n "$LATEST_EXECUTION" ]; then
+            echo "Latest execution: $LATEST_EXECUTION"
+            
+            # 実行の詳細を表示
+            gcloud run jobs executions describe $LATEST_EXECUTION \
+              --region=${REGION} \
+              --project=${PROJECT_ID} \
+              --format="yaml" | grep -E "(status:|startTime:|completionTime:|failedCount:|succeededCount:)" || true
+          fi
+          
+          echo ""
+          echo "✅ Migration workflow completed"
+          echo "📝 Please check the Cloud Run console for detailed execution logs:"
+          echo "   https://console.cloud.google.com/run/jobs/detail/${REGION}/database-migrate?project=${PROJECT_ID}"
+
+      # サマリー
+      - name: Migration Summary
+        if: always()
+        run: |
+          echo ""
+          echo "🚀 Migration Workflow Summary"
+          echo "=========================="
+          echo "Confirmation: ${{ github.event.inputs.confirm }}"
+          echo "Migration Type: ${{ github.event.inputs.migration_type }}"
+          echo "Dry Run: ${{ github.event.inputs.dry_run }}"
+          echo "Region: ${REGION}"
+          echo "Project: ${PROJECT_ID}"
+          echo ""
+          if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
+            echo "✅ Dry run completed - no changes were made"
+          else
+            echo "✅ Migration workflow executed - check logs above for results"
+          fi

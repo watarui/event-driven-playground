@@ -74,44 +74,18 @@ jobs:
           done
       
 
-      # マイグレーションの実行
-      - name: Run Database Migrations
-        run: |
-          echo "🗄️ Running database migrations..."
-          
-          # マイグレーションジョブを実行（Terraform で環境変数は設定済み）
-          echo "🚀 Executing migration job with optimized connection pool settings..."
-          echo "📋 Environment variables (set via Terraform):"
-          echo "   - POOL_SIZE=1"
-          echo "   - DB_QUEUE_TARGET=50ms"  
-          echo "   - DB_QUEUE_INTERVAL=100ms"
-          echo "   - DB_TIMEOUT=30s"
-          echo "   - DB_CONNECT_TIMEOUT=30s"
-          if gcloud run jobs execute database-migrate \
-            --region=${REGION} \
-            --project=${PROJECT_ID} \
-            --wait; then
-            echo "✅ Migration completed successfully"
-          else
-            echo "⚠️ Migration job failed. Checking detailed logs..."
-            
-            # 詳細なログを取得
-            echo "📋 Recent error logs:"
-            gcloud logging read 'resource.type=cloud_run_job AND resource.labels.job_name=database-migrate AND severity>=ERROR' \
-              --limit=20 \
-              --project=${PROJECT_ID} \
-              --format="table(timestamp,textPayload)" | head -50 || true
-            
-            echo ""
-            echo "📋 Connection errors:"
-            gcloud logging read 'resource.type=cloud_run_job AND resource.labels.job_name=database-migrate AND textPayload:"DBConnection.ConnectionError"' \
-              --limit=10 \
-              --project=${PROJECT_ID} \
-              --format="table(timestamp,textPayload)" || true
-            
-            echo "❌ Migration failed but continuing with deployment"
-            echo "📝 Note: Database might already be up to date"
-          fi
+      # マイグレーションは別ワークフローで実行
+      # - name: Run Database Migrations
+      #   マイグレーションは .github/workflows/run-migration.yml で手動実行
+      #   GitHub Actions タブから "Run Database Migration" ワークフローを選択して実行
+      #   
+      #   実行方法:
+      #   1. GitHub リポジトリの "Actions" タブを開く
+      #   2. 左側のワークフロー一覧から "Run Database Migration" を選択
+      #   3. "Run workflow" ボタンをクリック
+      #   4. confirm フィールドに "migrate" と入力
+      #   5. migration_type を選択（ecto または workaround）
+      #   6. "Run workflow" をクリックして実行
 
       # サービスのデプロイ（並列実行）
       - name: Deploy Services in Parallel
