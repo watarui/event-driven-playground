@@ -206,3 +206,5 @@ scripts/*-secret*.sh
 *.vercel
 .env.vercel
 .vercel
+
+/docs/.archive/

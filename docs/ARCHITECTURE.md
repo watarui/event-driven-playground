@@ -1,189 +1,195 @@
-# システムアーキテクチャ
+# アーキテクチャ
 
 ## 概要
 
-このシステムは、CQRS (Command Query Responsibility Segregation)、Event Sourcing、SAGA パターンを実装したマイクロサービスアーキテクチャです。Phoenix PubSub を使用してサービス間の非同期通信を実現しています。
+Event Driven Playground は、CQRS (Command Query Responsibility Segregation) と Event Sourcing パターンを実装したマイクロサービスアーキテクチャです。
 
-## システム構成図
+## システム構成
 
+```mermaid
+graph TB
+    subgraph "Frontend"
+        UI[Next.js App]
+    end
+    
+    subgraph "Backend Services"
+        GQL[Client Service<br/>GraphQL API]
+        CMD[Command Service]
+        QRY[Query Service]
+    end
+    
+    subgraph "Infrastructure"
+        PS[Cloud Pub/Sub]
+        FS[Firestore]
+    end
+    
+    UI --> |GraphQL| GQL
+    GQL --> |Commands| CMD
+    GQL --> |Queries| QRY
+    CMD --> |Events| PS
+    PS --> |Events| QRY
+    CMD --> |Event Store| FS
+    QRY --> |Read Model| FS
 ```
-┌─────────────────┐
-│   Client App    │
-│   (Browser)     │
-└────────┬────────┘
-         │ GraphQL (HTTP/WebSocket)
-         ▼
-┌─────────────────┐     Phoenix PubSub     ┌─────────────────┐
-│ Client Service  │ ◄──────────────────────► │ Command Service │
-│   (Port 4000)   │                         │                 │
-└─────────────────┘                         └────────┬────────┘
-         │                                            │
-         │              Phoenix PubSub                │ Events
-         │         ┌──────────────────────┐           ▼
-         └─────────► │  Query Service    │ ◄─── Event Store
-                    │                    │      (PostgreSQL)
-                    └────────────────────┘
-```
 
-## マイクロサービス詳細
+## 主要コンポーネント
 
-### 1. Shared (共通ライブラリ)
+### 1. Client Service (GraphQL API)
 
-共通で使用されるコンポーネントを提供：
-
-- **値オブジェクト**
-
-  - `Money` - 日本円の金額を表現
-  - `EntityId` - UUID ベースの識別子
-  - `ProductName` - 商品名（1-100 文字）
-  - `CategoryName` - カテゴリ名（1-50 文字）
-
-- **ドメインイベント**
-
-  - カテゴリイベント（作成、更新、削除）
-  - 商品イベント（作成、更新、価格変更、削除）
-  - 注文イベント（作成、確認、支払い処理、キャンセル）
-
-- **インフラストラクチャ**
-  - `EventStore` - イベントの永続化
-  - `EventBus` - Phoenix PubSub を使用したイベント配信
-  - `SagaExecutor` - SAGA の実行管理
-  - `CircuitBreaker` - 障害時の回路遮断
-  - `HealthChecker` - サービスの健全性監視
+- **役割**: フロントエンドとバックエンドサービス間のゲートウェイ
+- **技術**: Phoenix Framework + Absinthe
+- **機能**:
+  - GraphQL スキーマの定義と実行
+  - 認証・認可（Firebase Authentication）
+  - コマンドとクエリのルーティング
 
 ### 2. Command Service
 
-書き込み操作を担当：
-
-- **アグリゲート**
-
-  - `CategoryAggregate` - カテゴリの状態とビジネスロジック
-  - `ProductAggregate` - 商品の状態とビジネスロジック
-  - `OrderAggregate` - 注文の状態とビジネスロジック
-
-- **コマンドハンドラ**
-
-  - カテゴリ、商品、注文の作成・更新・削除を処理
-  - イベントストアへの永続化
-  - イベントバスへの発行
-
-- **SAGA**
-  - `OrderSaga` - 注文処理の分散トランザクション管理
+- **役割**: コマンド（書き込み操作）の処理
+- **責務**:
+  - ビジネスロジックの実行
+  - イベントの生成と永続化
+  - ドメインの整合性保証
+- **パターン**: アグリゲートパターンを使用
 
 ### 3. Query Service
 
-読み取り操作を担当：
+- **役割**: クエリ（読み取り操作）の処理
+- **責務**:
+  - Read Model の構築と管理
+  - 最適化されたクエリの実行
+  - イベントからの投影（Projection）
 
-- **プロジェクション**
+## CQRS と Event Sourcing
 
-  - イベントからリードモデルを構築
-  - カテゴリ、商品、注文の集計情報を管理
+### CQRS の実装
 
-- **リポジトリ**
+```elixir
+# コマンド側（Command Service）
+defmodule CommandService.Products.CreateProduct do
+  def execute(params) do
+    # ビジネスロジックの実行
+    # イベントの生成
+    # Event Store への保存
+  end
+end
 
-  - 最適化されたクエリ用データストア
-  - キャッシュ層（ETS）を使用した高速化
+# クエリ側（Query Service）
+defmodule QueryService.Products.GetProduct do
+  def execute(product_id) do
+    # Read Model から最適化されたデータを取得
+  end
+end
+```
 
-- **クエリハンドラ**
-  - Phoenix PubSub 経由でクエリを受信
-  - リードモデルから効率的にデータを取得
+### Event Sourcing の実装
 
-### 4. Client Service
+すべての状態変更はイベントとして記録されます：
 
-クライアント向け API を提供：
-
-- **GraphQL API**
-
-  - Absinthe を使用した GraphQL 実装
-  - Dataloader による N+1 問題の解決
-  - WebSocket によるリアルタイムサブスクリプション
-  - PubSubBroadcaster によるメッセージキャッシングと配信
-
-- **通信層**
-  - Phoenix PubSub を使用した非同期通信
-  - タイムアウト処理とエラーハンドリング
-  - AbsintheSocket による WebSocket 接続管理
-  - リアルタイムモニタリングとメトリクス収集
+```elixir
+# イベントの例
+%ProductCreated{
+  aggregate_id: "product-123",
+  name: "商品名",
+  price: 1000,
+  category_id: "category-456",
+  timestamp: ~U[2024-01-01 00:00:00Z]
+}
+```
 
 ## データフロー
 
-### コマンド（書き込み）フロー
+### 1. コマンドフロー（書き込み）
 
-1. クライアントが GraphQL mutation を送信
-2. Client Service がコマンドを Phoenix PubSub 経由で Command Service に送信
-3. Command Service がコマンドを処理し、アグリゲートを更新
-4. イベントがイベントストアに保存される
-5. イベントが Phoenix PubSub 経由で配信される
-6. Query Service がイベントを受信し、プロジェクションを更新
-7. PubSubBroadcaster がイベントを WebSocket 経由でクライアントに配信
+1. フロントエンドが GraphQL Mutation を送信
+2. Client Service がコマンドを Command Service にルーティング
+3. Command Service がビジネスロジックを実行
+4. イベントを生成し、Event Store（Firestore）に保存
+5. イベントを Pub/Sub に発行
+6. 成功/失敗をフロントエンドに返す
 
-### クエリ（読み取り）フロー
+### 2. クエリフロー（読み取り）
 
-1. クライアントが GraphQL query を送信
-2. Client Service がクエリを Phoenix PubSub 経由で Query Service に送信
-3. Query Service がリードモデルからデータを取得
-4. 結果が Client Service に返される
-5. GraphQL レスポンスとしてクライアントに返される
+1. フロントエンドが GraphQL Query を送信
+2. Client Service がクエリを Query Service にルーティング
+3. Query Service が Read Model から最適化されたデータを取得
+4. 結果をフロントエンドに返す
 
-## 技術的な選択
+### 3. イベント処理フロー
 
-### Phoenix PubSub を選択した理由
+1. Command Service がイベントを Pub/Sub に発行
+2. Query Service がイベントをサブスクライブ
+3. イベントハンドラーが Read Model を更新
+4. 最新の状態がクエリで利用可能になる
 
-- Elixir/Phoenix エコシステムとの親和性
-- 低レイテンシの通信
-- 組み込みのクラスタリングサポート
-- シンプルな実装
+## Firestore の使用
 
-### PostgreSQL ベースのイベントストア
+### コレクション構造
 
-- トランザクションの保証
-- 既存の運用知識の活用
-- スナップショット機能のサポート
-- 高い信頼性
+```
+firestore/
+├── events/                    # Event Store
+│   └── {aggregate_id}/
+│       └── {event_id}        # 個別のイベント
+├── command_service/           # Command側の状態
+│   ├── categories/
+│   ├── products/
+│   └── orders/
+└── query_service/            # Read Model
+    ├── categories/
+    ├── products/
+    └── orders/
+```
 
-### ETS によるキャッシュ
+### Event Store の設計
 
-- インメモリの高速アクセス
-- プロセス間での共有
-- TTL とサイズ制限のサポート
-- Erlang VM のネイティブ機能
-
-## リアルタイム機能
-
-### WebSocket サブスクリプション
-
-- **イベントストリーム** - すべてのドメインイベントのリアルタイム配信
-- **PubSub ストリーム** - トピック別メッセージのリアルタイム配信
-- **Saga 更新** - Saga の状態変更通知
-- **ダッシュボード統計** - システムメトリクスのリアルタイム更新
-- **メトリクスストリーム** - パフォーマンスメトリクスのリアルタイム配信
-
-### PubSubBroadcaster
-
-- メッセージの一時キャッシュ（最大 1000 件）
-- トピック別の統計収集
-- GraphQL サブスクリプションへの効率的な配信
-- メッセージ履歴の提供
-
-## モニタリングとオブザーバビリティ
-
-### システムトポロジー
-
-- ノード間の接続状態の可視化
-- サービスの健全性監視
-- リアルタイムのメッセージフロー表示
-
-### メトリクス収集
-
-- コマンド/クエリの実行時間
-- イベント処理のスループット
-- Saga の実行状態
-- システムリソースの使用状況
+- 各アグリゲートのイベントは独立したコレクションに保存
+- イベントは append-only（追加のみ）
+- イベントの順序は timestamp で管理
 
 ## スケーラビリティ
 
+### 水平スケーリング
+
 - 各サービスは独立してスケール可能
-- Phoenix PubSub のクラスタリング対応
-- リードモデルの複製による読み取りスケール
-- WebSocket 接続の水平分散
-- PubSubBroadcaster によるメッセージの効率的な配信
+- Cloud Run の自動スケーリング機能を活用
+- Read Model の複製による読み取り性能の向上
+
+### 非同期処理
+
+- Pub/Sub による疎結合
+- イベント駆動による最終的整合性
+- バックプレッシャー制御
+
+## セキュリティ
+
+### 認証・認可
+
+- Firebase Authentication による認証
+- JWT トークンの検証
+- ロールベースのアクセス制御（RBAC）
+
+### データ保護
+
+- HTTPS による通信の暗号化
+- Firestore のセキュリティルール
+- Secret Manager による機密情報管理
+
+## 監視とロギング
+
+### メトリクス
+
+- Cloud Monitoring によるシステムメトリクス
+- カスタムメトリクス（処理時間、エラー率など）
+- アラート設定
+
+### トレーシング
+
+- OpenTelemetry による分散トレーシング
+- リクエストの追跡とボトルネックの特定
+
+### ロギング
+
+- 構造化ログ（JSON形式）
+- Cloud Logging への集約
+- エラーログの自動アラート
