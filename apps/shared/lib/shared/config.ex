@@ -28,6 +28,14 @@ defmodule Shared.Config do
   end
 
   @doc """
+  データベースアダプターを取得
+  """
+  @spec database_adapter() :: :postgres | :firestore
+  def database_adapter do
+    get_env_config(:database_adapter, :postgres)
+  end
+
+  @doc """
   データベース URL を取得
 
   サービス固有の環境変数を優先し、なければ共通の DATABASE_URL を使用
@@ -78,7 +86,8 @@ defmodule Shared.Config do
         pool_size: pool_size,
         # 初期プールサイズを明示的に設定
         init_pool_size: pool_size,
-        socket_options: [:inet6],
+        # IPv4 と IPv6 の両方をサポート（DNS 解決の問題を回避）
+        socket_options: [:inet6, :inet],
         show_sensitive_data_on_connection_error:
           Map.get(db_config, :show_sensitive_data_on_connection_error, false),
         queue_target:
@@ -100,6 +109,12 @@ defmodule Shared.Config do
             System.get_env("DB_CONNECT_TIMEOUT") ||
               to_string(Map.get(db_config, :connect_timeout, 15_000))
           ),
+        # DNS 解決のタイムアウトを長く設定
+        tcp_keepalive: [
+          idle: 30_000,
+          interval: 10_000,
+          count: 3
+        ],
         # リトライしない
         backoff_type: :stop,
         backoff_min: 1000,

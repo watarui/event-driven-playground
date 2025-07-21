@@ -1,0 +1,71 @@
+# Firestore Emulator for local development
+# 複数の独立したインスタンスで CQRS の完全分離を実現
+
+version: '3.8'
+
+services:
+  # Event Store 用 Firestore Emulator
+  firestore-event-store:
+    image: andreysenov/firebase-tools:latest
+    command: >
+      sh -c "
+      firebase setup:emulators:firestore &&
+      firebase emulators:start --only firestore --project event-store-local
+      "
+    ports:
+      - "8080:8080"  # Firestore
+      - "4000:4000"  # Emulator UI
+    environment:
+      - FIRESTORE_PROJECT_ID=event-store-local
+    volumes:
+      - ./firebase-configs/event-store:/opt/workspace/.firebaserc
+      - firestore-event-store-data:/opt/workspace/.firebase
+    networks:
+      - event-driven-network
+
+  # Command Service 用 Firestore Emulator
+  firestore-command:
+    image: andreysenov/firebase-tools:latest
+    command: >
+      sh -c "
+      firebase setup:emulators:firestore &&
+      firebase emulators:start --only firestore --project command-service-local
+      "
+    ports:
+      - "8081:8080"  # Firestore
+      - "4001:4000"  # Emulator UI
+    environment:
+      - FIRESTORE_PROJECT_ID=command-service-local
+    volumes:
+      - ./firebase-configs/command:/opt/workspace/.firebaserc
+      - firestore-command-data:/opt/workspace/.firebase
+    networks:
+      - event-driven-network
+
+  # Query Service 用 Firestore Emulator
+  firestore-query:
+    image: andreysenov/firebase-tools:latest
+    command: >
+      sh -c "
+      firebase setup:emulators:firestore &&
+      firebase emulators:start --only firestore --project query-service-local
+      "
+    ports:
+      - "8082:8080"  # Firestore
+      - "4002:4000"  # Emulator UI
+    environment:
+      - FIRESTORE_PROJECT_ID=query-service-local
+    volumes:
+      - ./firebase-configs/query:/opt/workspace/.firebaserc
+      - firestore-query-data:/opt/workspace/.firebase
+    networks:
+      - event-driven-network
+
+networks:
+  event-driven-network:
+    external: true
+
+volumes:
+  firestore-event-store-data:
+  firestore-command-data:
+  firestore-query-data:

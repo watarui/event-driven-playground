@@ -45,6 +45,7 @@ defmodule Shared.MixProject do
       {:phoenix_pubsub, "~> 2.1"},
       {:finch, "~> 0.18"},
       {:google_api_pub_sub, "~> 0.36"},
+      {:google_api_firestore, "~> 0.26"},
       {:goth, "~> 1.4"}
     ]
   end
