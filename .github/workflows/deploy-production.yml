@@ -84,7 +84,7 @@ jobs:
           gcloud run jobs update database-migrate \
             --region=${REGION} \
             --project=${PROJECT_ID} \
-            --set-env-vars="POOL_SIZE=1,DB_QUEUE_TARGET=50,DB_QUEUE_INTERVAL=100,DB_TIMEOUT=30000,DB_CONNECT_TIMEOUT=30000" || {
+            --update-env-vars="POOL_SIZE=1,DB_QUEUE_TARGET=50,DB_QUEUE_INTERVAL=100,DB_TIMEOUT=30000,DB_CONNECT_TIMEOUT=30000" || {
             echo "⚠️ Failed to update job configuration"
           }
           
