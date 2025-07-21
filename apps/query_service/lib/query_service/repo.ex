@@ -9,7 +9,7 @@ defmodule QueryService.Repo do
     defaults = [
       migration_default_prefix: "query"
     ]
-    
+
     config = Keyword.merge(defaults, config)
     {:ok, config}
   end

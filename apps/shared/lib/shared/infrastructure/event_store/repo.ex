@@ -15,7 +15,7 @@ defmodule Shared.Infrastructure.EventStore.Repo do
       log: :debug,
       migration_default_prefix: "event_store"
     ]
-    
+
     config = Keyword.merge(defaults, config)
 
     {:ok, config}

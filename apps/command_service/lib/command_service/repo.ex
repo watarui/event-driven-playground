@@ -9,7 +9,7 @@ defmodule CommandService.Repo do
     defaults = [
       migration_default_prefix: "command"
     ]
-    
+
     config = Keyword.merge(defaults, config)
     {:ok, config}
   end
