@@ -194,14 +194,20 @@ defmodule CommandService.Domain.Services.BusinessRulesService do
   end
 
   defp hours_since_creation(order) do
-    DateTime.diff(DateTime.utc_now(), order.created_at, :hour)
+    case order.created_at do
+      %DateTime{} = created_at ->
+        DateTime.diff(DateTime.utc_now(), created_at, :hour)
+      _ ->
+        0
+    end
   end
 
   defp days_since_delivery(order) do
-    if order.delivered_at do
-      DateTime.diff(DateTime.utc_now(), order.delivered_at, :day)
-    else
-      0
+    case order.delivered_at do
+      %DateTime{} = delivered_at ->
+        DateTime.diff(DateTime.utc_now(), delivered_at, :day)
+      _ ->
+        0
     end
   end
 
@@ -231,7 +237,7 @@ defmodule CommandService.Domain.Services.BusinessRulesService do
        when is_struct(from, DateTime) and is_struct(to, DateTime) do
     now = DateTime.utc_now()
 
-    if DateTime.compare(now, from) >= 0 && DateTime.compare(now, to) <= 0 do
+    if DateTime.compare(now, from) in [:eq, :gt] && DateTime.compare(now, to) in [:eq, :lt] do
       :ok
     else
       {:error, BusinessRuleError,

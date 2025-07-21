@@ -131,4 +131,21 @@ defmodule Shared.Infrastructure.EventStore.EventStore do
   def get_snapshot(aggregate_id) do
     adapter().get_snapshot(aggregate_id)
   end
+
+  @doc """
+  トランザクション内で処理を実行する
+  """
+  def transaction(fun) do
+    # アダプターがトランザクションをサポートしている場合は使用
+    if function_exported?(adapter(), :transaction, 1) do
+      adapter().transaction(fun)
+    else
+      # サポートしていない場合は直接実行
+      try do
+        {:ok, fun.()}
+      rescue
+        e -> {:error, e}
+      end
+    end
+  end
 end

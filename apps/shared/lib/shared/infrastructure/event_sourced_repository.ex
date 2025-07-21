@@ -5,7 +5,7 @@ defmodule Shared.Infrastructure.EventSourcedRepository do
   Event Store を使用してアグリゲートの永続化を行う。
   """
 
-  alias Shared.Infrastructure.EventStore
+  alias Shared.Infrastructure.EventStore.EventStore
   alias Shared.Domain.ValueObjects.EntityId
   alias Shared.Config
 
@@ -30,7 +30,7 @@ defmodule Shared.Infrastructure.EventSourcedRepository do
       @impl true
       def find_by_id(aggregate_id) do
         with {:ok, id_string} <- EntityId.to_string(aggregate_id),
-             {:ok, events} <- EventStore.get_events(id_string) do
+             {:ok, events} <- EventStore.get_events(id_string, nil) do
           if Enum.empty?(events) do
             {:error, :not_found}
           else
@@ -52,7 +52,8 @@ defmodule Shared.Infrastructure.EventSourcedRepository do
                    id_string,
                    @aggregate_type,
                    events,
-                   aggregate.version
+                   aggregate.version,
+                   %{}
                  ) do
               {:ok, _} ->
                 # イベントを発行
@@ -99,6 +100,28 @@ defmodule Shared.Infrastructure.EventSourcedRepository do
       end
 
       @impl true
+      def all(_opts \\ []) do
+        # イベントソーシングでは全件取得は非効率
+        Logger.warning("all/1 is not efficient for event-sourced repositories")
+        {:error, :not_supported}
+      end
+
+      @impl true
+      def count(_opts \\ []) do
+        # イベントソーシングでは件数取得は非効率
+        Logger.warning("count/1 is not efficient for event-sourced repositories")
+        {:error, :not_supported}
+      end
+
+      @impl true
+      def exists?(aggregate_id) do
+        case find_by_id(aggregate_id) do
+          {:ok, _} -> true
+          _ -> false
+        end
+      end
+
+      @impl true
       def transaction(fun) do
         # EventStore のトランザクションに委譲
         EventStore.transaction(fun)
@@ -142,7 +165,7 @@ defmodule Shared.Infrastructure.EventSourcedRepository do
       end
 
       # オーバーライド可能にする
-      defoverridable find_by: 2, delete: 1
+      defoverridable find_by: 2, delete: 1, all: 1, count: 1, exists?: 1
     end
   end
 end

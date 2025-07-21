@@ -5,12 +5,63 @@ defmodule CommandService.Domain.Repositories.OrderRepository do
   注文アグリゲートの永続化を担当する。
   """
 
-  use Shared.Infrastructure.EventSourcedRepository,
-    aggregate: CommandService.Domain.Aggregates.OrderAggregate,
-    aggregate_type: :order
+  @behaviour Shared.Domain.Repository
 
   require Logger
   alias CommandService.Domain.Aggregates.OrderAggregate
+
+  @impl true
+  def aggregate_type, do: :order
+
+  @impl true
+  def find_by_id(order_id) do
+    # 実装は Infrastructure 層に委譲
+    CommandService.Infrastructure.Repositories.OrderRepository.find_by_id(order_id)
+  end
+
+  @impl true
+  def save(order) do
+    # 実装は Infrastructure 層に委譲
+    CommandService.Infrastructure.Repositories.OrderRepository.save(order)
+  end
+
+  @impl true
+  def find_by_ids(ids) do
+    # 実装は Infrastructure 層に委譲
+    CommandService.Infrastructure.Repositories.OrderRepository.find_by_ids(ids)
+  end
+
+  @impl true
+  def find_by(criteria) do
+    # 実装は Infrastructure 層に委譲
+    CommandService.Infrastructure.Repositories.OrderRepository.find_by(criteria)
+  end
+
+  @impl true
+  def all(_opts \\ []) do
+    # イベントソーシングでは全件取得は非効率
+    Logger.warning("all/1 is not efficient for event-sourced repositories")
+    {:error, :not_supported}
+  end
+
+  @impl true
+  def count(_opts \\ []) do
+    # イベントソーシングでは件数取得は非効率
+    Logger.warning("count/1 is not efficient for event-sourced repositories")
+    {:error, :not_supported}
+  end
+
+  @impl true
+  def exists?(order_id) do
+    # 実装は Infrastructure 層に委譲
+    CommandService.Infrastructure.Repositories.OrderRepository.exists?(order_id)
+  end
+
+  @impl true
+  def transaction(fun) do
+    # 実装は Infrastructure 層に委譲
+    CommandService.Infrastructure.Repositories.OrderRepository.transaction(fun)
+  end
 
   # ドメイン固有のクエリメソッドを追加
 
@@ -63,41 +114,4 @@ defmodule CommandService.Domain.Repositories.OrderRepository do
   end
 
 
-  @doc """
-  注文が存在するか確認する
-  """
-  @impl true
-  def exists?(order_id) do
-    case find_by_id(order_id) do
-      {:ok, _} -> true
-      {:error, :not_found} -> false
-      _ -> false
-    end
-  end
-
-  @doc """
-  複数のIDで注文を取得する
-  
-  Note: イベントソーシングでは非効率なため、Read Model の使用を推奨
-  """
-  @impl true
-  def find_by_ids(ids) when is_list(ids) do
-    Logger.warning("find_by_ids/1 is not efficient for event-sourced repositories, use Read Model")
-    
-    results =
-      ids
-      |> Enum.map(&find_by_id/1)
-      |> Enum.reduce({[], []}, fn
-        {:ok, order}, {orders, errors} ->
-          {[order | orders], errors}
-
-        {:error, error}, {orders, errors} ->
-          {orders, [error | errors]}
-      end)
-
-    case results do
-      {orders, []} -> {:ok, Enum.reverse(orders)}
-      {_, errors} -> {:error, {:partial_failure, errors}}
-    end
-  end
 end

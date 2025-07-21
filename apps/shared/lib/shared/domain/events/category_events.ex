@@ -47,12 +47,13 @@ defmodule Shared.Domain.Events.CategoryEvents do
     use Shared.Domain.Events.BaseEvent
 
     @enforce_keys [:id, :name, :updated_at]
-    defstruct [:id, :name, :description, :updated_at]
+    defstruct [:id, :name, :description, :parent_id, :updated_at]
 
     @type t :: %__MODULE__{
             id: EntityId.t(),
             name: CategoryName.t(),
             description: String.t() | nil,
+            parent_id: EntityId.t() | nil,
             updated_at: DateTime.t()
           }
 
@@ -62,6 +63,7 @@ defmodule Shared.Domain.Events.CategoryEvents do
         id: params.id,
         name: params.name,
         description: params[:description],
+        parent_id: params[:parent_id],
         updated_at: params[:updated_at] || DateTime.utc_now()
       }
     end

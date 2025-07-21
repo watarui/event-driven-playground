@@ -18,7 +18,7 @@ defmodule CommandService.Infrastructure.Repositories.OrderRepository do
       {:ok, entity_id} ->
         stream_name = "#{@aggregate_type}-#{entity_id.value}"
 
-        case EventStore.get_events(stream_name) do
+        case EventStore.get_events(stream_name, nil) do
           {:ok, events} when events != [] ->
             aggregate = rebuild_aggregate_from_events(events)
             {:ok, aggregate}
@@ -68,7 +68,7 @@ defmodule CommandService.Infrastructure.Repositories.OrderRepository do
   @impl true
   def delete(_id) do
     # イベントソーシングでは論理削除を使用
-    {:error, "Delete not supported for event-sourced aggregates"}
+    {:error, :not_allowed}
   end
 
   @impl true
@@ -95,13 +95,16 @@ defmodule CommandService.Infrastructure.Repositories.OrderRepository do
     {:error, :not_supported}
   end
 
+
   @impl true
   def all(_opts \\ []) do
+    # イベントソーシングでは全件取得は非効率
     {:error, :not_supported}
   end
 
   @impl true
   def count(_opts \\ []) do
+    # イベントソーシングでは件数取得は非効率
     {:error, :not_supported}
   end
 
