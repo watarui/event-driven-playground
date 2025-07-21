@@ -25,15 +25,15 @@ defmodule Shared.Infrastructure.EventStore.PostgresAdapter do
     uuid_aggregate_id = ensure_uuid_string(aggregate_id)
     Logger.debug("Converted aggregate_id to UUID string: #{uuid_aggregate_id}")
 
-    # テスト環境では CircuitBreaker をスキップ
-    if Application.get_env(:shared, :circuit_breaker_enabled, true) do
-      # サーキットブレーカーを通じて実行
+    # サーキットブレーカーを通じて実行
+    try do
       CircuitBreaker.call(:event_store, fn ->
         do_append_events(uuid_aggregate_id, aggregate_type, events, expected_version, metadata)
       end)
-    else
-      # 直接実行
-      do_append_events(uuid_aggregate_id, aggregate_type, events, expected_version, metadata)
+    rescue
+      # CircuitBreaker が存在しない場合は直接実行
+      ArgumentError ->
+        do_append_events(uuid_aggregate_id, aggregate_type, events, expected_version, metadata)
     end
   end
 
@@ -62,15 +62,15 @@ defmodule Shared.Infrastructure.EventStore.PostgresAdapter do
     uuid_stream_id = ensure_uuid_string(stream_id)
     Logger.debug("Converted stream_id to UUID string: #{uuid_stream_id}")
 
-    # テスト環境では CircuitBreaker をスキップ
-    if Application.get_env(:shared, :circuit_breaker_enabled, true) do
-      # サーキットブレーカーを通じて実行
+    # サーキットブレーカーを通じて実行
+    try do
       CircuitBreaker.call(:event_store, fn ->
         do_append_events(uuid_stream_id, aggregate_type, events, expected_version, metadata)
       end)
-    else
-      # 直接実行
-      do_append_events(uuid_stream_id, aggregate_type, events, expected_version, metadata)
+    rescue
+      # CircuitBreaker が存在しない場合は直接実行
+      ArgumentError ->
+        do_append_events(uuid_stream_id, aggregate_type, events, expected_version, metadata)
     end
   end
 
@@ -156,40 +156,43 @@ defmodule Shared.Infrastructure.EventStore.PostgresAdapter do
   def read_stream(stream_id, from_version) do
     uuid_stream_id = ensure_uuid_string(stream_id)
 
-    # テスト環境では CircuitBreaker をスキップ
-    execute_fn = fn ->
-      query =
-        from(e in Event,
-          where: e.aggregate_id == ^uuid_stream_id,
-          order_by: [asc: e.event_version]
-        )
-
-      query =
-        if from_version do
-          from(e in query, where: e.event_version > ^from_version)
-        else
-          query
-        end
-
-      events = Shared.Infrastructure.EventStore.Repo.all(query)
-
-      decoded_events =
-        Enum.map(events, fn event ->
-          decode_event(event)
-        end)
-
-      {:ok, decoded_events}
-    end
-
-    if Application.get_env(:shared, :circuit_breaker_enabled, true) do
-      CircuitBreaker.call(:event_store, execute_fn)
-    else
-      execute_fn.()
+    try do
+      CircuitBreaker.call(:event_store, fn ->
+        execute_read_stream(uuid_stream_id, from_version)
+      end)
+    rescue
+      # CircuitBreaker が存在しない場合は直接実行
+      ArgumentError ->
+        execute_read_stream(uuid_stream_id, from_version)
     end
   rescue
     e ->
       Logger.error("Failed to get events: #{inspect(e)}")
       {:error, e}
+  end
+
+  defp execute_read_stream(uuid_stream_id, from_version) do
+    query =
+      from(e in Event,
+        where: e.aggregate_id == ^uuid_stream_id,
+        order_by: [asc: e.event_version]
+      )
+
+    query =
+      if from_version do
+        from(e in query, where: e.event_version > ^from_version)
+      else
+        query
+      end
+
+    events = Shared.Infrastructure.EventStore.Repo.all(query)
+
+    decoded_events =
+      Enum.map(events, fn event ->
+        decode_event(event)
+      end)
+
+    {:ok, decoded_events}
   end
 
   def get_events_by_type(event_type, opts) do

@@ -19,11 +19,8 @@ config :client_service, ClientService.Auth.Guardian,
 # テスト環境では認証を無効化（任意）
 config :client_service, :auth_mode, :disabled
 
-# テスト環境では CircuitBreaker を無効化
-config :shared, :circuit_breaker_enabled, false
-
-# テスト環境では Firebase Auth のモックを使用
-config :client_service, :firebase_auth_adapter, ClientService.Auth.FirebaseAuthMock
+# テスト環境では CircuitBreaker を起動しない
+config :shared, :start_circuit_breaker, false
 
 # Firebase のテスト用プロジェクト ID
 config :client_service, :firebase_project_id, "test-project"

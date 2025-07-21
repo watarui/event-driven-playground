@@ -2,51 +2,36 @@ defmodule ClientService.Auth.FirebaseAuth do
   @moduledoc """
   Firebase Authentication JWT トークンの検証
   """
-  @behaviour ClientService.Auth.FirebaseAuthBehaviour
-
   require Logger
 
   @firebase_public_keys_url "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com"
   @cache_duration :timer.hours(1)
 
-  # アダプターの取得
-  defp adapter do
-    Application.get_env(:client_service, :firebase_auth_adapter, __MODULE__)
-  end
-
   @doc """
   Firebase JWT トークンを検証
   """
-  @impl true
   def verify_token(token) do
-    # テスト環境ではアダプターに委譲
-    if adapter() != __MODULE__ do
-      adapter().verify_token(token)
-    else
-      # 本番環境では通常の検証を実行
-      Logger.info("Firebase token verification started")
-      Logger.debug("Token received: #{String.slice(token, 0, 50)}...")
+    Logger.info("Firebase token verification started")
+    Logger.debug("Token received: #{String.slice(token, 0, 50)}...")
 
-      with {:ok, header, claims} <- decode_token(token),
-           :ok <- validate_header(header),
-           :ok <- validate_claims(claims),
-           {:ok, key_id} <- get_key_id(header),
-           {:ok, public_key} <- get_public_key(key_id),
-           :ok <- verify_signature(token, public_key) do
-        Logger.info("Firebase token verification succeeded for user: #{claims["sub"]}")
-        {:ok, build_user_info(claims)}
-      else
-        {:error, reason} ->
-          Logger.error("Firebase token verification failed: #{inspect(reason)}")
-          {:error, :unauthorized}
-      end
+    with {:ok, header, claims} <- decode_token(token),
+         :ok <- validate_header(header),
+         :ok <- validate_claims(claims),
+         {:ok, key_id} <- get_key_id(header),
+         {:ok, public_key} <- get_public_key(key_id),
+         :ok <- verify_signature(token, public_key) do
+      Logger.info("Firebase token verification succeeded for user: #{claims["sub"]}")
+      {:ok, build_user_info(claims)}
+    else
+      {:error, reason} ->
+        Logger.error("Firebase token verification failed: #{inspect(reason)}")
+        {:error, :unauthorized}
     end
   end
 
   @doc """
   トークンからユーザー情報を構築
   """
-  @impl true
   def build_user_info(claims) do
     email = claims["email"]
     role = Shared.Auth.Permissions.determine_role(email)
@@ -200,14 +185,8 @@ defmodule ClientService.Auth.FirebaseAuth do
   @doc """
   ユーザーのロールを取得
   """
-  @impl true
   def get_user_role(claims) do
-    # テスト環境ではアダプターに委譲
-    if adapter() != __MODULE__ do
-      adapter().get_user_role(claims)
-    else
-      Shared.Auth.Permissions.determine_role(claims)
-    end
+    Shared.Auth.Permissions.determine_role(claims)
   end
 
   # Firebase プロジェクト ID の取得

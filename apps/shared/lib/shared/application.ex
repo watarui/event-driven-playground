@@ -21,8 +21,6 @@ defmodule Shared.Application do
       # get_event_bus_module(), # PubSub を直接起動するためコメントアウト
       # アグリゲートバージョンキャッシュ
       Shared.Infrastructure.EventStore.AggregateVersionCache,
-      # サーキットブレーカー
-      Shared.Infrastructure.Resilience.CircuitBreakerSupervisor,
       # デッドレターキュー
       Shared.Infrastructure.DeadLetterQueue,
       # べき等性ストア
@@ -35,6 +33,15 @@ defmodule Shared.Application do
       {Shared.Infrastructure.EventStore.EventArchiver,
        [archive_interval: :timer.hours(24), retention_days: 90]}
     ]
+
+    # サーキットブレーカーをテスト環境では起動しない
+    children = 
+      if Application.get_env(:shared, :start_circuit_breaker, true) do
+        # サーキットブレーカー
+        children ++ [Shared.Infrastructure.Resilience.CircuitBreakerSupervisor]
+      else
+        children
+      end
 
     opts = [strategy: :one_for_one, name: Shared.Supervisor]
     Supervisor.start_link(children, opts)
