@@ -2,16 +2,27 @@ defmodule ClientService.GraphQL.AuthIntegrationTest do
   @moduledoc """
   GraphQL API の認証・認可に関する統合テスト
   """
-  use ExUnit.Case
-  use Phoenix.ConnTest
-
+  use ExUnit.Case, async: false
+  import Plug.Conn
   import Phoenix.ConnTest
-  alias ClientServiceWeb.Endpoint
   alias ClientService.Auth.Guardian
 
   @endpoint ClientServiceWeb.Endpoint
 
   setup do
+    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Shared.Repo)
+    Ecto.Adapters.SQL.Sandbox.mode(Shared.Repo, {:shared, self()})
+    
+    # 他のRepoも必要に応じてチェックアウト
+    if Code.ensure_loaded?(CommandService.Repo) do
+      :ok = Ecto.Adapters.SQL.Sandbox.checkout(CommandService.Repo)
+      Ecto.Adapters.SQL.Sandbox.mode(CommandService.Repo, {:shared, self()})
+    end
+    
+    if Code.ensure_loaded?(QueryService.Repo) do
+      :ok = Ecto.Adapters.SQL.Sandbox.checkout(QueryService.Repo)
+      Ecto.Adapters.SQL.Sandbox.mode(QueryService.Repo, {:shared, self()})
+    end
     # テスト用ユーザー
     admin_user = %{id: "admin-123", email: "admin@example.com", role: :admin}
     writer_user = %{id: "writer-123", email: "writer@example.com", role: :writer}

@@ -2,10 +2,28 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolverTest do
   @moduledoc """
   MonitoringResolver のユニットテスト
   """
-  use ExUnit.Case
+  use ExUnit.Case, async: false
 
   alias ClientService.GraphQL.Resolvers.MonitoringResolver
-  alias ClientService.Infrastructure.RemoteQueryBus
+  alias Shared.Repo
+
+  setup do
+    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Shared.Repo)
+    Ecto.Adapters.SQL.Sandbox.mode(Shared.Repo, {:shared, self()})
+    
+    # 他のRepoも必要に応じてチェックアウト
+    if Code.ensure_loaded?(CommandService.Repo) do
+      :ok = Ecto.Adapters.SQL.Sandbox.checkout(CommandService.Repo)
+      Ecto.Adapters.SQL.Sandbox.mode(CommandService.Repo, {:shared, self()})
+    end
+    
+    if Code.ensure_loaded?(QueryService.Repo) do
+      :ok = Ecto.Adapters.SQL.Sandbox.checkout(QueryService.Repo)
+      Ecto.Adapters.SQL.Sandbox.mode(QueryService.Repo, {:shared, self()})
+    end
+    
+    :ok
+  end
 
   describe "get_event_store_stats/3" do
     test "returns event store statistics" do

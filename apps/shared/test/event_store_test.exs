@@ -134,14 +134,19 @@ defmodule Shared.Infrastructure.EventStore.EventStoreTest do
         })
       ]
 
-      assert {:error, :version_mismatch} =
-               EventStore.append_events(
+      result = EventStore.append_events(
                  aggregate_id,
                  "CategoryAggregate",
                  events2,
                  # 期待されるバージョンが間違っている
                  0
                )
+               
+      assert {:error, %Shared.Infrastructure.EventStore.VersionConflictError{
+                aggregate_id: ^aggregate_id,
+                expected_version: 0,
+                actual_version: 1
+              }} = result
 
       # 正しいバージョンで保存
       assert {:ok, 2} =

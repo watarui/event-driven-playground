@@ -25,8 +25,11 @@ defmodule ClientService.Auth.AuthPlug do
           case ClientService.Auth.Guardian.verify_token(token) do
             {:ok, auth_info} ->
               Logger.info("Token verified successfully")
-              # 認証情報をコンテキストに追加
-              Absinthe.Plug.put_options(conn,
+              # 認証情報を assigns と Absinthe コンテキストに追加
+              conn
+              |> assign(:current_user, auth_info)
+              |> assign(:user_signed_in?, true)
+              |> Absinthe.Plug.put_options(
                 context: %{
                   current_user: auth_info,
                   is_authenticated: true,
@@ -37,10 +40,14 @@ defmodule ClientService.Auth.AuthPlug do
             {:error, reason} ->
               Logger.error("Token verification failed: #{inspect(reason)}")
               conn
+              |> assign(:current_user, nil)
+              |> assign(:user_signed_in?, false)
           end
         else
           Logger.info("No token found in header")
           conn
+          |> assign(:current_user, nil)
+          |> assign(:user_signed_in?, false)
         end
 
       _user ->
@@ -51,8 +58,11 @@ defmodule ClientService.Auth.AuthPlug do
         case ClientService.Auth.Guardian.verify_token(token) do
           {:ok, auth_info} ->
             Logger.info("Token verified successfully for user")
-            # 認証情報をコンテキストに追加
-            Absinthe.Plug.put_options(conn,
+            # 認証情報を assigns と Absinthe コンテキストに追加
+            conn
+            |> assign(:current_user, auth_info)
+            |> assign(:user_signed_in?, true)
+            |> Absinthe.Plug.put_options(
               context: %{
                 current_user: auth_info,
                 is_authenticated: true,
@@ -63,6 +73,8 @@ defmodule ClientService.Auth.AuthPlug do
           {:error, reason} ->
             Logger.error("Token verification failed: #{inspect(reason)}")
             conn
+            |> assign(:current_user, nil)
+            |> assign(:user_signed_in?, false)
         end
     end
   end

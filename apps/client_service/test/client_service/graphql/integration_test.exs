@@ -3,15 +3,26 @@ defmodule ClientService.GraphQL.IntegrationTest do
   GraphQL API の統合テスト
   全てのクエリとミューテーションが正しく動作することを確認
   """
-  use ExUnit.Case
-  use Phoenix.ConnTest
-
+  use ExUnit.Case, async: false
+  import Plug.Conn
   import Phoenix.ConnTest
-  alias ClientServiceWeb.Endpoint
 
   @endpoint ClientServiceWeb.Endpoint
 
   setup do
+    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Shared.Repo)
+    Ecto.Adapters.SQL.Sandbox.mode(Shared.Repo, {:shared, self()})
+    
+    # 他のRepoも必要に応じてチェックアウト
+    if Code.ensure_loaded?(CommandService.Repo) do
+      :ok = Ecto.Adapters.SQL.Sandbox.checkout(CommandService.Repo)
+      Ecto.Adapters.SQL.Sandbox.mode(CommandService.Repo, {:shared, self()})
+    end
+    
+    if Code.ensure_loaded?(QueryService.Repo) do
+      :ok = Ecto.Adapters.SQL.Sandbox.checkout(QueryService.Repo)
+      Ecto.Adapters.SQL.Sandbox.mode(QueryService.Repo, {:shared, self()})
+    end
     # テスト用の認証コンテキスト
     conn =
       build_conn()

@@ -12,13 +12,13 @@ defmodule ClientService.Auth.Guardian do
   JWT からサブジェクトを取得
   """
   @impl Guardian
-  def subject_for_token(resource, _claims) do
+  def subject_for_token(resource, claims) do
     case resource do
       %{user_id: user_id} when not is_nil(user_id) ->
-        {:ok, to_string(user_id)}
+        {:ok, to_string(user_id), claims}
       
       %{id: id} when not is_nil(id) ->
-        {:ok, to_string(id)}
+        {:ok, to_string(id), claims}
       
       _ ->
         {:error, :invalid_resource}
@@ -83,7 +83,10 @@ defmodule ClientService.Auth.Guardian do
     new_claims = %{
       "aud" => "client_service",
       "typ" => (if is_list(opts), do: Keyword.get(opts, :token_type, "access"), else: Map.get(opts, :token_type, "access")),
-      "iss" => "client_service"
+      "iss" => "client_service",
+      "iat" => DateTime.to_unix(DateTime.utc_now()),
+      "nbf" => DateTime.to_unix(DateTime.utc_now()) - 1,
+      "exp" => DateTime.to_unix(DateTime.utc_now()) + (30 * 24 * 60 * 60) # 30 days
     }
     
     # リソースから追加のクレームを抽出
@@ -101,4 +104,5 @@ defmodule ClientService.Auth.Guardian do
     # すべてのクレームをマージ
     {:ok, Map.merge(claims, Map.merge(new_claims, resource_claims))}
   end
+  
 end

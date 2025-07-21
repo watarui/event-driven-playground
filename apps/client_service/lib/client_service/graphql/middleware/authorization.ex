@@ -9,7 +9,8 @@ defmodule ClientService.GraphQL.Middleware.Authorization do
 
   @impl true
   def call(resolution, permission) do
-    current_user = Map.get(resolution.context, :current_user)
+    context = resolution.context || %{}
+    current_user = Map.get(context, :current_user)
 
     if Permissions.has_permission?(current_user, permission) do
       resolution

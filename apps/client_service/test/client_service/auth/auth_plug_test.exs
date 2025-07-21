@@ -1,6 +1,7 @@
 defmodule ClientService.Auth.AuthPlugTest do
   use ExUnit.Case
-  use Plug.Test
+  import Plug.Test
+  import Plug.Conn
 
   alias ClientService.Auth.AuthPlug
   alias ClientService.Auth.Guardian

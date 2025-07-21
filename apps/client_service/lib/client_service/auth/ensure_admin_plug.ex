@@ -8,39 +8,50 @@ defmodule ClientService.Auth.EnsureAdminPlug do
 
   def init(opts), do: opts
 
-  def call(conn, _opts) do
+  def call(conn, opts) do
+    current_user = conn.assigns[:current_user]
+    error_handler = opts[:error_handler]
+    
     cond do
-      !conn.assigns[:is_authenticated] ->
+      is_nil(current_user) ->
         Logger.warning("Unauthenticated request to admin endpoint")
+        
+        if error_handler do
+          error_handler.auth_error(conn, {:unauthenticated, :unauthenticated}, opts)
+        else
+          conn
+          |> put_status(:unauthorized)
+          |> put_resp_content_type("application/json")
+          |> send_resp(
+            401,
+            Jason.encode!(%{
+              error: "Unauthorized",
+              message: "Authentication required"
+            })
+          )
+          |> halt()
+        end
 
-        conn
-        |> put_status(:unauthorized)
-        |> put_resp_content_type("application/json")
-        |> send_resp(
-          401,
-          Jason.encode!(%{
-            error: "Unauthorized",
-            message: "Authentication required"
-          })
-        )
-        |> halt()
-
-      !conn.assigns[:is_admin] ->
+      current_user[:role] != :admin ->
         Logger.warning(
-          "Non-admin user attempted to access admin endpoint: #{conn.assigns[:current_user][:user_id]}"
+          "Non-admin user attempted to access admin endpoint: #{current_user[:user_id] || current_user[:id]}"
         )
-
-        conn
-        |> put_status(:forbidden)
-        |> put_resp_content_type("application/json")
-        |> send_resp(
-          403,
-          Jason.encode!(%{
-            error: "Forbidden",
-            message: "Admin privileges required"
-          })
-        )
-        |> halt()
+        
+        if error_handler do
+          error_handler.auth_error(conn, {:unauthorized, :forbidden}, opts)
+        else
+          conn
+          |> put_status(:forbidden)
+          |> put_resp_content_type("application/json")
+          |> send_resp(
+            403,
+            Jason.encode!(%{
+              error: "Forbidden",
+              message: "Admin privileges required"
+            })
+          )
+          |> halt()
+        end
 
       true ->
         conn
