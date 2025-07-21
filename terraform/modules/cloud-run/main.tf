@@ -130,15 +130,15 @@ resource "google_cloud_run_service_iam_member" "public_access" {
   member   = "allUsers"
 }
 
-# ヘルスチェック用の公開アクセス（すべてのサービス）
-# 注意: これによりサービス全体が公開されるため、各サービスで適切な認証実装が必要
-resource "google_cloud_run_service_iam_member" "health_check_access" {
-  for_each = var.services
+# サービス間通信用の認証設定
+# command-service と query-service はサービスアカウントのみアクセス可能
+resource "google_cloud_run_service_iam_member" "service_account_access" {
+  for_each = { for k, v in var.services : k => v if k != "client-service" }
   
   service  = google_cloud_run_v2_service.services[each.key].name
   location = google_cloud_run_v2_service.services[each.key].location
   role     = "roles/run.invoker"
-  member   = "allUsers"
+  member   = "serviceAccount:${var.service_account}"
 }
 
 # Service URLs for internal communication

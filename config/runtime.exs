@@ -14,6 +14,14 @@ if config_env() == :prod do
   config :client_service, ClientServiceWeb.Endpoint,
     Shared.Config.endpoint_config(port: String.to_integer(System.get_env("PORT") || "8080"))
 
+  # Command Service エンドポイント設定
+  config :command_service, CommandServiceWeb.Endpoint,
+    Shared.Config.endpoint_config(port: String.to_integer(System.get_env("PORT") || "8080"))
+
+  # Query Service エンドポイント設定
+  config :query_service, QueryServiceWeb.Endpoint,
+    Shared.Config.endpoint_config(port: String.to_integer(System.get_env("PORT") || "8080"))
+
   # Firebase 設定
   if System.get_env("FIREBASE_PROJECT_ID") do
     config :client_service, :firebase_project_id, System.get_env("FIREBASE_PROJECT_ID")
