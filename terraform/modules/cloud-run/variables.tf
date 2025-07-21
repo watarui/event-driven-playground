@@ -20,7 +20,7 @@ variable "services" {
     cpu        = string
     min_scale  = number
     max_scale  = number
-    port       = number
+    port       = optional(number, 8080)  # Cloud Run が自動的に設定するため optional
   }))
 }
 
