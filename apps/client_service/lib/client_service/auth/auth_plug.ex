@@ -17,7 +17,7 @@ defmodule ClientService.Auth.AuthPlug do
         Logger.info("No current resource found, checking token directly")
 
         # Guardian.Plug がリソースをロードできなかった場合、直接トークンを検証
-        token = get_token_from_header(conn)
+        token = get_token(conn)
 
         if token do
           Logger.info("Found token, verifying with Firebase")
@@ -44,7 +44,7 @@ defmodule ClientService.Auth.AuthPlug do
               |> assign(:user_signed_in?, false)
           end
         else
-          Logger.info("No token found in header")
+          Logger.info("No token found in header or cookie")
           conn
           |> assign(:current_user, nil)
           |> assign(:user_signed_in?, false)
@@ -52,8 +52,8 @@ defmodule ClientService.Auth.AuthPlug do
 
       _user ->
         Logger.info("Current resource found, verifying token")
-        # Authorization ヘッダーからトークンを取得
-        token = get_token_from_header(conn)
+        # Authorization ヘッダーまたは Cookie からトークンを取得
+        token = get_token(conn)
 
         case ClientService.Auth.Guardian.verify_token(token) do
           {:ok, auth_info} ->
@@ -79,10 +79,16 @@ defmodule ClientService.Auth.AuthPlug do
     end
   end
 
-  defp get_token_from_header(conn) do
+  defp get_token(conn) do
+    # First try header
     case get_req_header(conn, "authorization") do
       ["Bearer " <> token] -> token
-      _ -> nil
+      _ ->
+        # Then try cookie
+        # fetch_cookies/2 を呼び出して cookies を取得
+        conn = fetch_cookies(conn)
+        Map.get(conn.req_cookies, "auth_token")
     end
   end
+
 end

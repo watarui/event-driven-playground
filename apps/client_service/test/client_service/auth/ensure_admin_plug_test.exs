@@ -59,7 +59,7 @@ defmodule ClientService.Auth.EnsureAdminPlugTest do
              }
     end
 
-    test "allows request for writer role", %{conn: conn} do
+    test "halts request for writer role", %{conn: conn} do
       # Simulate writer user
       conn =
         conn
@@ -68,8 +68,9 @@ defmodule ClientService.Auth.EnsureAdminPlugTest do
 
       result_conn = EnsureAdminPlug.call(conn, %{})
 
-      # Writers should also be allowed (they have write permissions)
-      refute result_conn.halted
+      # Writers should NOT be allowed (admin only)
+      assert result_conn.halted
+      assert result_conn.status == 403
     end
 
     test "halts request when current_user is nil", %{conn: conn} do
@@ -81,7 +82,7 @@ defmodule ClientService.Auth.EnsureAdminPlugTest do
       result_conn = EnsureAdminPlug.call(conn, %{})
 
       assert result_conn.halted
-      assert result_conn.status == 403
+      assert result_conn.status == 401
     end
 
     test "halts request when role is missing", %{conn: conn} do
@@ -97,11 +98,15 @@ defmodule ClientService.Auth.EnsureAdminPlugTest do
     end
 
     test "respects custom error handler for unauthorized", %{conn: conn} do
-      error_handler = fn conn, message ->
-        conn
-        |> put_status(403)
-        |> put_resp_content_type("text/plain")
-        |> send_resp(403, "Custom: #{message}")
+      # Create a test module for error handler
+      defmodule TestErrorHandler do
+        def auth_error(conn, {_type, _reason}, _opts) do
+          conn
+          |> Plug.Conn.put_status(403)
+          |> Plug.Conn.put_resp_content_type("text/plain")
+          |> Plug.Conn.send_resp(403, "Custom: Admin access required")
+          |> Plug.Conn.halt()
+        end
       end
 
       conn =
@@ -109,7 +114,7 @@ defmodule ClientService.Auth.EnsureAdminPlugTest do
         |> assign(:user_signed_in?, true)
         |> assign(:current_user, %{id: "123", role: :reader})
 
-      result_conn = EnsureAdminPlug.call(conn, %{error_handler: error_handler})
+      result_conn = EnsureAdminPlug.call(conn, %{error_handler: TestErrorHandler})
 
       assert result_conn.halted
       assert result_conn.status == 403

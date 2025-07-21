@@ -23,6 +23,17 @@ defmodule ClientService.Auth.AdaptivePlug do
         Logger.info("AdaptivePlug: Auth disabled in development mode")
         assign_dev_user(conn)
 
+      :test ->
+        # テスト環境: Guardian 経由での認証を使用
+        Logger.debug("AdaptivePlug: Using test authentication")
+        # Authorization ヘッダーがある場合は FirebasePlug で処理
+        # ない場合はそのまま通す（各テストで必要に応じて認証を設定）
+        if get_req_header(conn, "authorization") != [] do
+          FirebasePlug.call(conn, opts)
+        else
+          conn
+        end
+
       :firebase ->
         # 本番環境: Firebase 認証を使用
         Logger.info("AdaptivePlug: Using Firebase authentication")

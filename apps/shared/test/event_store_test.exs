@@ -16,6 +16,8 @@ defmodule Shared.Infrastructure.EventStore.EventStoreTest do
   setup do
     # テストデータをクリーンアップ
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Repo)
+    # 共有モードに設定して、他のプロセスからもアクセスできるようにする
+    Ecto.Adapters.SQL.Sandbox.mode(Repo, {:shared, self()})
     
     # CircuitBreakerプロセスに接続を許可
     case Registry.lookup(Shared.CircuitBreakerRegistry, :event_store) do

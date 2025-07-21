@@ -10,6 +10,21 @@ defmodule ClientService.GraphQL.IntegrationTest do
   @endpoint ClientServiceWeb.Endpoint
 
   setup do
+    # EventStore.Repo のサンドボックスをチェックアウト
+    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Shared.Infrastructure.EventStore.Repo)
+    # 共有モードに設定して、他のプロセスからもアクセスできるようにする
+    Ecto.Adapters.SQL.Sandbox.mode(Shared.Infrastructure.EventStore.Repo, {:shared, self()})
+    
+    # 他のRepoも必要に応じてチェックアウト
+    if Code.ensure_loaded?(CommandService.Repo) do
+      :ok = Ecto.Adapters.SQL.Sandbox.checkout(CommandService.Repo)
+      Ecto.Adapters.SQL.Sandbox.mode(CommandService.Repo, {:shared, self()})
+    end
+    
+    if Code.ensure_loaded?(QueryService.Repo) do
+      :ok = Ecto.Adapters.SQL.Sandbox.checkout(QueryService.Repo)
+      Ecto.Adapters.SQL.Sandbox.mode(QueryService.Repo, {:shared, self()})
+    end
     # テスト用の認証コンテキスト
     conn =
       build_conn()
@@ -269,8 +284,11 @@ defmodule ClientService.GraphQL.IntegrationTest do
       """
 
       conn = post(conn, "/graphql", %{query: query})
-      assert %{"data" => %{"health" => health}} = json_response(conn, 200)
-      assert health["status"] in ["healthy", "unhealthy", "degraded"]
+      response = json_response(conn, 200)
+      assert %{"data" => %{"health" => health}} = response
+      # status はアトムまたは文字列の可能性があるため、両方のケースを許可
+      status = health["status"]
+      assert String.downcase(to_string(status)) in ["healthy", "unhealthy", "degraded"]
     end
   end
 end

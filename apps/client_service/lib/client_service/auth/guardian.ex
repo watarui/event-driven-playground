@@ -50,7 +50,18 @@ defmodule ClientService.Auth.Guardian do
   Guardian インターフェース互換
   """
   def verify_token(token) do
-    FirebaseAuth.verify_token(token)
+    # テスト環境では Firebase を使用しない
+    if Application.get_env(:client_service, :use_firebase, true) do
+      FirebaseAuth.verify_token(token)
+    else
+      # テスト環境では Guardian のデフォルトの検証を使用
+      case decode_and_verify(token) do
+        {:ok, claims} ->
+          {:ok, FirebaseAuth.build_user_info(claims)}
+        {:error, _} ->
+          {:error, :unauthorized}
+      end
+    end
   end
 
   # Guardian の verify_claims をオーバーライド

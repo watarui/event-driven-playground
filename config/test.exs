@@ -16,11 +16,17 @@ config :client_service, ClientService.Auth.Guardian,
   issuer: "client_service",
   secret_key: "test-secret-key-for-guardian"
 
+# テスト環境では Firebase を使用しない
+config :client_service, :use_firebase, false
+
 # テスト環境では認証を無効化（任意）
-config :client_service, :auth_mode, :disabled
+config :client_service, :auth_mode, :test
 
 # テスト環境では CircuitBreaker を起動しない
 config :shared, :start_circuit_breaker, false
+
+# テスト環境では同期的な EventBus を使用
+config :shared, :event_bus_module, Shared.Infrastructure.EventBus.LocalEventBus
 
 # Firebase のテスト用プロジェクト ID
 config :client_service, :firebase_project_id, "test-project"
