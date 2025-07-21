@@ -171,6 +171,7 @@ terraform/**/*_override.tf
 terraform/**/*_override.tf.json
 terraform/**/.terraformrc
 terraform/**/terraform.rc
+terraform/**/*.tfplan
 
 # Terraform env-specific state files
 terraform/environments/*/*.tfstate
