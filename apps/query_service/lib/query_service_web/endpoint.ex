@@ -16,7 +16,7 @@ defmodule QueryServiceWeb.Endpoint do
 
   def start_link(_opts \\ []) do
     # 開発環境用のポート設定
-    default_port = if Mix.env() == :dev, do: "4082", else: "8080"
+    default_port = "8080"
     port = System.get_env("PORT", default_port) |> String.to_integer()
 
     require Logger
