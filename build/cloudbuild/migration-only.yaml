@@ -4,8 +4,8 @@ steps:
   - id: 'build-migrate'
     name: 'gcr.io/kaniko-project/executor:latest'
     args:
-      - '--context=.'
       - '--dockerfile=build/docker/Dockerfile.migrate'
+      - '--context=.'
       - '--destination=${_REGISTRY}/migrate:${SHORT_SHA}'
       - '--destination=${_REGISTRY}/migrate:latest'
       - '--cache=true'

@@ -8,8 +8,8 @@ steps:
   - id: 'build-client'
     name: 'gcr.io/kaniko-project/executor:latest'
     args:
-      - '--context=.'
       - '--dockerfile=build/docker/Dockerfile.client'
+      - '--context=.'
       - '--destination=${_REGISTRY}/client-service:${SHORT_SHA}'
       - '--destination=${_REGISTRY}/client-service:latest'
       - '--cache=true'
@@ -22,8 +22,8 @@ steps:
   - id: 'build-command'
     name: 'gcr.io/kaniko-project/executor:latest'
     args:
-      - '--context=.'
       - '--dockerfile=build/docker/Dockerfile.command'
+      - '--context=.'
       - '--destination=${_REGISTRY}/command-service:${SHORT_SHA}'
       - '--destination=${_REGISTRY}/command-service:latest'
       - '--cache=true'
@@ -36,8 +36,8 @@ steps:
   - id: 'build-query'
     name: 'gcr.io/kaniko-project/executor:latest'
     args:
-      - '--context=.'
       - '--dockerfile=build/docker/Dockerfile.query'
+      - '--context=.'
       - '--destination=${_REGISTRY}/query-service:${SHORT_SHA}'
       - '--destination=${_REGISTRY}/query-service:latest'
       - '--cache=true'
