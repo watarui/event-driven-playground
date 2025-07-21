@@ -44,6 +44,7 @@ COPY apps/shared/lib/mix/tasks apps/shared/lib/mix/tasks
 # マイグレーションスクリプトをコピー
 COPY run_migrations.sh /app/run_migrations.sh
 COPY run_migrations_prod.sh /app/run_migrations_prod.sh
+COPY run_migrations_prod_workaround.sh /app/run_migrations_prod_workaround.sh
 COPY debug_config.exs /app/debug_config.exs
 
 # 依存関係をコンパイル
@@ -53,11 +54,11 @@ RUN mix deps.compile
 RUN mix compile
 
 # スクリプトに実行権限を付与
-RUN chmod +x /app/run_migrations.sh /app/run_migrations_prod.sh
+RUN chmod +x /app/run_migrations.sh /app/run_migrations_prod.sh /app/run_migrations_prod_workaround.sh
 
 # ヘルスチェックスクリプトを作成
 RUN echo '#!/bin/sh\npsql "$DATABASE_URL" -c "SELECT 1;" > /dev/null 2>&1' > /app/healthcheck.sh && \
     chmod +x /app/healthcheck.sh
 
-# 本番環境用のエントリーポイント
-ENTRYPOINT ["/app/run_migrations_prod.sh"]
+# 本番環境用のエントリーポイント（一時的に回避策を使用）
+ENTRYPOINT ["/app/run_migrations_prod_workaround.sh"]
