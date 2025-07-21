@@ -110,7 +110,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost/event_driven_playground_test
         run: |
-          mix test --warnings-as-errors
+          mix test --warnings-as-errors --cover --cover-export cover/
 
       - name: Check formatting
         run: |
@@ -144,12 +144,13 @@ jobs:
         with:
           name: coverage
           path: cover/
+          if-no-files-found: warn
 
   coverage:
     name: Aggregate Coverage
     needs: test
     runs-on: ubuntu-latest
-    if: always()
+    if: success() || failure()
 
     steps:
       - name: Checkout code
@@ -160,26 +161,39 @@ jobs:
         with:
           name: coverage
           path: coverage-reports/
+        continue-on-error: true
 
       - name: Merge coverage reports
         run: |
-          # Merge all coverage reports
-          echo "📊 Coverage reports merged"
+          # Check if coverage reports exist
+          if [ -d "coverage-reports" ] && [ "$(ls -A coverage-reports)" ]; then
+            echo "📊 Coverage reports found"
+            ls -la coverage-reports/
+          else
+            echo "⚠️ No coverage reports found"
+          fi
 
       - name: Generate coverage summary
         run: |
-          # カバレッジレポートから統計を抽出（実装は簡略化）
+          # Generate coverage summary
           echo "## Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📊 Total Coverage: **85%** (placeholder)" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -d "coverage-reports" ] && [ "$(ls -A coverage-reports)" ]; then
+            echo "📊 Coverage reports were generated successfully" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Coverage by App:" >> $GITHUB_STEP_SUMMARY
+            echo "- Client Service: Coverage data available" >> $GITHUB_STEP_SUMMARY
+            echo "- Command Service: Coverage data available" >> $GITHUB_STEP_SUMMARY
+            echo "- Query Service: Coverage data available" >> $GITHUB_STEP_SUMMARY
+            echo "- Shared: Coverage data available" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ No coverage reports were generated" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Please check the test job logs for more information." >> $GITHUB_STEP_SUMMARY
+          fi
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Coverage by App:" >> $GITHUB_STEP_SUMMARY
-          echo "- Client Service: 87%" >> $GITHUB_STEP_SUMMARY
-          echo "- Command Service: 82%" >> $GITHUB_STEP_SUMMARY
-          echo "- Query Service: 85%" >> $GITHUB_STEP_SUMMARY
-          echo "- Shared: 90%" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ All tests passed!" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Workflow completed!" >> $GITHUB_STEP_SUMMARY
 
   build:
     name: Build Docker Images
