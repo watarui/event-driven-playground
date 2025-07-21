@@ -1,5 +1,5 @@
 defmodule ClientService.GraphQL.Middleware.AuthorizationTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias ClientService.GraphQL.Middleware.Authorization
   alias Absinthe.Resolution

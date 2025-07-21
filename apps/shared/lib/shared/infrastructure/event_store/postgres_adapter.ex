@@ -26,14 +26,15 @@ defmodule Shared.Infrastructure.EventStore.PostgresAdapter do
     Logger.debug("Converted aggregate_id to UUID string: #{uuid_aggregate_id}")
 
     # サーキットブレーカーを通じて実行
-    try do
-      CircuitBreaker.call(:event_store, fn ->
+    case CircuitBreaker.call(:event_store, fn ->
+           do_append_events(uuid_aggregate_id, aggregate_type, events, expected_version, metadata)
+         end) do
+      {:error, :circuit_breaker_not_found} ->
+        # CircuitBreaker が存在しない場合は直接実行
         do_append_events(uuid_aggregate_id, aggregate_type, events, expected_version, metadata)
-      end)
-    rescue
-      # CircuitBreaker が存在しない場合は直接実行
-      ArgumentError ->
-        do_append_events(uuid_aggregate_id, aggregate_type, events, expected_version, metadata)
+
+      result ->
+        result
     end
   end
 
@@ -63,14 +64,15 @@ defmodule Shared.Infrastructure.EventStore.PostgresAdapter do
     Logger.debug("Converted stream_id to UUID string: #{uuid_stream_id}")
 
     # サーキットブレーカーを通じて実行
-    try do
-      CircuitBreaker.call(:event_store, fn ->
+    case CircuitBreaker.call(:event_store, fn ->
+           do_append_events(uuid_stream_id, aggregate_type, events, expected_version, metadata)
+         end) do
+      {:error, :circuit_breaker_not_found} ->
+        # CircuitBreaker が存在しない場合は直接実行
         do_append_events(uuid_stream_id, aggregate_type, events, expected_version, metadata)
-      end)
-    rescue
-      # CircuitBreaker が存在しない場合は直接実行
-      ArgumentError ->
-        do_append_events(uuid_stream_id, aggregate_type, events, expected_version, metadata)
+
+      result ->
+        result
     end
   end
 
@@ -156,14 +158,15 @@ defmodule Shared.Infrastructure.EventStore.PostgresAdapter do
   def read_stream(stream_id, from_version) do
     uuid_stream_id = ensure_uuid_string(stream_id)
 
-    try do
-      CircuitBreaker.call(:event_store, fn ->
+    case CircuitBreaker.call(:event_store, fn ->
+           execute_read_stream(uuid_stream_id, from_version)
+         end) do
+      {:error, :circuit_breaker_not_found} ->
+        # CircuitBreaker が存在しない場合は直接実行
         execute_read_stream(uuid_stream_id, from_version)
-      end)
-    rescue
-      # CircuitBreaker が存在しない場合は直接実行
-      ArgumentError ->
-        execute_read_stream(uuid_stream_id, from_version)
+
+      result ->
+        result
     end
   rescue
     e ->
@@ -313,7 +316,7 @@ defmodule Shared.Infrastructure.EventStore.PostgresAdapter do
             select: max(e.event_version)
           )
 
-        version = Shared.Infrastructure.EventStore.Repo.one(query) || -1
+        version = Shared.Infrastructure.EventStore.Repo.one(query) || 0
         # キャッシュに保存
         AggregateVersionCache.set_version(uuid_aggregate_id, version)
         version

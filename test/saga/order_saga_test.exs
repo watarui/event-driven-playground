@@ -1,5 +1,5 @@
 defmodule CommandService.Domain.Sagas.OrderSagaTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias CommandService.Domain.Sagas.OrderSaga
   alias Shared.Domain.Events.OrderEvents

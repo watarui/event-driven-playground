@@ -13,6 +13,9 @@ ExUnit.start()
 {:ok, _} = Application.ensure_all_started(:shared)
 {:ok, _} = Application.ensure_all_started(:client_service)
 
+# Endpoint を手動で起動
+ClientServiceWeb.Endpoint.start_link()
+
 # Load support files
 Code.require_file("support/test_helpers.ex", __DIR__)
 Code.require_file("support/factory.ex", __DIR__)
