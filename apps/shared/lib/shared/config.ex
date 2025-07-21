@@ -76,9 +76,25 @@ defmodule Shared.Config do
         socket_options: [:inet6],
         show_sensitive_data_on_connection_error:
           Map.get(db_config, :show_sensitive_data_on_connection_error, false),
-        queue_target: Map.get(db_config, :queue_target, 5000),
-        queue_interval: Map.get(db_config, :queue_interval, 1000),
-        timeout: Map.get(db_config, :timeout, 15_000)
+        queue_target:
+          String.to_integer(
+            System.get_env("DB_QUEUE_TARGET") ||
+              to_string(Map.get(db_config, :queue_target, 5000))
+          ),
+        queue_interval:
+          String.to_integer(
+            System.get_env("DB_QUEUE_INTERVAL") ||
+              to_string(Map.get(db_config, :queue_interval, 1000))
+          ),
+        timeout:
+          String.to_integer(
+            System.get_env("DB_TIMEOUT") || to_string(Map.get(db_config, :timeout, 15_000))
+          ),
+        connect_timeout:
+          String.to_integer(
+            System.get_env("DB_CONNECT_TIMEOUT") ||
+              to_string(Map.get(db_config, :connect_timeout, 15_000))
+          )
       )
     else
       raise """
