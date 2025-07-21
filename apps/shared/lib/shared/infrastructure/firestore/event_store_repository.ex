@@ -110,43 +110,74 @@ defmodule Shared.Infrastructure.Firestore.EventStoreRepository do
   end
 
   defp commit_writes(conn, project_id, writes) do
-    database = "projects/#{project_id}/databases/(default)"
-    
-    # CommitRequest を Map として作成
-    request = %{
-      writes: writes
-    }
-    
-    Projects.firestore_projects_databases_documents_commit(conn, database, body: request)
+    if is_emulator_client?(conn) do
+      # エミュレータクライアントの場合
+      Shared.Infrastructure.Firestore.EmulatorClient.commit_writes(conn, project_id, writes)
+    else
+      # Google API クライアントの場合
+      database = "projects/#{project_id}/databases/(default)"
+      
+      # CommitRequest を Map として作成
+      request = %{
+        writes: writes
+      }
+      
+      Projects.firestore_projects_databases_documents_commit(conn, database, body: request)
+    end
   end
 
   defp query_events(conn, project_id, aggregate_id, from_version) do
     {aggregate_type, aggregate_uuid} = parse_aggregate_id(aggregate_id)
-    parent = "projects/#{project_id}/databases/(default)/documents/event_store/#{aggregate_type}/#{aggregate_uuid}"
     
-    # Firestore クエリで version > from_version のイベントを取得
-    # TODO: 実際のクエリ実装
-    Projects.firestore_projects_databases_documents_list(
-      conn,
-      parent,
-      @events_collection,
-      orderBy: "version",
-      pageSize: 1000
-    )
-    |> case do
-      {:ok, response} -> 
-        documents = response.documents || []
-        filtered = Enum.filter(documents, fn doc ->
-          version = get_in(doc.fields, ["version", "integerValue"])
-          version && String.to_integer(version) > from_version
-        end)
-        {:ok, filtered}
-      error -> error
+    if is_emulator_client?(conn) do
+      # エミュレータクライアントの場合
+      collection_path = "event_store/#{aggregate_type}/#{aggregate_uuid}/#{@events_collection}"
+      case Shared.Infrastructure.Firestore.EmulatorClient.list_documents(
+        conn,
+        project_id,
+        collection_path,
+        orderBy: "version",
+        pageSize: 1000
+      ) do
+        {:ok, result} ->
+          documents = Map.get(result, "documents", [])
+          filtered = Enum.filter(documents, fn doc ->
+            version = get_in(doc, ["fields", "version", "integerValue"])
+            version && String.to_integer(version) > from_version
+          end)
+          {:ok, filtered}
+        error -> error
+      end
+    else
+      # Google API クライアントの場合
+      parent = "projects/#{project_id}/databases/(default)/documents/event_store/#{aggregate_type}/#{aggregate_uuid}"
+      Projects.firestore_projects_databases_documents_list(
+        conn,
+        parent,
+        @events_collection,
+        orderBy: "version",
+        pageSize: 1000
+      )
+      |> case do
+        {:ok, response} -> 
+          documents = response.documents || []
+          filtered = Enum.filter(documents, fn doc ->
+            version = get_in(doc.fields, ["version", "integerValue"])
+            version && String.to_integer(version) > from_version
+          end)
+          {:ok, filtered}
+        error -> error
+      end
     end
   end
 
   defp parse_event_document(document) do
-    fields = document.fields
+    # Map形式（エミュレータ）とstruct形式（Google API）の両方に対応
+    fields = if is_map(document) && Map.has_key?(document, "fields") do
+      document["fields"]
+    else
+      document.fields
+    end
     
     %{
       aggregate_id: get_string_value(fields, "aggregate_id"),
@@ -219,11 +250,27 @@ defmodule Shared.Infrastructure.Firestore.EventStoreRepository do
   end
 
   defp get_string_value(fields, key) do
-    get_in(fields, [key, "stringValue"]) || ""
+    # Map形式とstruct形式の両方に対応
+    value = if is_map(fields) && !is_struct(fields) do
+      # Map形式（エミュレータ）
+      get_in(fields, [key, "stringValue"])
+    else
+      # struct形式（Google API）
+      case Map.get(fields, key) do
+        %{stringValue: value} -> value
+        _ -> nil
+      end
+    end
+    value || ""
   end
 
   defp parse_timestamp(iso8601_string) do
     {:ok, datetime, _} = DateTime.from_iso8601(iso8601_string)
     datetime
+  end
+  
+  defp is_emulator_client?(conn) do
+    # Tesla クライアントかどうかで判定
+    is_struct(conn, Tesla.Client)
   end
 end

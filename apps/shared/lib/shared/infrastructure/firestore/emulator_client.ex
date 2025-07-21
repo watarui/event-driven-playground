@@ -114,8 +114,24 @@ defmodule Shared.Infrastructure.Firestore.EmulatorClient do
   def commit_writes(client, project_id, writes) do
     path = "projects/#{project_id}/databases/(default)/documents:commit"
     
+    # Write オブジェクトを適切な形式に変換
+    converted_writes = Enum.map(writes, fn write ->
+      if Map.has_key?(write, :update) do
+        # update オペレーション
+        %{
+          "update" => %{
+            "name" => write.update.name,
+            "fields" => write.update.fields
+          }
+        }
+      else
+        # その他のオペレーション（delete など）
+        write
+      end
+    end)
+    
     body = %{
-      writes: writes
+      "writes" => converted_writes
     }
     
     case Tesla.post(client, path, body) do

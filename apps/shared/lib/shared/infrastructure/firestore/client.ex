@@ -6,22 +6,33 @@ defmodule Shared.Infrastructure.Firestore.Client do
   """
 
   require Logger
+  alias Shared.Infrastructure.Firestore.EmulatorClient
 
   @doc """
   Firestore 接続を取得
   
   サービスごとに異なるプロジェクトID を使用可能にします。
   """
-  def get_connection(_service \\ :shared) do
-    # Goth で認証トークンを取得
-    case get_auth_token() do
-      {:ok, token} ->
-        # GoogleApi.Firestore.V1.Connection を作成
-        {:ok, GoogleApi.Firestore.V1.Connection.new(token)}
-        
-      {:error, reason} ->
-        Logger.error("Failed to get auth token: #{inspect(reason)}")
-        {:error, reason}
+  def get_connection(service \\ :shared) do
+    if using_emulator?(service) do
+      # エミュレータを使用する場合
+      case EmulatorClient.create_client(service) do
+        nil ->
+          {:error, :emulator_not_configured}
+        client ->
+          {:ok, client}
+      end
+    else
+      # 本番環境では Goth で認証
+      case get_auth_token() do
+        {:ok, token} ->
+          # GoogleApi.Firestore.V1.Connection を作成
+          {:ok, GoogleApi.Firestore.V1.Connection.new(token)}
+          
+        {:error, reason} ->
+          Logger.error("Failed to get auth token: #{inspect(reason)}")
+          {:error, reason}
+      end
     end
   end
 
