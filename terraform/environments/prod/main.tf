@@ -72,11 +72,9 @@ resource "google_project_iam_member" "cloud_run_roles" {
 module "secrets" {
   source = "../../modules/secrets"
   
-  project_id           = var.project_id
-  supabase_url         = var.supabase_url
-  supabase_service_key = var.supabase_service_key
-  firebase_api_key     = var.firebase_config.api_key
-  secret_key_base      = var.secret_key_base
+  project_id       = var.project_id
+  firebase_api_key = var.firebase_config.api_key
+  secret_key_base  = var.secret_key_base
   
   depends_on = [google_project_service.required_apis]
 }

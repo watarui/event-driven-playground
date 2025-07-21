@@ -2,16 +2,19 @@ project_id  = "your-gcp-project-id"
 region      = "asia-northeast1"
 environment = "prod"
 
-# Supabase configuration
-supabase_url         = "https://your-project.supabase.co"
-supabase_service_key = "your-supabase-service-key"
-
 # Firebase configuration
 firebase_config = {
   api_key     = "your-firebase-api-key"
   auth_domain = "your-project.firebaseapp.com"
   project_id  = "your-firebase-project-id"
 }
+
+# Google OAuth configuration for Firebase Authentication
+google_oauth_client_id     = "your-google-oauth-client-id"
+google_oauth_client_secret = "your-google-oauth-client-secret"
+
+# Secret key for Phoenix session encryption
+secret_key_base = "your-secret-key-base"
 
 # Service configuration for production
 services = {

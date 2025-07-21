@@ -2,16 +2,6 @@
 output "env_var_secrets" {
   description = "Map of environment variable names to secret IDs for Cloud Run"
   value = {
-    # データベース関連
-    DATABASE_URL               = google_secret_manager_secret.secrets["database_url"].id
-    EVENT_STORE_DATABASE_URL   = google_secret_manager_secret.secrets["database_url"].id
-    COMMAND_SERVICE_DATABASE_URL = google_secret_manager_secret.secrets["database_url"].id
-    QUERY_SERVICE_DATABASE_URL = google_secret_manager_secret.secrets["database_url"].id
-    SUPABASE_URL               = google_secret_manager_secret.secrets["database_url"].id  # 互換性のため
-    
-    # Supabase サービスキー
-    SUPABASE_SERVICE_KEY = google_secret_manager_secret.secrets["supabase_service_key"].id
-    
     # Firebase API キー
     FIREBASE_API_KEY = google_secret_manager_secret.secrets["firebase_api_key"].id
     
