@@ -7,6 +7,7 @@ output "env_var_secrets" {
     EVENT_STORE_DATABASE_URL   = google_secret_manager_secret.secrets["database_url"].id
     COMMAND_SERVICE_DATABASE_URL = google_secret_manager_secret.secrets["database_url"].id
     QUERY_SERVICE_DATABASE_URL = google_secret_manager_secret.secrets["database_url"].id
+    SUPABASE_URL               = google_secret_manager_secret.secrets["database_url"].id  # 互換性のため
     
     # Supabase サービスキー
     SUPABASE_SERVICE_KEY = google_secret_manager_secret.secrets["supabase_service_key"].id
