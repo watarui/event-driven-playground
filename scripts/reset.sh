@@ -36,32 +36,28 @@ log_to_file "stop.sh --all を実行中..."
 log_to_file "サービス停止完了"
 
 # ==============================================================================
-# データベースの削除
+# Firestore エミュレータのデータ削除
 # ==============================================================================
 
-section "🗑️  データベース削除"
+section "🗑️  Firestore データ削除"
 
-if is_docker_running && docker compose ps | grep -q postgres; then
-    # Docker コンテナを再起動してクリーンな状態にする
-    info "PostgreSQL コンテナを再作成しています..."
+if is_docker_running && docker compose ps | grep -q firestore; then
+    # Firestore エミュレータを再起動してクリーンな状態にする
+    info "Firestore エミュレータを再起動しています..."
     cd "$PROJECT_ROOT"
-    log_to_file "Docker コンテナを削除中..."
-    docker compose rm -sf postgres-event-store postgres-command postgres-query >> "$LOG_FILE" 2>&1
-    log_to_file "Docker ボリュームを削除中..."
-    docker volume rm -f event-driven-playground_postgres-event-store-data event-driven-playground_postgres-command-data event-driven-playground_postgres-query-data >> "$LOG_FILE" 2>&1 || true
+    log_to_file "Firestore コンテナを再起動中..."
+    docker compose restart firestore >> "$LOG_FILE" 2>&1
     
-    # コンテナを再作成
-    log_to_file "Docker コンテナを再作成中..."
-    docker compose up -d postgres-event-store postgres-command postgres-query >> "$LOG_FILE" 2>&1
-    
-    # PostgreSQL の起動を待つ
-    info "PostgreSQL の起動を待機しています..."
-    sleep 10
-    
-    success "データベースをクリーンな状態にリセットしました"
-    log_to_file "データベースのリセット完了"
+    # エミュレータの起動を待つ
+    info "Firestore エミュレータの起動を待機しています..."
+    if wait_for_firestore_emulator; then
+        success "Firestore エミュレータをクリーンな状態にリセットしました"
+        log_to_file "Firestore のリセット完了"
+    else
+        warning "Firestore エミュレータの起動確認に失敗しました"
+    fi
 else
-    warning "Docker が起動していないため、データベースの削除をスキップしました"
+    warning "Docker が起動していないため、Firestore のリセットをスキップしました"
 fi
 
 # ==============================================================================
@@ -120,5 +116,5 @@ log "  1. サービスを起動: ${CYAN}./scripts/start.sh${NC}"
 log "  2. シードデータを投入: ${CYAN}./scripts/seed.sh${NC}"
 log ""
 log "または:"
-log "  ${CYAN}./scripts/dev.sh${NC} で自動的に実行"
+log "  ${CYAN}make start${NC} で自動的に実行"
 log ""

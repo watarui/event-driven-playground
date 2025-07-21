@@ -66,14 +66,7 @@ defmodule EventDrivenPlayground.MixProject do
         "compile --warnings-as-errors",
         "credo --strict",
         "dialyzer"
-      ],
-      # Setup all databases
-      "ecto.setup": [
-        "ecto.create",
-        "ecto.migrate"
-      ],
-      "ecto.reset": ["ecto.drop", "ecto.setup"],
-      "ecto.migrate": ["ecto.migrate"]
+      ]
     ]
   end
 end

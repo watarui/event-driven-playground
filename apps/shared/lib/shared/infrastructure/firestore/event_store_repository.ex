@@ -201,37 +201,79 @@ defmodule Shared.Infrastructure.Firestore.EventStoreRepository do
 
   defp save_snapshot_document(conn, project_id, aggregate_id, version, document) do
     {aggregate_type, aggregate_uuid} = parse_aggregate_id(aggregate_id)
-    name = "projects/#{project_id}/databases/(default)/documents/event_store/#{aggregate_type}/#{aggregate_uuid}/#{@snapshots_collection}/#{version}"
     
-    Projects.firestore_projects_databases_documents_patch(
-      conn,
-      name,
-      body: document,
-      updateMask_fieldPaths: ["*"]
-    )
+    if is_emulator_client?(conn) do
+      # エミュレータクライアントの場合
+      collection_path = "event_store/#{aggregate_type}/#{aggregate_uuid}/#{@snapshots_collection}"
+      fields = document.fields
+      Shared.Infrastructure.Firestore.EmulatorClient.create_or_update_document(
+        conn,
+        project_id,
+        collection_path,
+        to_string(version),
+        fields
+      )
+    else
+      # Google API クライアントの場合
+      name = "projects/#{project_id}/databases/(default)/documents/event_store/#{aggregate_type}/#{aggregate_uuid}/#{@snapshots_collection}/#{version}"
+      
+      Projects.firestore_projects_databases_documents_patch(
+        conn,
+        name,
+        body: document,
+        updateMask_fieldPaths: ["*"]
+      )
+    end
   end
 
   defp get_latest_snapshot_document(conn, project_id, aggregate_id) do
     {aggregate_type, aggregate_uuid} = parse_aggregate_id(aggregate_id)
-    parent = "projects/#{project_id}/databases/(default)/documents/event_store/#{aggregate_type}/#{aggregate_uuid}"
     
-    # 最新のスナップショットを取得（version で降順ソート、1件のみ）
-    Projects.firestore_projects_databases_documents_list(
-      conn,
-      parent,
-      @snapshots_collection,
-      orderBy: "version desc",
-      pageSize: 1
-    )
-    |> case do
-      {:ok, %{documents: [document | _]}} -> {:ok, document}
-      {:ok, %{documents: []}} -> {:error, :not_found}
-      error -> error
+    if is_emulator_client?(conn) do
+      # エミュレータクライアントの場合
+      collection_path = "event_store/#{aggregate_type}/#{aggregate_uuid}/#{@snapshots_collection}"
+      case Shared.Infrastructure.Firestore.EmulatorClient.list_documents(
+        conn,
+        project_id,
+        collection_path,
+        orderBy: "version desc",
+        pageSize: 1
+      ) do
+        {:ok, result} ->
+          case Map.get(result, "documents", []) do
+            [document | _] -> {:ok, document}
+            [] -> {:error, :not_found}
+          end
+        error -> error
+      end
+    else
+      # Google API クライアントの場合
+      parent = "projects/#{project_id}/databases/(default)/documents/event_store/#{aggregate_type}/#{aggregate_uuid}"
+      
+      # 最新のスナップショットを取得（version で降順ソート、1件のみ）
+      Projects.firestore_projects_databases_documents_list(
+        conn,
+        parent,
+        @snapshots_collection,
+        orderBy: "version desc",
+        pageSize: 1
+      )
+      |> case do
+        {:ok, %{documents: [document | _]}} -> {:ok, document}
+        {:ok, %{documents: []}} -> {:error, :not_found}
+        error -> error
+      end
     end
   end
 
   defp parse_snapshot_document(document) do
-    fields = document.fields
+    # Map形式（エミュレータ）とstruct形式（Google API）の両方に対応
+    fields = if is_map(document) && Map.has_key?(document, "fields") do
+      document["fields"]
+    else
+      document.fields
+    end
+    
     snapshot_data = Jason.decode!(get_string_value(fields, "snapshot_data"))
     version = String.to_integer(get_string_value(fields, "version"))
     {snapshot_data, version}
@@ -270,7 +312,7 @@ defmodule Shared.Infrastructure.Firestore.EventStoreRepository do
   end
   
   defp is_emulator_client?(conn) do
-    # Tesla クライアントかどうかで判定
-    is_struct(conn, Tesla.Client)
+    # エミュレータクライアントは Map で base_url を持つ
+    is_map(conn) && Map.has_key?(conn, :base_url)
   end
 end

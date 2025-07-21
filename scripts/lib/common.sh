@@ -17,15 +17,17 @@ export SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 export LOG_DIR="$PROJECT_ROOT/logs"
 
-# データベース設定
-export PGPASSWORD=postgres
+# 環境設定
 export MIX_ENV=dev
+export FIRESTORE_EMULATOR_HOST=localhost:8090
+export FIRESTORE_PROJECT_ID=demo-project
 
 # ポート設定
 export GRAPHQL_PORT=4000
-export COMMAND_PORT=4001
-export QUERY_PORT=4002
+export COMMAND_PORT=4081
+export QUERY_PORT=4082
 export FRONTEND_PORT=3000
+export FIRESTORE_PORT=8090
 
 # ==============================================================================
 # 出力関数
@@ -53,13 +55,13 @@ error() {
 
 section() {
     echo ""
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo -e "${BLUE}$1${NC}"
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 }
 
 # ==============================================================================
-# ヘルスチェック関数
+# ポート待機とヘルスチェック
 # ==============================================================================
 
 wait_for_port() {
@@ -68,33 +70,40 @@ wait_for_port() {
     local max_attempts=30
     local attempt=0
     
-    while ! nc -z localhost $port 2>/dev/null; do
-        attempt=$((attempt + 1))
-        if [ $attempt -eq $max_attempts ]; then
+    while ! nc -z localhost $port > /dev/null 2>&1; do
+        if [ $attempt -ge $max_attempts ]; then
             return 1
         fi
         sleep 1
+        ((attempt++))
     done
     return 0
-}
-
-check_postgres() {
-    local port=$1
-    pg_isready -h localhost -p $port -U postgres > /dev/null 2>&1
 }
 
 check_service_health() {
     local url=$1
     local service=$2
+    local max_attempts=10
+    local attempt=0
     
-    # GraphQL エンドポイントの場合は POST でチェック
-    if [[ "$url" == *"/graphql" ]]; then
-        if curl -s -X POST "$url" -H "Content-Type: application/json" -d '{"query":"{ __typename }"}' | grep -q "__typename"; then
+    while [ $attempt -lt $max_attempts ]; do
+        if curl -s -f -o /dev/null "$url"; then
             return 0
-        else
-            return 1
         fi
-    else
+        sleep 1
+        ((attempt++))
+    done
+    return 1
+}
+
+check_port() {
+    local port=$1
+    nc -z localhost $port > /dev/null 2>&1
+}
+
+check_url() {
+    local url=$1
+    if command -v curl &> /dev/null; then
         if curl -s -f -o /dev/null "$url"; then
             return 0
         else
@@ -135,29 +144,26 @@ are_containers_running() {
 }
 
 # ==============================================================================
-# データベース関連
+# Firestore エミュレータ関連
 # ==============================================================================
 
-database_exists() {
-    local db_name=$1
-    local port=$2
-    psql -h localhost -p $port -U postgres -lqt | cut -d \| -f 1 | grep -qw "$db_name"
+check_firestore_emulator() {
+    local port=${1:-$FIRESTORE_PORT}
+    curl -s -f -o /dev/null "http://localhost:$port/" 2>/dev/null
 }
 
-create_database_if_not_exists() {
-    local db_name=$1
-    local port=$2
+wait_for_firestore_emulator() {
+    local port=${1:-$FIRESTORE_PORT}
+    local max_attempts=30
+    local attempt=0
     
-    if ! database_exists "$db_name" "$port"; then
-        info "データベース $db_name を作成しています..."
-        psql -h localhost -p $port -U postgres -c "CREATE DATABASE \"$db_name\";" > /dev/null 2>&1
-        if [ $? -eq 0 ]; then
-            success "データベース $db_name を作成しました"
-        else
-            error "データベース $db_name の作成に失敗しました"
+    while ! check_firestore_emulator $port; do
+        if [ $attempt -ge $max_attempts ]; then
             return 1
         fi
-    fi
+        sleep 1
+        ((attempt++))
+    done
     return 0
 }
 
