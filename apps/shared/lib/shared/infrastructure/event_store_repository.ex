@@ -1,7 +1,7 @@
 defmodule Shared.Infrastructure.EventStoreRepository do
   @moduledoc """
   イベントストア専用のリポジトリビヘイビア
-  
+
   CQRS/イベントソーシングパターンに特化したインターフェースを提供します。
   """
 

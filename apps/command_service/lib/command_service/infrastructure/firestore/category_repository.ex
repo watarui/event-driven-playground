@@ -38,7 +38,7 @@ defmodule CommandService.Infrastructure.Firestore.CategoryRepository do
   @impl true
   def save(aggregate) do
     aggregate_id = "#{@aggregate_type}:#{aggregate.id.value}"
-    
+
     case EventStoreRepository.append_events(aggregate_id, aggregate.uncommitted_events) do
       {:ok, _version} ->
         updated_aggregate = %{

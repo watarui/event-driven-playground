@@ -1,7 +1,7 @@
 defmodule Shared.Infrastructure.Repository do
   @moduledoc """
   リポジトリのビヘイビア定義
-  
+
   PostgreSQL と Firestore の両方で実装可能な共通インターフェースを提供します。
   """
 

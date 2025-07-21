@@ -1,7 +1,7 @@
 defmodule Shared.Infrastructure.Firestore.Client do
   @moduledoc """
   Firestore クライアントの設定と接続管理
-  
+
   開発環境では Emulator、本番環境では実際の Firestore に接続します。
   """
 
@@ -10,7 +10,7 @@ defmodule Shared.Infrastructure.Firestore.Client do
 
   @doc """
   Firestore 接続を取得
-  
+
   サービスごとに異なるプロジェクトID を使用可能にします。
   """
   def get_connection(service \\ :shared) do
@@ -19,6 +19,7 @@ defmodule Shared.Infrastructure.Firestore.Client do
       case EmulatorClient.create_client(service) do
         nil ->
           {:error, :emulator_not_configured}
+
         client ->
           {:ok, client}
       end
@@ -28,7 +29,7 @@ defmodule Shared.Infrastructure.Firestore.Client do
         {:ok, token} ->
           # GoogleApi.Firestore.V1.Connection を作成
           {:ok, GoogleApi.Firestore.V1.Connection.new(token)}
-          
+
         {:error, reason} ->
           Logger.error("Failed to get auth token: #{inspect(reason)}")
           {:error, reason}
@@ -71,5 +72,4 @@ defmodule Shared.Infrastructure.Firestore.Client do
       end
     end
   end
-
 end

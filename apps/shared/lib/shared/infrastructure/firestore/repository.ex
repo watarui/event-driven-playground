@@ -36,7 +36,7 @@ defmodule Shared.Infrastructure.Firestore.Repository do
   @impl true
   def list(collection, opts \\ []) do
     limit = Keyword.get(opts, :limit, 100)
-    
+
     with {:ok, conn} <- Client.get_connection(),
          project_id <- Client.get_project_id(:shared),
          {:ok, response} <- list_documents(conn, project_id, collection, limit) do
@@ -74,7 +74,7 @@ defmodule Shared.Infrastructure.Firestore.Repository do
   defp create_or_update_document(conn, project_id, collection, id, document) do
     parent = "projects/#{project_id}/databases/(default)/documents"
     name = "#{parent}/#{collection}/#{id}"
-    
+
     Projects.firestore_projects_databases_documents_patch(
       conn,
       name,
@@ -90,7 +90,7 @@ defmodule Shared.Infrastructure.Firestore.Repository do
 
   defp list_documents(conn, project_id, collection, limit) do
     parent = "projects/#{project_id}/databases/(default)/documents"
-    
+
     Projects.firestore_projects_databases_documents_list(
       conn,
       parent,
@@ -105,12 +105,12 @@ defmodule Shared.Infrastructure.Firestore.Repository do
   end
 
   defp build_document(entity) when is_map(entity) do
-    fields = 
+    fields =
       entity
       |> Map.to_list()
       |> Enum.map(fn {key, value} -> {to_string(key), build_value(value)} end)
       |> Enum.into(%{})
-    
+
     %Document{fields: fields}
   end
 

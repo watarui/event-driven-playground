@@ -1,7 +1,7 @@
 defmodule Shared.Infrastructure.Firestore.EventStoreRepository do
   @moduledoc """
   Firestore を使用したイベントストアリポジトリの実装
-  
+
   イベントは以下の構造で保存されます：
   event_store/
     {aggregate_type}/
@@ -38,7 +38,7 @@ defmodule Shared.Infrastructure.Firestore.EventStoreRepository do
   @impl true
   def get_events(aggregate_id, opts \\ []) do
     from_version = Keyword.get(opts, :from_version, 0)
-    
+
     with {:ok, conn} <- Client.get_connection(:event_store),
          project_id <- Client.get_project_id(:event_store),
          {:ok, documents} <- query_events(conn, project_id, aggregate_id, from_version) do
@@ -87,12 +87,14 @@ defmodule Shared.Infrastructure.Firestore.EventStoreRepository do
 
   defp build_event_writes(project_id, aggregate_id, events) do
     {aggregate_type, aggregate_uuid} = parse_aggregate_id(aggregate_id)
-    base_path = "projects/#{project_id}/databases/(default)/documents/event_store/#{aggregate_type}/#{aggregate_uuid}/#{@events_collection}"
-    
+
+    base_path =
+      "projects/#{project_id}/databases/(default)/documents/event_store/#{aggregate_type}/#{aggregate_uuid}/#{@events_collection}"
+
     Enum.map(events, fn event ->
       event_id = generate_event_id(event)
       document_path = "#{base_path}/#{event_id}"
-      
+
       %Write{
         update: %Document{
           name: document_path,
@@ -116,41 +118,49 @@ defmodule Shared.Infrastructure.Firestore.EventStoreRepository do
     else
       # Google API クライアントの場合
       database = "projects/#{project_id}/databases/(default)"
-      
+
       # CommitRequest を Map として作成
       request = %{
         writes: writes
       }
-      
+
       Projects.firestore_projects_databases_documents_commit(conn, database, body: request)
     end
   end
 
   defp query_events(conn, project_id, aggregate_id, from_version) do
     {aggregate_type, aggregate_uuid} = parse_aggregate_id(aggregate_id)
-    
+
     if is_emulator_client?(conn) do
       # エミュレータクライアントの場合
       collection_path = "event_store/#{aggregate_type}/#{aggregate_uuid}/#{@events_collection}"
+
       case Shared.Infrastructure.Firestore.EmulatorClient.list_documents(
-        conn,
-        project_id,
-        collection_path,
-        orderBy: "version",
-        pageSize: 1000
-      ) do
+             conn,
+             project_id,
+             collection_path,
+             orderBy: "version",
+             pageSize: 1000
+           ) do
         {:ok, result} ->
           documents = Map.get(result, "documents", [])
-          filtered = Enum.filter(documents, fn doc ->
-            version = get_in(doc, ["fields", "version", "integerValue"])
-            version && String.to_integer(version) > from_version
-          end)
+
+          filtered =
+            Enum.filter(documents, fn doc ->
+              version = get_in(doc, ["fields", "version", "integerValue"])
+              version && String.to_integer(version) > from_version
+            end)
+
           {:ok, filtered}
-        error -> error
+
+        error ->
+          error
       end
     else
       # Google API クライアントの場合
-      parent = "projects/#{project_id}/databases/(default)/documents/event_store/#{aggregate_type}/#{aggregate_uuid}"
+      parent =
+        "projects/#{project_id}/databases/(default)/documents/event_store/#{aggregate_type}/#{aggregate_uuid}"
+
       Projects.firestore_projects_databases_documents_list(
         conn,
         parent,
@@ -159,26 +169,32 @@ defmodule Shared.Infrastructure.Firestore.EventStoreRepository do
         pageSize: 1000
       )
       |> case do
-        {:ok, response} -> 
+        {:ok, response} ->
           documents = response.documents || []
-          filtered = Enum.filter(documents, fn doc ->
-            version = get_in(doc.fields, ["version", "integerValue"])
-            version && String.to_integer(version) > from_version
-          end)
+
+          filtered =
+            Enum.filter(documents, fn doc ->
+              version = get_in(doc.fields, ["version", "integerValue"])
+              version && String.to_integer(version) > from_version
+            end)
+
           {:ok, filtered}
-        error -> error
+
+        error ->
+          error
       end
     end
   end
 
   defp parse_event_document(document) do
     # Map形式（エミュレータ）とstruct形式（Google API）の両方に対応
-    fields = if is_map(document) && Map.has_key?(document, "fields") do
-      document["fields"]
-    else
-      document.fields
-    end
-    
+    fields =
+      if is_map(document) && Map.has_key?(document, "fields") do
+        document["fields"]
+      else
+        document.fields
+      end
+
     %{
       aggregate_id: get_string_value(fields, "aggregate_id"),
       event_type: String.to_atom(get_string_value(fields, "event_type")),
@@ -201,11 +217,12 @@ defmodule Shared.Infrastructure.Firestore.EventStoreRepository do
 
   defp save_snapshot_document(conn, project_id, aggregate_id, version, document) do
     {aggregate_type, aggregate_uuid} = parse_aggregate_id(aggregate_id)
-    
+
     if is_emulator_client?(conn) do
       # エミュレータクライアントの場合
       collection_path = "event_store/#{aggregate_type}/#{aggregate_uuid}/#{@snapshots_collection}"
       fields = document.fields
+
       Shared.Infrastructure.Firestore.EmulatorClient.create_or_update_document(
         conn,
         project_id,
@@ -215,8 +232,9 @@ defmodule Shared.Infrastructure.Firestore.EventStoreRepository do
       )
     else
       # Google API クライアントの場合
-      name = "projects/#{project_id}/databases/(default)/documents/event_store/#{aggregate_type}/#{aggregate_uuid}/#{@snapshots_collection}/#{version}"
-      
+      name =
+        "projects/#{project_id}/databases/(default)/documents/event_store/#{aggregate_type}/#{aggregate_uuid}/#{@snapshots_collection}/#{version}"
+
       Projects.firestore_projects_databases_documents_patch(
         conn,
         name,
@@ -228,28 +246,32 @@ defmodule Shared.Infrastructure.Firestore.EventStoreRepository do
 
   defp get_latest_snapshot_document(conn, project_id, aggregate_id) do
     {aggregate_type, aggregate_uuid} = parse_aggregate_id(aggregate_id)
-    
+
     if is_emulator_client?(conn) do
       # エミュレータクライアントの場合
       collection_path = "event_store/#{aggregate_type}/#{aggregate_uuid}/#{@snapshots_collection}"
+
       case Shared.Infrastructure.Firestore.EmulatorClient.list_documents(
-        conn,
-        project_id,
-        collection_path,
-        orderBy: "version desc",
-        pageSize: 1
-      ) do
+             conn,
+             project_id,
+             collection_path,
+             orderBy: "version desc",
+             pageSize: 1
+           ) do
         {:ok, result} ->
           case Map.get(result, "documents", []) do
             [document | _] -> {:ok, document}
             [] -> {:error, :not_found}
           end
-        error -> error
+
+        error ->
+          error
       end
     else
       # Google API クライアントの場合
-      parent = "projects/#{project_id}/databases/(default)/documents/event_store/#{aggregate_type}/#{aggregate_uuid}"
-      
+      parent =
+        "projects/#{project_id}/databases/(default)/documents/event_store/#{aggregate_type}/#{aggregate_uuid}"
+
       # 最新のスナップショットを取得（version で降順ソート、1件のみ）
       Projects.firestore_projects_databases_documents_list(
         conn,
@@ -268,12 +290,13 @@ defmodule Shared.Infrastructure.Firestore.EventStoreRepository do
 
   defp parse_snapshot_document(document) do
     # Map形式（エミュレータ）とstruct形式（Google API）の両方に対応
-    fields = if is_map(document) && Map.has_key?(document, "fields") do
-      document["fields"]
-    else
-      document.fields
-    end
-    
+    fields =
+      if is_map(document) && Map.has_key?(document, "fields") do
+        document["fields"]
+      else
+        document.fields
+      end
+
     snapshot_data = Jason.decode!(get_string_value(fields, "snapshot_data"))
     version = String.to_integer(get_string_value(fields, "version"))
     {snapshot_data, version}
@@ -293,16 +316,18 @@ defmodule Shared.Infrastructure.Firestore.EventStoreRepository do
 
   defp get_string_value(fields, key) do
     # Map形式とstruct形式の両方に対応
-    value = if is_map(fields) && !is_struct(fields) do
-      # Map形式（エミュレータ）
-      get_in(fields, [key, "stringValue"])
-    else
-      # struct形式（Google API）
-      case Map.get(fields, key) do
-        %{stringValue: value} -> value
-        _ -> nil
+    value =
+      if is_map(fields) && !is_struct(fields) do
+        # Map形式（エミュレータ）
+        get_in(fields, [key, "stringValue"])
+      else
+        # struct形式（Google API）
+        case Map.get(fields, key) do
+          %{stringValue: value} -> value
+          _ -> nil
+        end
       end
-    end
+
     value || ""
   end
 
@@ -310,7 +335,7 @@ defmodule Shared.Infrastructure.Firestore.EventStoreRepository do
     {:ok, datetime, _} = DateTime.from_iso8601(iso8601_string)
     datetime
   end
-  
+
   defp is_emulator_client?(conn) do
     # エミュレータクライアントは Map で base_url を持つ
     is_map(conn) && Map.has_key?(conn, :base_url)

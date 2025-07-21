@@ -1,7 +1,7 @@
 defmodule QueryService.Infrastructure.RepositoryFactory do
   @moduledoc """
   リポジトリファクトリ
-  
+
   環境に応じて適切なリポジトリ実装を返します。
   """
 
@@ -14,6 +14,7 @@ defmodule QueryService.Infrastructure.RepositoryFactory do
     case Config.database_adapter() do
       :firestore ->
         get_firestore_repository(entity_type)
+
       _ ->
         get_postgres_repository(entity_type)
     end

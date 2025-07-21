@@ -1,7 +1,7 @@
 defmodule CommandService.Infrastructure.Firestore.OrderRepository do
   @moduledoc """
   注文リポジトリの Firestore 実装
-  
+
   イベントソーシングパターンを使用し、
   Firestore にイベントを保存します。
   """
@@ -41,7 +41,7 @@ defmodule CommandService.Infrastructure.Firestore.OrderRepository do
   @impl true
   def save(aggregate) do
     aggregate_id = "#{@aggregate_type}:#{aggregate.id.value}"
-    
+
     # Firestore にイベントを保存
     case EventStoreRepository.append_events(aggregate_id, aggregate.uncommitted_events) do
       {:ok, _version} ->

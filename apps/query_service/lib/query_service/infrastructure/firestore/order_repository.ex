@@ -97,13 +97,13 @@ defmodule QueryService.Infrastructure.Firestore.OrderRepository do
          project_id <- Client.get_project_id(:query),
          {:ok, documents} <- list_all_documents(conn, project_id) do
       count = length(documents)
-      
+
       # バッチ削除
       Enum.each(documents, fn doc ->
         doc_id = extract_document_id(doc.name)
         delete_document(conn, project_id, doc_id)
       end)
-      
+
       {:ok, count}
     end
   end
@@ -114,6 +114,7 @@ defmodule QueryService.Infrastructure.Firestore.OrderRepository do
     if is_emulator_client?(conn) do
       # エミュレータクライアントの場合
       fields = document.fields
+
       Shared.Infrastructure.Firestore.EmulatorClient.create_or_update_document(
         conn,
         project_id,
@@ -124,7 +125,7 @@ defmodule QueryService.Infrastructure.Firestore.OrderRepository do
     else
       # Google API クライアントの場合
       parent = "projects/#{project_id}/databases/(default)/documents"
-      
+
       Projects.firestore_projects_databases_documents_create_document(
         conn,
         parent,
@@ -139,6 +140,7 @@ defmodule QueryService.Infrastructure.Firestore.OrderRepository do
     if is_emulator_client?(conn) do
       # エミュレータクライアントの場合
       fields = document.fields
+
       Shared.Infrastructure.Firestore.EmulatorClient.create_or_update_document(
         conn,
         project_id,
@@ -149,7 +151,7 @@ defmodule QueryService.Infrastructure.Firestore.OrderRepository do
     else
       # Google API クライアントの場合
       name = "projects/#{project_id}/databases/(default)/documents/#{@collection}/#{id}"
-      
+
       Projects.firestore_projects_databases_documents_patch(
         conn,
         name,
@@ -195,26 +197,28 @@ defmodule QueryService.Infrastructure.Firestore.OrderRepository do
     if is_emulator_client?(conn) do
       # エミュレータクライアントの場合
       case Shared.Infrastructure.Firestore.EmulatorClient.list_documents(
-        conn,
-        project_id,
-        @collection,
-        pageSize: 1000
-      ) do
+             conn,
+             project_id,
+             @collection,
+             pageSize: 1000
+           ) do
         {:ok, result} ->
           documents = Map.get(result, "documents", [])
           {:ok, documents}
-        error -> error
+
+        error ->
+          error
       end
     else
       # Google API クライアントの場合
       parent = "projects/#{project_id}/databases/(default)/documents"
-      
+
       case Projects.firestore_projects_databases_documents_list(
-        conn,
-        parent,
-        @collection,
-        pageSize: 1000
-      ) do
+             conn,
+             parent,
+             @collection,
+             pageSize: 1000
+           ) do
         {:ok, response} -> {:ok, response.documents || []}
         error -> error
       end
@@ -226,33 +230,36 @@ defmodule QueryService.Infrastructure.Firestore.OrderRepository do
       # エミュレータクライアントの場合
       # 簡易的な実装：全件取得してフィルタリング
       case Shared.Infrastructure.Firestore.EmulatorClient.list_documents(
-        conn,
-        project_id,
-        @collection,
-        pageSize: 1000
-      ) do
+             conn,
+             project_id,
+             @collection,
+             pageSize: 1000
+           ) do
         {:ok, result} ->
           documents = Map.get(result, "documents", [])
           filtered = apply_query_filters(documents, query)
           {:ok, filtered}
-        error -> error
+
+        error ->
+          error
       end
     else
       # Google API クライアントの場合
       parent = "projects/#{project_id}/databases/(default)/documents"
-      
+
       request = %RunQueryRequest{
         structuredQuery: query
       }
-      
+
       case Projects.firestore_projects_databases_documents_run_query(
-        conn,
-        parent,
-        body: request
-      ) do
+             conn,
+             parent,
+             body: request
+           ) do
         {:ok, results} ->
           documents = Enum.map(results, fn result -> result.document end)
           {:ok, documents}
+
         error ->
           error
       end
@@ -268,16 +275,19 @@ defmodule QueryService.Infrastructure.Firestore.OrderRepository do
     query =
       filters
       |> Enum.reduce(query, fn
-        {:user_id, user_id}, q -> 
+        {:user_id, user_id}, q ->
           add_filter(q, "user_id", "EQUAL", user_id)
-        {:status, status}, q -> 
+
+        {:status, status}, q ->
           add_filter(q, "status", "EQUAL", status)
-        {:limit, limit}, q -> 
+
+        {:limit, limit}, q ->
           %{q | limit: %{value: limit}}
-        _, q -> 
+
+        _, q ->
           q
       end)
-    
+
     # ソート順を追加
     case Map.get(filters, :sort_by) do
       nil -> query
@@ -293,16 +303,18 @@ defmodule QueryService.Infrastructure.Firestore.OrderRepository do
         value: build_value(value)
       }
     }
-    
+
     where = Map.get(query, :where, %{})
-    updated_where = 
+
+    updated_where =
       case where do
         %{compositeFilter: %{filters: filters}} ->
           %{compositeFilter: %{op: "AND", filters: filters ++ [filter]}}
+
         _ ->
           filter
       end
-    
+
     %{query | where: updated_where}
   end
 
@@ -311,17 +323,17 @@ defmodule QueryService.Infrastructure.Firestore.OrderRepository do
       field: %{fieldPath: field},
       direction: if(direction == :desc, do: "DESCENDING", else: "ASCENDING")
     }
-    
+
     %{query | orderBy: [order]}
   end
 
   defp build_order_document(attrs) do
-    fields = 
+    fields =
       attrs
       |> Map.to_list()
       |> Enum.map(fn {key, value} -> {to_string(key), build_value(value)} end)
       |> Enum.into(%{})
-    
+
     %Document{fields: fields}
   end
 
@@ -353,9 +365,11 @@ defmodule QueryService.Infrastructure.Firestore.OrderRepository do
     |> Enum.map(fn {key, value} -> {String.to_atom(key), parse_value(value)} end)
     |> Enum.into(%{})
   end
+
   defp parse_order_document(document) when is_map(document) do
     # エミュレータクライアントの形式
     fields = document["fields"] || %{}
+
     fields
     |> Enum.map(fn {key, value} -> {String.to_atom(key), parse_emulator_value(value)} end)
     |> Enum.into(%{})
@@ -385,29 +399,47 @@ defmodule QueryService.Infrastructure.Firestore.OrderRepository do
     {:ok, datetime, _} = DateTime.from_iso8601(iso8601_string)
     datetime
   end
-  
+
   defp parse_emulator_value(value) when is_map(value) do
     cond do
-      Map.has_key?(value, "stringValue") -> value["stringValue"]
-      Map.has_key?(value, "integerValue") -> String.to_integer(value["integerValue"])
-      Map.has_key?(value, "doubleValue") -> value["doubleValue"]
-      Map.has_key?(value, "booleanValue") -> value["booleanValue"]
-      Map.has_key?(value, "timestampValue") -> parse_timestamp(value["timestampValue"])
-      Map.has_key?(value, "mapValue") -> parse_emulator_map_value(value["mapValue"])
-      Map.has_key?(value, "arrayValue") -> 
+      Map.has_key?(value, "stringValue") ->
+        value["stringValue"]
+
+      Map.has_key?(value, "integerValue") ->
+        String.to_integer(value["integerValue"])
+
+      Map.has_key?(value, "doubleValue") ->
+        value["doubleValue"]
+
+      Map.has_key?(value, "booleanValue") ->
+        value["booleanValue"]
+
+      Map.has_key?(value, "timestampValue") ->
+        parse_timestamp(value["timestampValue"])
+
+      Map.has_key?(value, "mapValue") ->
+        parse_emulator_map_value(value["mapValue"])
+
+      Map.has_key?(value, "arrayValue") ->
         values = get_in(value, ["arrayValue", "values"]) || []
         Enum.map(values, &parse_emulator_value/1)
-      Map.has_key?(value, "nullValue") -> nil
-      true -> nil
+
+      Map.has_key?(value, "nullValue") ->
+        nil
+
+      true ->
+        nil
     end
   end
+
   defp parse_emulator_value(_), do: nil
-  
+
   defp parse_emulator_map_value(%{"fields" => fields}) do
     fields
     |> Enum.map(fn {k, v} -> {String.to_atom(k), parse_emulator_value(v)} end)
     |> Enum.into(%{})
   end
+
   defp parse_emulator_map_value(_), do: %{}
 
   defp extract_document_id(document_name) do
@@ -415,12 +447,12 @@ defmodule QueryService.Infrastructure.Firestore.OrderRepository do
     |> String.split("/")
     |> List.last()
   end
-  
+
   defp is_emulator_client?(conn) do
     # エミュレータクライアントは Map で base_url を持つ
     is_map(conn) && Map.has_key?(conn, :base_url)
   end
-  
+
   defp apply_query_filters(documents, query) do
     # 簡易的なフィルタリング実装
     documents
@@ -428,33 +460,37 @@ defmodule QueryService.Infrastructure.Firestore.OrderRepository do
     |> apply_order_by(query)
     |> apply_limit(query)
   end
-  
+
   defp apply_where_filters(documents, %{where: where}) do
     Enum.filter(documents, fn doc ->
       fields = doc["fields"]
       check_filter(fields, where)
     end)
   end
+
   defp apply_where_filters(documents, _), do: documents
-  
+
   defp check_filter(fields, %{fieldFilter: %{field: %{fieldPath: path}, op: op, value: value}}) do
     field_value = get_field_value(fields, path)
     compare_values(field_value, op, value)
   end
+
   defp check_filter(fields, %{compositeFilter: %{op: "AND", filters: filters}}) do
     Enum.all?(filters, &check_filter(fields, &1))
   end
+
   defp check_filter(_fields, _filter), do: true
-  
+
   defp get_field_value(fields, path) do
     fields[path]
   end
-  
+
   defp compare_values(field_value, "EQUAL", expected_value) do
     normalize_value(field_value) == normalize_value(expected_value)
   end
+
   defp compare_values(_field_value, _op, _expected_value), do: true
-  
+
   defp normalize_value(%{"stringValue" => v}), do: v
   defp normalize_value(%{"integerValue" => v}), do: String.to_integer(v)
   defp normalize_value(%{"booleanValue" => v}), do: v
@@ -462,16 +498,22 @@ defmodule QueryService.Infrastructure.Firestore.OrderRepository do
   defp normalize_value(%Value{integerValue: v}), do: String.to_integer(v)
   defp normalize_value(%Value{booleanValue: v}), do: v
   defp normalize_value(v), do: v
-  
+
   defp apply_order_by(documents, %{orderBy: [%{field: %{fieldPath: path}, direction: direction}]}) do
-    Enum.sort_by(documents, fn doc ->
-      get_field_value(doc["fields"], path) |> normalize_value()
-    end, if(direction == "DESCENDING", do: :desc, else: :asc))
+    Enum.sort_by(
+      documents,
+      fn doc ->
+        get_field_value(doc["fields"], path) |> normalize_value()
+      end,
+      if(direction == "DESCENDING", do: :desc, else: :asc)
+    )
   end
+
   defp apply_order_by(documents, _), do: documents
-  
+
   defp apply_limit(documents, %{limit: %{value: limit}}) do
     Enum.take(documents, limit)
   end
+
   defp apply_limit(documents, _), do: documents
 end

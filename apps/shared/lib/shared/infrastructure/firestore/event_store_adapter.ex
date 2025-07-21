@@ -1,7 +1,7 @@
 defmodule Shared.Infrastructure.Firestore.EventStoreAdapter do
   @moduledoc """
   Firestore を使用したイベントストアアダプター
-  
+
   EventStore のビヘイビアを実装し、Firestore EventStoreRepository に委譲します。
   """
 
@@ -13,32 +13,29 @@ defmodule Shared.Infrastructure.Firestore.EventStoreAdapter do
   def append_events(aggregate_id, aggregate_type, events, expected_version, metadata) do
     # aggregate_id を構築
     full_aggregate_id = "#{aggregate_type}:#{aggregate_id}"
-    
+
     # イベントにメタデータを追加
-    events_with_metadata = 
+    events_with_metadata =
       events
       |> Enum.with_index(expected_version + 1)
       |> Enum.map(fn {event, version} ->
-        %{event | 
-          version: version,
-          metadata: Map.merge(event.metadata || %{}, metadata)
-        }
+        %{event | version: version, metadata: Map.merge(event.metadata || %{}, metadata)}
       end)
-    
+
     EventStoreRepository.append_events(full_aggregate_id, events_with_metadata)
   end
 
   @impl true
   def get_events(aggregate_id, from_version) do
     # aggregate_id からタイプとIDを分離（既に結合されている場合）
-    full_aggregate_id = 
+    full_aggregate_id =
       if String.contains?(aggregate_id, ":") do
         aggregate_id
       else
         # タイプが不明な場合は、全タイプから検索（非効率だが互換性のため）
         "Order:#{aggregate_id}"
       end
-    
+
     EventStoreRepository.get_events(full_aggregate_id, from_version: from_version)
   end
 
@@ -69,7 +66,7 @@ defmodule Shared.Infrastructure.Firestore.EventStoreAdapter do
   def save_snapshot(aggregate_id, aggregate_type, version, data, metadata) do
     full_aggregate_id = "#{aggregate_type}:#{aggregate_id}"
     snapshot = Map.merge(data, metadata)
-    
+
     case EventStoreRepository.save_snapshot(full_aggregate_id, snapshot, version) do
       :ok -> {:ok, snapshot}
       error -> error
@@ -79,13 +76,13 @@ defmodule Shared.Infrastructure.Firestore.EventStoreAdapter do
   @impl true
   def get_snapshot(aggregate_id) do
     # aggregate_id からタイプとIDを分離（既に結合されている場合）
-    full_aggregate_id = 
+    full_aggregate_id =
       if String.contains?(aggregate_id, ":") do
         aggregate_id
       else
         "Order:#{aggregate_id}"
       end
-    
+
     case EventStoreRepository.get_latest_snapshot(full_aggregate_id) do
       {:ok, {snapshot, _version}} -> {:ok, snapshot}
       error -> error

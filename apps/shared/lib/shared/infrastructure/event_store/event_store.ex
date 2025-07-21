@@ -62,6 +62,7 @@ defmodule Shared.Infrastructure.EventStore.EventStore do
       case Shared.Config.database_adapter() do
         :firestore ->
           Shared.Infrastructure.Firestore.EventStoreAdapter
+
         _ ->
           Application.get_env(
             :shared,
