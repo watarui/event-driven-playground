@@ -156,7 +156,18 @@ echo "DB_QUEUE_INTERVAL=$DB_QUEUE_INTERVAL"
 echo "DB_TIMEOUT=$DB_TIMEOUT"
 echo "DB_CONNECT_TIMEOUT=$DB_CONNECT_TIMEOUT"
 
+# デバッグ: 詳細な設定確認
+echo ""
+echo "=== Debugging: Checking database configuration ==="
+cp /debug_config.exs /app/debug_config.exs 2>/dev/null || true
+if [ -f /app/debug_config.exs ]; then
+    MIX_ENV=prod mix run /app/debug_config.exs || true
+else
+    echo "Debug script not found, skipping detailed config check"
+fi
+
 # Mix環境でスキーマを作成
+echo ""
 echo "Creating schemas using Mix task..."
 MIX_ENV=prod mix db.create_schemas || {
     echo "Mix task failed, attempting direct SQL..."

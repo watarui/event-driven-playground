@@ -44,6 +44,7 @@ COPY apps/shared/lib/mix/tasks apps/shared/lib/mix/tasks
 # マイグレーションスクリプトをコピー
 COPY run_migrations.sh /app/run_migrations.sh
 COPY run_migrations_prod.sh /app/run_migrations_prod.sh
+COPY debug_config.exs /app/debug_config.exs
 
 # 依存関係をコンパイル
 RUN mix deps.compile
