@@ -57,7 +57,8 @@ defmodule Mix.Tasks.Db.MigrateWithConfig do
       # 注: Ecto 3.x では動的な再起動はサポートされていないため、
       # 設定の更新のみ行う
       IO.puts("Configuration updated for #{inspect(repo)}")
-      IO.inspect(new_config, label: "New config", limit: :infinity)
+      # デバッグ情報の表示（IO.inspect の代わりに IO.puts を使用）
+      IO.puts("New config: #{inspect(new_config, limit: :infinity)}")
     end
 
     # マイグレーションを実行
