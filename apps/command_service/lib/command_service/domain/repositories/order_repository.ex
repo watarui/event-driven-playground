@@ -9,6 +9,7 @@ defmodule CommandService.Domain.Repositories.OrderRepository do
     aggregate: CommandService.Domain.Aggregates.OrderAggregate,
     aggregate_type: :order
 
+  require Logger
   alias CommandService.Domain.Aggregates.OrderAggregate
   alias Shared.Domain.ValueObjects.EntityId
 

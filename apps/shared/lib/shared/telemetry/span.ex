@@ -52,6 +52,13 @@ defmodule Shared.Telemetry.Span do
   end
 
   @doc """
+  現在のスパンに単一の属性を追加する
+  """
+  def set_attribute(key, value) do
+    set_attributes(%{key => value})
+  end
+
+  @doc """
   現在のスパンにイベントを追加する
   """
   def add_event(name, attributes \\ %{}) do
@@ -65,6 +72,15 @@ defmodule Shared.Telemetry.Span do
   def set_status(:error, message), do: Tracer.set_status(:error, message)
 
   @doc """
+  現在のスパンにエラーを設定する
+  """
+  def set_error(message) do
+    set_status(:error, message)
+    set_attribute("error", true)
+    set_attribute("error.message", message)
+  end
+
+  @doc """
   現在のトレースIDを取得する
   """
   def get_trace_id do
@@ -73,8 +89,8 @@ defmodule Shared.Telemetry.Span do
         nil
 
       span_ctx ->
-        {:ok, trace_id} = OpenTelemetry.Span.trace_id(span_ctx)
-        trace_id |> :io_lib.format("~32.16.0b") |> to_string()
+        trace_id = OpenTelemetry.Span.trace_id(span_ctx)
+        :io_lib.format("~32.16.0b", [trace_id]) |> to_string()
     end
   end
 
@@ -87,8 +103,8 @@ defmodule Shared.Telemetry.Span do
         nil
 
       span_ctx ->
-        {:ok, span_id} = OpenTelemetry.Span.span_id(span_ctx)
-        span_id |> :io_lib.format("~16.16.0b") |> to_string()
+        span_id = OpenTelemetry.Span.span_id(span_ctx)
+        :io_lib.format("~16.16.0b", [span_id]) |> to_string()
     end
   end
 

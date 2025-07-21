@@ -113,7 +113,7 @@ defmodule Shared.Domain.ValueObjects.PhoneNumber do
 
       String.starts_with?(cleaned, "0") ->
         # 国内番号形式の場合、デフォルトの国番号を付与
-        default_country_code <> String.slice(cleaned, 1..-1)
+        default_country_code <> String.slice(cleaned, 1..-1//1)
 
       true ->
         # 既に国番号なしの形式
@@ -129,10 +129,10 @@ defmodule Shared.Domain.ValueObjects.PhoneNumber do
     # 簡易的な実装。実際はより複雑な国別ルールが必要
     cond do
       String.starts_with?(number, "+81") ->
-        {"+81", String.slice(number, 3..-1)}
+        {"+81", String.slice(number, 3..-1//1)}
 
       String.starts_with?(number, "+1") ->
-        {"+1", String.slice(number, 2..-1)}
+        {"+1", String.slice(number, 2..-1//1)}
 
       String.starts_with?(number, "+") ->
         # その他の国

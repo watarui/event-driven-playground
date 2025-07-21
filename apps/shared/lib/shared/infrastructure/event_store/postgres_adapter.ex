@@ -289,18 +289,6 @@ defmodule Shared.Infrastructure.EventStore.PostgresAdapter do
 
   # Private functions
 
-  defp validate_version(multi, aggregate_id, expected_version) do
-    Ecto.Multi.run(multi, :validate_version, fn repo, _changes ->
-      current_version = get_current_version(repo, aggregate_id)
-
-      if current_version == expected_version do
-        {:ok, :valid}
-      else
-        {:error, {:version_mismatch, expected_version, current_version}}
-      end
-    end)
-  end
-
   defp get_current_version(_repo, aggregate_id) do
     uuid_aggregate_id = ensure_uuid_string(aggregate_id)
     # キャッシュからバージョンを取得
@@ -323,42 +311,6 @@ defmodule Shared.Infrastructure.EventStore.PostgresAdapter do
     end
   end
 
-  defp insert_events(multi, aggregate_id, aggregate_type, events, expected_version, metadata) do
-    Ecto.Multi.run(multi, :events, fn _repo, _changes ->
-      event_records =
-        events
-        |> Enum.with_index(1)
-        |> Enum.map(fn {event, index} ->
-          %{
-            aggregate_id: aggregate_id,
-            aggregate_type: aggregate_type,
-            event_type: event.__struct__.event_type(),
-            event_data: encode_event_data(event),
-            event_version: expected_version + index,
-            metadata: metadata,
-            # global_sequence を追加
-            global_sequence: nil,
-            # schema_version を追加
-            schema_version: 1,
-            inserted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second),
-            updated_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
-          }
-        end)
-
-      Logger.debug("Inserting #{length(event_records)} events for aggregate #{aggregate_id}")
-
-      {count, inserted} =
-        Shared.Infrastructure.EventStore.Repo.insert_all(Event, event_records, returning: true)
-
-      Logger.debug("Inserted #{count} events successfully")
-
-      if count == length(events) do
-        {:ok, inserted}
-      else
-        {:error, :insert_failed}
-      end
-    end)
-  end
 
   defp encode_event_data(event) do
     event
@@ -506,7 +458,7 @@ defmodule Shared.Infrastructure.EventStore.PostgresAdapter do
       {:ok, version} ->
         {:ok, version}
 
-      {:error, :not_found} ->
+      {:error, :not_cached} ->
         # キャッシュにない場合は DB から取得
         version = get_current_version(nil, uuid_stream_id)
 

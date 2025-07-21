@@ -82,7 +82,7 @@ defmodule ClientService.Auth.Guardian do
     # 基本的なクレームを構築
     new_claims = %{
       "aud" => "client_service",
-      "typ" => Keyword.get(opts, :token_type, "access"),
+      "typ" => (if is_list(opts), do: Keyword.get(opts, :token_type, "access"), else: Map.get(opts, :token_type, "access")),
       "iss" => "client_service"
     }
     

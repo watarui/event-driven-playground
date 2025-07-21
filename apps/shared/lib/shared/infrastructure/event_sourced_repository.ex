@@ -17,6 +17,7 @@ defmodule Shared.Infrastructure.EventSourcedRepository do
 
     quote do
       use Shared.Domain.Repository
+      require Logger
 
       alias unquote(aggregate_module), as: Aggregate
 
