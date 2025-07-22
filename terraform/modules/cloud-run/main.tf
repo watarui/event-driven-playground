@@ -18,7 +18,7 @@ resource "google_cloud_run_v2_service" "services" {
     }
     
     containers {
-      image = "${local.image_base}/${each.key}:8efcfb7"
+      image = "${local.image_base}/${each.key}:latest"
       
       # ports ブロックを削除 - Cloud Run が自動的に PORT 環境変数を設定する
       # ports {
