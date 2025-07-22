@@ -1,7 +1,7 @@
 defmodule CommandService.Domain.Models.Category do
   @moduledoc """
   カテゴリーエンティティ
-  
+
   コマンドサービス側で使用するカテゴリーのドメインモデル
   """
 
@@ -28,13 +28,14 @@ defmodule CommandService.Domain.Models.Category do
   @spec new(String.t(), String.t(), String.t() | nil) :: {:ok, t()} | {:error, atom()}
   def new(id, name, description \\ nil) do
     with :ok <- validate_name(name) do
-      {:ok, %__MODULE__{
-        id: id,
-        name: name,
-        description: description,
-        created_at: DateTime.utc_now(),
-        updated_at: DateTime.utc_now()
-      }}
+      {:ok,
+       %__MODULE__{
+         id: id,
+         name: name,
+         description: description,
+         created_at: DateTime.utc_now(),
+         updated_at: DateTime.utc_now()
+       }}
     end
   end
 
@@ -44,20 +45,22 @@ defmodule CommandService.Domain.Models.Category do
   @spec update(t(), map()) :: {:ok, t()} | {:error, atom()}
   def update(%__MODULE__{} = category, attrs) do
     updated_category = %{category | updated_at: DateTime.utc_now()}
-    
+
     updated_category =
       Enum.reduce(attrs, updated_category, fn
-        {:name, value}, acc -> 
+        {:name, value}, acc ->
           case validate_name(value) do
             :ok -> %{acc | name: value}
             _ -> acc
           end
-        {:description, value}, acc -> 
+
+        {:description, value}, acc ->
           %{acc | description: value}
-        _, acc -> 
+
+        _, acc ->
           acc
       end)
-    
+
     {:ok, updated_category}
   end
 
@@ -86,5 +89,6 @@ defmodule CommandService.Domain.Models.Category do
       {:error, :name_too_long}
     end
   end
+
   defp validate_name(_), do: {:error, :invalid_name}
 end

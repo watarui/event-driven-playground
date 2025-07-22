@@ -32,7 +32,7 @@ defmodule QueryService.Infrastructure.Repositories.CategoryRepository do
   """
   def get(id) do
     case Repository.get(@collection, id) do
-      {:ok, data} -> 
+      {:ok, data} ->
         category = %Category{
           id: data["id"] || data[:id],
           name: data["name"] || data[:name],
@@ -41,9 +41,10 @@ defmodule QueryService.Infrastructure.Repositories.CategoryRepository do
           created_at: parse_datetime(data["created_at"] || data[:created_at]),
           updated_at: parse_datetime(data["updated_at"] || data[:updated_at])
         }
+
         {:ok, category}
-      
-      error -> 
+
+      error ->
         error
     end
   end
@@ -53,26 +54,27 @@ defmodule QueryService.Infrastructure.Repositories.CategoryRepository do
   """
   def get_all(filters \\ %{}) do
     opts = build_query_opts(filters)
-    
+
     case Repository.list(@collection, opts) do
       {:ok, data_list} ->
-        categories = Enum.map(data_list, fn data ->
-          %Category{
-            id: data["id"] || data[:id],
-            name: data["name"] || data[:name],
-            description: data["description"] || data[:description],
-            product_count: data["product_count"] || data[:product_count] || 0,
-            created_at: parse_datetime(data["created_at"] || data[:created_at]),
-            updated_at: parse_datetime(data["updated_at"] || data[:updated_at])
-          }
-        end)
-        
+        categories =
+          Enum.map(data_list, fn data ->
+            %Category{
+              id: data["id"] || data[:id],
+              name: data["name"] || data[:name],
+              description: data["description"] || data[:description],
+              product_count: data["product_count"] || data[:product_count] || 0,
+              created_at: parse_datetime(data["created_at"] || data[:created_at]),
+              updated_at: parse_datetime(data["updated_at"] || data[:updated_at])
+            }
+          end)
+
         # ソート処理
         sorted = apply_sorting(categories, filters)
-        
+
         {:ok, sorted}
-      
-      error -> 
+
+      error ->
         error
     end
   end
@@ -125,9 +127,10 @@ defmodule QueryService.Infrastructure.Repositories.CategoryRepository do
         Enum.each(categories, fn category ->
           delete(category.id)
         end)
+
         {:ok, length(categories)}
-      
-      error -> 
+
+      error ->
         error
     end
   end
@@ -161,17 +164,18 @@ defmodule QueryService.Infrastructure.Repositories.CategoryRepository do
 
   defp build_query_opts(filters) do
     opts = []
-    
+
     # ページネーション
     opts = if Map.has_key?(filters, :limit), do: [{:limit, filters.limit} | opts], else: opts
     opts = if Map.has_key?(filters, :offset), do: [{:offset, filters.offset} | opts], else: opts
-    
+
     opts
   end
 
   defp apply_sorting(categories, %{sort_by: field, sort_order: order}) do
     Enum.sort_by(categories, &Map.get(&1, field), order_to_fun(order))
   end
+
   defp apply_sorting(categories, _), do: categories
 
   defp order_to_fun(:asc), do: &<=/2
@@ -180,11 +184,13 @@ defmodule QueryService.Infrastructure.Repositories.CategoryRepository do
 
   defp parse_datetime(nil), do: nil
   defp parse_datetime(%DateTime{} = dt), do: dt
+
   defp parse_datetime(string) when is_binary(string) do
     case DateTime.from_iso8601(string) do
       {:ok, datetime, _} -> datetime
       _ -> nil
     end
   end
+
   defp parse_datetime(_), do: nil
 end

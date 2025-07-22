@@ -13,9 +13,9 @@ defmodule Shared.Health.Checks.FirestoreCheck do
   """
   def check do
     case perform_check() do
-      :ok -> 
+      :ok ->
         {:ok, %{status: :connected, operations: [:read, :write, :delete]}}
-      
+
       {:error, reason} ->
         {:error, "Firestore check failed: #{inspect(reason)}", %{error: reason}}
     end
@@ -35,6 +35,7 @@ defmodule Shared.Health.Checks.FirestoreCheck do
 
   defp check_write do
     test_id = "health_check_#{:erlang.unique_integer([:positive])}"
+
     test_data = %{
       checked_at: DateTime.utc_now(),
       node: node(),
@@ -42,28 +43,28 @@ defmodule Shared.Health.Checks.FirestoreCheck do
     }
 
     case execute_with_timeout(fn ->
-      Shared.Infrastructure.Firestore.Repository.save(@collection, test_id, test_data)
-    end) do
-      {:ok, _} -> 
+           Shared.Infrastructure.Firestore.Repository.save(@collection, test_id, test_data)
+         end) do
+      {:ok, _} ->
         Process.put(:health_check_doc_id, test_id)
         :ok
-      
-      error -> 
+
+      error ->
         {:error, {:write_failed, error}}
     end
   end
 
   defp check_read do
     test_id = Process.get(:health_check_doc_id)
-    
+
     if test_id do
       case execute_with_timeout(fn ->
-        Shared.Infrastructure.Firestore.Repository.get(@collection, test_id)
-      end) do
-        {:ok, _data} -> 
+             Shared.Infrastructure.Firestore.Repository.get(@collection, test_id)
+           end) do
+        {:ok, _data} ->
           :ok
-        
-        error -> 
+
+        error ->
           {:error, {:read_failed, error}}
       end
     else
@@ -73,16 +74,16 @@ defmodule Shared.Health.Checks.FirestoreCheck do
 
   defp check_delete do
     test_id = Process.get(:health_check_doc_id)
-    
+
     if test_id do
       case execute_with_timeout(fn ->
-        Shared.Infrastructure.Firestore.Repository.delete(@collection, test_id)
-      end) do
-        :ok -> 
+             Shared.Infrastructure.Firestore.Repository.delete(@collection, test_id)
+           end) do
+        :ok ->
           Process.delete(:health_check_doc_id)
           :ok
-        
-        error -> 
+
+        error ->
           {:error, {:delete_failed, error}}
       end
     else
@@ -92,15 +93,15 @@ defmodule Shared.Health.Checks.FirestoreCheck do
 
   defp execute_with_timeout(fun) do
     task = Task.async(fun)
-    
+
     case Task.yield(task, @timeout) || Task.shutdown(task) do
-      {:ok, result} -> 
+      {:ok, result} ->
         result
-      
-      nil -> 
+
+      nil ->
         {:error, :timeout}
-      
-      {:exit, reason} -> 
+
+      {:exit, reason} ->
         {:error, {:task_failed, reason}}
     end
   end

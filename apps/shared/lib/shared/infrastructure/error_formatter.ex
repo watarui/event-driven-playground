@@ -1,7 +1,7 @@
 defmodule Shared.Infrastructure.ErrorFormatter do
   @moduledoc """
   GraphQL エラーフォーマッター
-  
+
   エラーメッセージを統一的なフォーマットに変換します。
   """
 

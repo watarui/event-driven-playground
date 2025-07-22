@@ -25,19 +25,19 @@ defmodule CommandService.Infrastructure.UnitOfWork do
     # 楽観的ロックとイベントの順序保証で一貫性を確保します。
     Process.put(:unit_of_work_events, [])
     Process.put(:unit_of_work_active, true)
-    
+
     try do
       case fun.() do
         {:ok, result} ->
           # 収集したイベントを発行
           publish_collected_events()
           {:ok, result}
-        
+
         {:error, _} = error ->
           # エラーの場合はイベントを破棄
           discard_collected_events()
           error
-        
+
         result ->
           # 関数が{:ok, _} | {:error, _}の形式でない場合
           publish_collected_events()
@@ -78,7 +78,7 @@ defmodule CommandService.Infrastructure.UnitOfWork do
     else
       Logger.warning("Attempted to add event outside of transaction")
     end
-    
+
     :ok
   end
 
@@ -102,10 +102,10 @@ defmodule CommandService.Infrastructure.UnitOfWork do
 
   defp publish_collected_events do
     events = Process.get(:unit_of_work_events, []) |> Enum.reverse()
-    
+
     if Enum.any?(events) do
       Logger.info("Publishing #{length(events)} events from transaction")
-      
+
       # イベントバスに一括で発行
       Enum.each(events, fn event ->
         try do
@@ -113,6 +113,7 @@ defmodule CommandService.Infrastructure.UnitOfWork do
         rescue
           e ->
             Logger.error("Failed to publish event: #{inspect(e)}")
+
             # イベント発行の失敗は記録するが、トランザクション自体は成功とする
             # Dead Letter Queue などで後続処理
         end
@@ -122,7 +123,7 @@ defmodule CommandService.Infrastructure.UnitOfWork do
 
   defp discard_collected_events do
     events = Process.get(:unit_of_work_events, [])
-    
+
     if Enum.any?(events) do
       Logger.info("Discarding #{length(events)} events due to transaction failure")
     end

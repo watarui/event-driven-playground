@@ -38,11 +38,11 @@ defmodule QueryService.Infrastructure.Repositories.ProductRepository do
   """
   def get(id) do
     case Repository.get(@collection, id) do
-      {:ok, data} -> 
+      {:ok, data} ->
         product = build_product_from_data(data)
         {:ok, product}
-      
-      error -> 
+
+      error ->
         error
     end
   end
@@ -52,20 +52,20 @@ defmodule QueryService.Infrastructure.Repositories.ProductRepository do
   """
   def get_all(filters \\ %{}) do
     opts = build_query_opts(filters)
-    
+
     case Repository.list(@collection, opts) do
       {:ok, data_list} ->
         products = Enum.map(data_list, &build_product_from_data/1)
-        
+
         # フィルタリング（Firestore クエリが完全でない場合の補完）
         filtered = apply_filters(products, filters)
-        
+
         # ソート処理
         sorted = apply_sorting(filtered, filters)
-        
+
         {:ok, sorted}
-      
-      error -> 
+
+      error ->
         error
     end
   end
@@ -109,9 +109,10 @@ defmodule QueryService.Infrastructure.Repositories.ProductRepository do
           updated_product = %{product | category_name: new_name}
           save(updated_product)
         end)
+
         {:ok, length(products)}
-      
-      error -> 
+
+      error ->
         error
     end
   end
@@ -126,9 +127,10 @@ defmodule QueryService.Infrastructure.Repositories.ProductRepository do
         Enum.each(products, fn product ->
           delete(product.id)
         end)
+
         {:ok, length(products)}
-      
-      error -> 
+
+      error ->
         error
     end
   end
@@ -186,11 +188,11 @@ defmodule QueryService.Infrastructure.Repositories.ProductRepository do
 
   defp build_query_opts(filters) do
     opts = []
-    
+
     # ページネーション
     opts = if Map.has_key?(filters, :limit), do: [{:limit, filters.limit} | opts], else: opts
     opts = if Map.has_key?(filters, :offset), do: [{:offset, filters.offset} | opts], else: opts
-    
+
     opts
   end
 
@@ -203,25 +205,31 @@ defmodule QueryService.Infrastructure.Repositories.ProductRepository do
   end
 
   defp filter_by_category(products, nil), do: products
+
   defp filter_by_category(products, category_id) do
-    Enum.filter(products, fn product -> 
-      product.category_id == category_id 
+    Enum.filter(products, fn product ->
+      product.category_id == category_id
     end)
   end
 
   defp filter_by_price_range(products, nil, nil), do: products
+
   defp filter_by_price_range(products, min_price, nil) do
     min = Decimal.new(min_price)
-    Enum.filter(products, fn product -> 
+
+    Enum.filter(products, fn product ->
       Decimal.compare(product.price, min) in [:gt, :eq]
     end)
   end
+
   defp filter_by_price_range(products, nil, max_price) do
     max = Decimal.new(max_price)
-    Enum.filter(products, fn product -> 
+
+    Enum.filter(products, fn product ->
       Decimal.compare(product.price, max) in [:lt, :eq]
     end)
   end
+
   defp filter_by_price_range(products, min_price, max_price) do
     products
     |> filter_by_price_range(min_price, nil)
@@ -229,25 +237,30 @@ defmodule QueryService.Infrastructure.Repositories.ProductRepository do
   end
 
   defp filter_by_stock(products, nil), do: products
+
   defp filter_by_stock(products, true) do
-    Enum.filter(products, fn product -> 
-      product.stock_quantity > 0 
+    Enum.filter(products, fn product ->
+      product.stock_quantity > 0
     end)
   end
+
   defp filter_by_stock(products, false), do: products
 
   defp filter_by_search(products, nil), do: products
+
   defp filter_by_search(products, search_term) do
     term = String.downcase(search_term)
+
     Enum.filter(products, fn product ->
       String.contains?(String.downcase(product.name), term) ||
-      (product.description && String.contains?(String.downcase(product.description), term))
+        (product.description && String.contains?(String.downcase(product.description), term))
     end)
   end
 
   defp apply_sorting(products, %{sort_by: field, sort_order: order}) do
     Enum.sort_by(products, &Map.get(&1, field), order_to_fun(order))
   end
+
   defp apply_sorting(products, _), do: products
 
   defp order_to_fun(:asc), do: &<=/2
@@ -257,21 +270,25 @@ defmodule QueryService.Infrastructure.Repositories.ProductRepository do
   defp parse_decimal(nil), do: Decimal.new(0)
   defp parse_decimal(value) when is_float(value), do: Decimal.from_float(value)
   defp parse_decimal(value) when is_integer(value), do: Decimal.new(value)
+
   defp parse_decimal(value) when is_binary(value) do
     case Decimal.parse(value) do
       {decimal, _} -> decimal
       :error -> Decimal.new(0)
     end
   end
+
   defp parse_decimal(_), do: Decimal.new(0)
 
   defp parse_datetime(nil), do: nil
   defp parse_datetime(%DateTime{} = dt), do: dt
+
   defp parse_datetime(string) when is_binary(string) do
     case DateTime.from_iso8601(string) do
       {:ok, datetime, _} -> datetime
       _ -> nil
     end
   end
+
   defp parse_datetime(_), do: nil
 end

@@ -42,7 +42,7 @@ defmodule QueryService.Domain.ReadModels.Order do
     @moduledoc """
     注文アイテムの構造体
     """
-    
+
     @enforce_keys [:product_id, :product_name, :quantity, :unit_price, :subtotal]
     defstruct [
       :product_id,

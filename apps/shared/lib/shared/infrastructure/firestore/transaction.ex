@@ -1,16 +1,22 @@
 defmodule Shared.Infrastructure.Firestore.Transaction do
   @moduledoc """
   Firestore トランザクションの実装
-  
+
   アトミックな読み書き操作を提供します。
   """
 
   alias Shared.Infrastructure.Firestore.Client
   alias GoogleApi.Firestore.V1.Api.Projects
+
   alias GoogleApi.Firestore.V1.Model.{
-    BeginTransactionRequest, CommitRequest, RollbackRequest,
-    Write, Document, Value
+    BeginTransactionRequest,
+    CommitRequest,
+    RollbackRequest,
+    Write,
+    Document,
+    Value
   }
+
   require Logger
 
   @max_retries 5
@@ -18,9 +24,9 @@ defmodule Shared.Infrastructure.Firestore.Transaction do
 
   @doc """
   トランザクション内で操作を実行する
-  
+
   ## 例
-  
+
       Transaction.run(fn tx ->
         {:ok, doc} = Transaction.get(tx, "users", "user123")
         updated_doc = Map.put(doc, "counter", doc["counter"] + 1)
@@ -38,7 +44,6 @@ defmodule Shared.Infrastructure.Firestore.Transaction do
          project_id <- Client.get_project_id(:shared),
          database <- "projects/#{project_id}/databases/(default)",
          {:ok, %{transaction: transaction_id}} <- begin_transaction(conn, database) do
-      
       # トランザクションコンテキストを作成
       tx_context = %{
         conn: conn,
@@ -48,23 +53,25 @@ defmodule Shared.Infrastructure.Firestore.Transaction do
         reads: [],
         writes: []
       }
-      
+
       # トランザクション関数を実行
       case execute_transaction_function(fun, tx_context) do
         {:ok, result, final_context} ->
           # コミット
           case commit_transaction(conn, database, final_context) do
-            {:ok, _} -> 
+            {:ok, _} ->
               {:ok, result}
+
             {:error, :conflict} ->
               # リトライ
               Process.sleep(@retry_delay)
               run_with_retry(fun, retries_left - 1)
+
             error ->
               rollback_transaction(conn, database, transaction_id)
               error
           end
-        
+
         {:error, _} = error ->
           rollback_transaction(conn, database, transaction_id)
           error
@@ -81,20 +88,20 @@ defmodule Shared.Infrastructure.Firestore.Transaction do
   """
   def get(tx_context, collection, doc_id) do
     name = build_document_name(tx_context.project_id, collection, doc_id)
-    
+
     case Projects.firestore_projects_databases_documents_get(
-      tx_context.conn,
-      name,
-      transaction: tx_context.transaction_id
-    ) do
+           tx_context.conn,
+           name,
+           transaction: tx_context.transaction_id
+         ) do
       {:ok, document} ->
         # 読み取ったドキュメントを記録（競合検出用）
         updated_context = Map.update!(tx_context, :reads, &[document | &1])
         {:ok, parse_document(document), updated_context}
-      
+
       {:error, 404} ->
         {:ok, nil, tx_context}
-      
+
       error ->
         error
     end
@@ -107,7 +114,7 @@ defmodule Shared.Infrastructure.Firestore.Transaction do
     write = %Write{
       update: build_document(tx_context.project_id, collection, doc_id, data)
     }
-    
+
     updated_context = Map.update!(tx_context, :writes, &[write | &1])
     {:ok, updated_context}
   end
@@ -117,11 +124,11 @@ defmodule Shared.Infrastructure.Firestore.Transaction do
   """
   def delete(tx_context, collection, doc_id) do
     name = build_document_name(tx_context.project_id, collection, doc_id)
-    
+
     write = %Write{
       delete: name
     }
-    
+
     updated_context = Map.update!(tx_context, :writes, &[write | &1])
     {:ok, updated_context}
   end
@@ -130,9 +137,10 @@ defmodule Shared.Infrastructure.Firestore.Transaction do
 
   defp begin_transaction(conn, database) do
     request = %BeginTransactionRequest{
-      options: %{} # デフォルトオプション（読み書き可能）
+      # デフォルトオプション（読み書き可能）
+      options: %{}
     }
-    
+
     Projects.firestore_projects_databases_documents_begin_transaction(
       conn,
       database,
@@ -143,21 +151,22 @@ defmodule Shared.Infrastructure.Firestore.Transaction do
   defp commit_transaction(conn, database, tx_context) do
     request = %CommitRequest{
       transaction: tx_context.transaction_id,
-      writes: Enum.reverse(tx_context.writes) # 書き込み順序を保持
+      # 書き込み順序を保持
+      writes: Enum.reverse(tx_context.writes)
     }
-    
+
     case Projects.firestore_projects_databases_documents_commit(
-      conn,
-      database,
-      body: request
-    ) do
-      {:ok, _result} -> 
+           conn,
+           database,
+           body: request
+         ) do
+      {:ok, _result} ->
         {:ok, :committed}
-      
-      {:error, %{status: 409}} -> 
+
+      {:error, %{status: 409}} ->
         {:error, :conflict}
-      
-      error -> 
+
+      error ->
         error
     end
   end
@@ -166,19 +175,21 @@ defmodule Shared.Infrastructure.Firestore.Transaction do
     request = %RollbackRequest{
       transaction: transaction_id
     }
-    
+
     Projects.firestore_projects_databases_documents_rollback(
       conn,
       database,
       body: request
     )
   catch
-    _ -> :ok # ロールバックの失敗は無視
+    # ロールバックの失敗は無視
+    _ -> :ok
   end
 
   defp execute_transaction_function(fun, tx_context) do
     try do
       result = fun.(tx_context)
+
       case result do
         {:ok, value, final_context} -> {:ok, value, final_context}
         {:ok, value} -> {:ok, value, tx_context}
@@ -204,7 +215,7 @@ defmodule Shared.Infrastructure.Firestore.Transaction do
   end
 
   defp encode_fields(data) when is_map(data) do
-    Map.new(data, fn {key, value} -> 
+    Map.new(data, fn {key, value} ->
       {to_string(key), encode_value(value)}
     end)
   end

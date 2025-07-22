@@ -98,15 +98,17 @@ defmodule CommandService.Application.Handlers.CategoryCommandHandler do
         case CategoryRepository.has_products?(category_id) do
           {:ok, false} ->
             :ok
+
           {:ok, true} ->
             {:error, "Cannot delete category with products"}
+
           error ->
             error
         end
 
       {:ok, true} ->
         {:error, "Cannot delete category with sub-categories"}
-      
+
       error ->
         error
     end

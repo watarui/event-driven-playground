@@ -1,7 +1,7 @@
 defmodule Shared.Infrastructure.Saga.SagaDefinition do
   @moduledoc """
   Saga定義のためのビヘイビア
-  
+
   長時間実行されるビジネストランザクションを実装するための
   インターフェースを定義します。
   """
@@ -24,23 +24,23 @@ defmodule Shared.Infrastructure.Saga.SagaDefinition do
   @doc """
   イベントを処理する
   """
-  @callback handle_event(event :: struct(), state :: map()) :: 
-              {:ok, new_state :: map()} | 
-              {:error, reason :: term()}
+  @callback handle_event(event :: struct(), state :: map()) ::
+              {:ok, new_state :: map()}
+              | {:error, reason :: term()}
 
   @doc """
   ステップを実行する
   """
-  @callback execute_step(step :: atom(), state :: map()) :: 
-              {:ok, commands :: [struct()]} | 
-              {:error, reason :: term()}
+  @callback execute_step(step :: atom(), state :: map()) ::
+              {:ok, commands :: [struct()]}
+              | {:error, reason :: term()}
 
   @doc """
   ステップを補償する（ロールバック）
   """
-  @callback compensate_step(step :: atom(), state :: map()) :: 
-              {:ok, commands :: [struct()]} | 
-              {:error, reason :: term()}
+  @callback compensate_step(step :: atom(), state :: map()) ::
+              {:ok, commands :: [struct()]}
+              | {:error, reason :: term()}
 
   @doc """
   ステップがリトライ可能かチェックする
@@ -78,10 +78,11 @@ defmodule Shared.Infrastructure.Saga.SagaDefinition do
       @behaviour Shared.Infrastructure.Saga.SagaDefinition
 
       # デフォルト実装
-      def timeout, do: 300_000  # 5分
+      # 5分
+      def timeout, do: 300_000
       def max_retries, do: 3
 
-      defoverridable [timeout: 0, max_retries: 0]
+      defoverridable timeout: 0, max_retries: 0
     end
   end
 end

@@ -35,11 +35,11 @@ defmodule CommandService.Infrastructure.Repositories.OrderRepository do
   """
   def find_by_id(id) do
     case Repository.get(@collection, id) do
-      {:ok, data} -> 
+      {:ok, data} ->
         order = build_order_from_data(data)
         {:ok, order}
-      
-      error -> 
+
+      error ->
         error
     end
   end
@@ -48,13 +48,14 @@ defmodule CommandService.Infrastructure.Repositories.OrderRepository do
   複数の ID で注文を取得する
   """
   def find_by_ids(ids) when is_list(ids) do
-    orders = Enum.reduce(ids, [], fn id, acc ->
-      case find_by_id(id) do
-        {:ok, order} -> [order | acc]
-        _ -> acc
-      end
-    end)
-    
+    orders =
+      Enum.reduce(ids, [], fn id, acc ->
+        case find_by_id(id) do
+          {:ok, order} -> [order | acc]
+          _ -> acc
+        end
+      end)
+
     {:ok, Enum.reverse(orders)}
   end
 
@@ -68,8 +69,8 @@ defmodule CommandService.Infrastructure.Repositories.OrderRepository do
         orders = Enum.map(data_list, &build_order_from_data/1)
         filtered = apply_criteria(orders, criteria)
         {:ok, filtered}
-      
-      error -> 
+
+      error ->
         error
     end
   end
@@ -138,6 +139,7 @@ defmodule CommandService.Infrastructure.Repositories.OrderRepository do
       }
     end)
   end
+
   defp parse_items(_), do: []
 
   defp parse_status("pending"), do: :pending
@@ -155,37 +157,43 @@ defmodule CommandService.Infrastructure.Repositories.OrderRepository do
   end
 
   defp filter_by_customer(orders, nil), do: orders
+
   defp filter_by_customer(orders, customer_id) do
-    Enum.filter(orders, fn order -> 
-      order.customer_id == customer_id 
+    Enum.filter(orders, fn order ->
+      order.customer_id == customer_id
     end)
   end
 
   defp filter_by_status(orders, nil), do: orders
+
   defp filter_by_status(orders, status) do
-    Enum.filter(orders, fn order -> 
-      order.status == status 
+    Enum.filter(orders, fn order ->
+      order.status == status
     end)
   end
 
   defp parse_decimal(nil), do: Decimal.new(0)
   defp parse_decimal(value) when is_float(value), do: Decimal.from_float(value)
   defp parse_decimal(value) when is_integer(value), do: Decimal.new(value)
+
   defp parse_decimal(value) when is_binary(value) do
     case Decimal.parse(value) do
       {decimal, _} -> decimal
       :error -> Decimal.new(0)
     end
   end
+
   defp parse_decimal(_), do: Decimal.new(0)
 
   defp parse_datetime(nil), do: nil
   defp parse_datetime(%DateTime{} = dt), do: dt
+
   defp parse_datetime(string) when is_binary(string) do
     case DateTime.from_iso8601(string) do
       {:ok, datetime, _} -> datetime
       _ -> nil
     end
   end
+
   defp parse_datetime(_), do: nil
 end

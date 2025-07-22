@@ -34,7 +34,7 @@ defmodule CommandService.Infrastructure.Repositories.ProductRepository do
   """
   def get(id) do
     case Repository.get(@collection, id) do
-      {:ok, data} -> 
+      {:ok, data} ->
         product = %Product{
           id: data["id"] || data[:id],
           name: data["name"] || data[:name],
@@ -45,9 +45,10 @@ defmodule CommandService.Infrastructure.Repositories.ProductRepository do
           created_at: parse_datetime(data["created_at"] || data[:created_at]),
           updated_at: parse_datetime(data["updated_at"] || data[:updated_at])
         }
+
         {:ok, product}
-      
-      error -> 
+
+      error ->
         error
     end
   end
@@ -58,21 +59,23 @@ defmodule CommandService.Infrastructure.Repositories.ProductRepository do
   def get_all(opts \\ []) do
     case Repository.list(@collection, opts) do
       {:ok, data_list} ->
-        products = Enum.map(data_list, fn data ->
-          %Product{
-            id: data["id"] || data[:id],
-            name: data["name"] || data[:name],
-            description: data["description"] || data[:description],
-            price: parse_decimal(data["price"] || data[:price]),
-            stock_quantity: data["stock_quantity"] || data[:stock_quantity] || 0,
-            category_id: data["category_id"] || data[:category_id],
-            created_at: parse_datetime(data["created_at"] || data[:created_at]),
-            updated_at: parse_datetime(data["updated_at"] || data[:updated_at])
-          }
-        end)
+        products =
+          Enum.map(data_list, fn data ->
+            %Product{
+              id: data["id"] || data[:id],
+              name: data["name"] || data[:name],
+              description: data["description"] || data[:description],
+              price: parse_decimal(data["price"] || data[:price]),
+              stock_quantity: data["stock_quantity"] || data[:stock_quantity] || 0,
+              category_id: data["category_id"] || data[:category_id],
+              created_at: parse_datetime(data["created_at"] || data[:created_at]),
+              updated_at: parse_datetime(data["updated_at"] || data[:updated_at])
+            }
+          end)
+
         {:ok, products}
-      
-      error -> 
+
+      error ->
         error
     end
   end
@@ -92,12 +95,14 @@ defmodule CommandService.Infrastructure.Repositories.ProductRepository do
     # 一時的に全件取得してフィルタリング
     case get_all() do
       {:ok, products} ->
-        filtered = Enum.filter(products, fn product -> 
-          product.category_id == category_id 
-        end)
+        filtered =
+          Enum.filter(products, fn product ->
+            product.category_id == category_id
+          end)
+
         {:ok, filtered}
-      
-      error -> 
+
+      error ->
         error
     end
   end
@@ -138,21 +143,25 @@ defmodule CommandService.Infrastructure.Repositories.ProductRepository do
   defp parse_decimal(nil), do: Decimal.new(0)
   defp parse_decimal(value) when is_float(value), do: Decimal.from_float(value)
   defp parse_decimal(value) when is_integer(value), do: Decimal.new(value)
+
   defp parse_decimal(value) when is_binary(value) do
     case Decimal.parse(value) do
       {decimal, _} -> decimal
       :error -> Decimal.new(0)
     end
   end
+
   defp parse_decimal(_), do: Decimal.new(0)
 
   defp parse_datetime(nil), do: nil
   defp parse_datetime(%DateTime{} = dt), do: dt
+
   defp parse_datetime(string) when is_binary(string) do
     case DateTime.from_iso8601(string) do
       {:ok, datetime, _} -> datetime
       _ -> nil
     end
   end
+
   defp parse_datetime(_), do: nil
 end

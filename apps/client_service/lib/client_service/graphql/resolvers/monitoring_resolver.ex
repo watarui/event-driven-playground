@@ -18,7 +18,7 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
       event_types: [],
       last_event_at: nil
     }
-    
+
     {:ok, stats}
   end
 
@@ -28,12 +28,13 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
   def list_events(_parent, args, _resolution) do
     limit = Map.get(args, :limit, 100)
     aggregate_id = Map.get(args, :aggregate_id)
-    
+
     if aggregate_id do
       case EventStore.get_events(aggregate_id, 0) do
-        {:ok, events} -> 
+        {:ok, events} ->
           {:ok, Enum.take(events, limit)}
-        error -> 
+
+        error ->
           error
       end
     else
@@ -47,7 +48,7 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
   """
   def recent_events(_parent, args, _resolution) do
     _limit = Map.get(args, :limit, 10)
-    
+
     # TODO: 最近のイベントの取得を実装
     {:ok, []}
   end
@@ -57,7 +58,7 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
   """
   def get_system_statistics(_parent, _args, _resolution) do
     memory_info = :erlang.memory()
-    
+
     stats = %{
       node: node(),
       uptime: :erlang.statistics(:wall_clock) |> elem(0),
@@ -69,7 +70,7 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
         ets: memory_info[:ets]
       }
     }
-    
+
     {:ok, stats}
   end
 
@@ -83,7 +84,7 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
       last_processed_event_id: nil,
       is_rebuilding: false
     }
-    
+
     {:ok, status}
   end
 
@@ -92,7 +93,7 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
   """
   def list_sagas(_parent, args, _resolution) do
     limit = Map.get(args, :limit, 100)
-    
+
     case Repository.list("sagas", limit: limit) do
       {:ok, sagas} -> {:ok, sagas}
       error -> error
@@ -115,7 +116,7 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
   """
   def list_pubsub_messages(_parent, args, _resolution) do
     _limit = Map.get(args, :limit, 100)
-    
+
     # TODO: Pub/Subメッセージの取得を実装
     {:ok, []}
   end
@@ -129,7 +130,7 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
       total_messages: 0,
       subscribers: []
     }
-    
+
     {:ok, stats}
   end
 
@@ -138,7 +139,7 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
   """
   def list_query_executions(_parent, args, _resolution) do
     limit = Map.get(args, :limit, 100)
-    
+
     case Repository.list("query_executions", limit: limit) do
       {:ok, executions} -> {:ok, executions}
       error -> error
@@ -150,7 +151,7 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
   """
   def list_command_executions(_parent, args, _resolution) do
     limit = Map.get(args, :limit, 100)
-    
+
     case Repository.list("command_executions", limit: limit) do
       {:ok, executions} -> {:ok, executions}
       error -> error
@@ -162,17 +163,18 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
   """
   def get_system_topology(_parent, _args, _resolution) do
     nodes = [node() | Node.list()]
-    
+
     topology = %{
-      nodes: Enum.map(nodes, fn n ->
-        %{
-          name: to_string(n),
-          status: if(n == node(), do: "self", else: "connected"),
-          services: get_node_services(n)
-        }
-      end)
+      nodes:
+        Enum.map(nodes, fn n ->
+          %{
+            name: to_string(n),
+            status: if(n == node(), do: "self", else: "connected"),
+            services: get_node_services(n)
+          }
+        end)
     }
-    
+
     {:ok, topology}
   end
 
@@ -187,9 +189,9 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
           health_checks: checks,
           timestamp: DateTime.utc_now()
         }
-        
+
         {:ok, stats}
-      
+
       _ ->
         {:error, "Failed to get dashboard stats"}
     end
@@ -199,7 +201,7 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
 
   defp get_node_services(node_name) do
     node_str = to_string(node_name)
-    
+
     cond do
       String.contains?(node_str, "command") -> ["CommandService"]
       String.contains?(node_str, "query") -> ["QueryService"]

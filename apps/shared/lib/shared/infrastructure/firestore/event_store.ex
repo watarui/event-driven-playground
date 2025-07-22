@@ -20,12 +20,13 @@ defmodule Shared.Infrastructure.Firestore.EventStore do
     # トランザクション内でバージョンチェックと保存を実行
     with {:ok, connection} <- Client.get_connection(),
          {:ok, _} <- verify_version(connection, aggregate_id, expected_version),
-         {:ok, _} <- save_events_batch(connection, aggregate_id, aggregate_type, events, expected_version) do
+         {:ok, _} <-
+           save_events_batch(connection, aggregate_id, aggregate_type, events, expected_version) do
       {:ok, events}
     else
       {:error, :version_conflict} ->
         {:error, :concurrent_modification}
-      
+
       error ->
         Logger.error("Failed to save events: #{inspect(error)}")
         error
@@ -48,7 +49,7 @@ defmodule Shared.Infrastructure.Firestore.EventStore do
     with {:ok, connection} <- Client.get_connection() do
       document_id = "#{aggregate_id}_v#{version}"
       document_path = document_path(@snapshots_collection, document_id)
-      
+
       document = %Document{
         name: document_path,
         fields: %{
@@ -96,13 +97,15 @@ defmodule Shared.Infrastructure.Firestore.EventStore do
           limit: 1
         }
       }
-      
+
       case run_firestore_query(connection, query) do
-        {:ok, [document | _]} -> 
+        {:ok, [document | _]} ->
           {:ok, decode_snapshot(document)}
-        {:ok, []} -> 
+
+        {:ok, []} ->
           {:ok, nil}
-        error -> 
+
+        error ->
           error
       end
     end
@@ -126,19 +129,23 @@ defmodule Shared.Infrastructure.Firestore.EventStore do
           limit: limit
         }
       }
-      
+
       case run_firestore_query(connection, query) do
         {:ok, documents} ->
           events = Enum.map(documents, &decode_event/1)
           # after_event_id より後のイベントをフィルタ
-          filtered = if after_event_id do
-            Enum.drop_while(events, fn event ->
-              event.event_id != after_event_id
-            end) |> Enum.drop(1)
-          else
-            events
-          end
+          filtered =
+            if after_event_id do
+              Enum.drop_while(events, fn event ->
+                event.event_id != after_event_id
+              end)
+              |> Enum.drop(1)
+            else
+              events
+            end
+
           {:ok, filtered}
+
         error ->
           error
       end
@@ -151,16 +158,16 @@ defmodule Shared.Infrastructure.Firestore.EventStore do
     case get_latest_event_version(connection, aggregate_id) do
       {:ok, current_version} when current_version == expected_version ->
         {:ok, current_version}
-      
+
       {:ok, _different_version} ->
         {:error, :version_conflict}
-      
+
       {:error, :not_found} when expected_version == 0 ->
         {:ok, 0}
-      
+
       {:error, :not_found} ->
         {:error, :version_conflict}
-      
+
       error ->
         error
     end
@@ -186,13 +193,15 @@ defmodule Shared.Infrastructure.Firestore.EventStore do
         limit: 1
       }
     }
-    
+
     case run_firestore_query(connection, query) do
       {:ok, [document | _]} ->
         event = decode_event(document)
         {:ok, event.event_version}
+
       {:ok, []} ->
         {:error, :not_found}
+
       error ->
         error
     end
@@ -203,7 +212,7 @@ defmodule Shared.Infrastructure.Firestore.EventStore do
     # TODO: Firestore のトランザクション API を使用してアトミックに保存
     Enum.reduce_while(events, {:ok, base_version}, fn event, {:ok, version} ->
       new_version = version + 1
-      
+
       case save_single_event(connection, aggregate_id, aggregate_type, event, new_version) do
         {:ok, _} -> {:cont, {:ok, new_version}}
         error -> {:halt, error}
@@ -214,7 +223,7 @@ defmodule Shared.Infrastructure.Firestore.EventStore do
   defp save_single_event(connection, aggregate_id, aggregate_type, event, version) do
     document_id = "#{aggregate_id}_v#{version}_#{UUID.uuid4()}"
     document_path = document_path(@events_collection, document_id)
-    
+
     document = %Document{
       name: document_path,
       fields: %{
@@ -268,11 +277,12 @@ defmodule Shared.Infrastructure.Firestore.EventStore do
         ]
       }
     }
-    
+
     case run_firestore_query(connection, query) do
       {:ok, documents} ->
         events = Enum.map(documents, &decode_event/1)
         {:ok, events}
+
       error ->
         error
     end
@@ -281,34 +291,37 @@ defmodule Shared.Infrastructure.Firestore.EventStore do
   defp run_firestore_query(connection, query) do
     project_id = Client.get_project_id(:shared)
     parent = "projects/#{project_id}/databases/(default)/documents"
-    
+
     case Projects.firestore_projects_databases_documents_run_query(
-      connection,
-      parent,
-      body: query
-    ) do
+           connection,
+           parent,
+           body: query
+         ) do
       {:ok, responses} ->
-        documents = Enum.flat_map(responses, fn response ->
-          case response do
-            %{document: doc} when not is_nil(doc) -> [doc]
-            _ -> []
-          end
-        end)
+        documents =
+          Enum.flat_map(responses, fn response ->
+            case response do
+              %{document: doc} when not is_nil(doc) -> [doc]
+              _ -> []
+            end
+          end)
+
         {:ok, documents}
+
       error ->
         Logger.error("Firestore query failed: #{inspect(error)}")
         error
     end
   end
 
-
   defp decode_event(document) do
-    fields = case document do
-      %{fields: f} -> f
-      %{"fields" => f} -> f
-      _ -> %{}
-    end
-    
+    fields =
+      case document do
+        %{fields: f} -> f
+        %{"fields" => f} -> f
+        _ -> %{}
+      end
+
     %{
       event_id: Map.get(document, "name", "") |> String.split("/") |> List.last(),
       aggregate_id: get_field_value(fields, "aggregate_id", :string),
@@ -321,12 +334,13 @@ defmodule Shared.Infrastructure.Firestore.EventStore do
   end
 
   defp decode_snapshot(document) do
-    fields = case document do
-      %{fields: f} -> f
-      %{"fields" => f} -> f
-      _ -> %{}
-    end
-    
+    fields =
+      case document do
+        %{fields: f} -> f
+        %{"fields" => f} -> f
+        _ -> %{}
+      end
+
     %{
       aggregate_id: get_field_value(fields, "aggregate_id", :string),
       aggregate_type: get_field_value(fields, "aggregate_type", :string),
@@ -368,21 +382,22 @@ defmodule Shared.Infrastructure.Firestore.EventStore do
   defp encode_value(value) when is_float(value), do: %Value{doubleValue: value}
   defp encode_value(value) when is_boolean(value), do: %Value{booleanValue: value}
   defp encode_value(nil), do: %Value{nullValue: "NULL_VALUE"}
-  
+
   defp encode_value(%DateTime{} = value) do
     %Value{timestampValue: DateTime.to_iso8601(value)}
   end
-  
+
   defp encode_value(value) when is_map(value) do
     %Value{
       mapValue: %MapValue{
-        fields: Map.new(value, fn {k, v} -> 
-          {to_string(k), encode_value(v)} 
-        end)
+        fields:
+          Map.new(value, fn {k, v} ->
+            {to_string(k), encode_value(v)}
+          end)
       }
     }
   end
-  
+
   defp encode_value(value) when is_list(value) do
     %Value{
       arrayValue: %ArrayValue{
@@ -396,19 +411,19 @@ defmodule Shared.Infrastructure.Firestore.EventStore do
   defp decode_value(%{"doubleValue" => value}), do: value
   defp decode_value(%{"booleanValue" => value}), do: value
   defp decode_value(%{"nullValue" => _}), do: nil
-  
+
   defp decode_value(%{"timestampValue" => value}) do
     decode_timestamp(value)
   end
-  
+
   defp decode_value(%{"mapValue" => %{"fields" => fields}}) do
     Map.new(fields, fn {k, v} -> {k, decode_value(v)} end)
   end
-  
+
   defp decode_value(%{"arrayValue" => %{"values" => values}}) do
     Enum.map(values, &decode_value/1)
   end
-  
+
   defp decode_value(value), do: value
 
   defp decode_timestamp(timestamp_string) do

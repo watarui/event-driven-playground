@@ -94,10 +94,12 @@ defmodule CommandService.Domain.Models.Order do
   """
   def add_item(%__MODULE__{} = order, item) do
     updated_items = [item | order.items]
-    %{order | 
-      items: updated_items,
-      total_amount: calculate_total(updated_items),
-      updated_at: DateTime.utc_now()
+
+    %{
+      order
+      | items: updated_items,
+        total_amount: calculate_total(updated_items),
+        updated_at: DateTime.utc_now()
     }
   end
 
@@ -105,14 +107,16 @@ defmodule CommandService.Domain.Models.Order do
   注文アイテムを削除する
   """
   def remove_item(%__MODULE__{} = order, product_id) do
-    updated_items = Enum.reject(order.items, fn item -> 
-      item.product_id == product_id 
-    end)
-    
-    %{order | 
-      items: updated_items,
-      total_amount: calculate_total(updated_items),
-      updated_at: DateTime.utc_now()
+    updated_items =
+      Enum.reject(order.items, fn item ->
+        item.product_id == product_id
+      end)
+
+    %{
+      order
+      | items: updated_items,
+        total_amount: calculate_total(updated_items),
+        updated_at: DateTime.utc_now()
     }
   end
 end

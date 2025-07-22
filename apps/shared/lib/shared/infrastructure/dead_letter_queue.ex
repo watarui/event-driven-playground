@@ -1,7 +1,7 @@
 defmodule Shared.Infrastructure.DeadLetterQueue do
   @moduledoc """
   Dead Letter Queue の実装（Firestore版）
-  
+
   処理に失敗したメッセージを保存し、後で再処理できるようにします。
   """
 
@@ -29,7 +29,7 @@ defmodule Shared.Infrastructure.DeadLetterQueue do
       {:ok, _} ->
         Logger.warning("Message added to dead letter queue: #{message_type}")
         :ok
-      
+
       error ->
         Logger.error("Failed to add message to dead letter queue: #{inspect(error)}")
         error
@@ -49,7 +49,7 @@ defmodule Shared.Infrastructure.DeadLetterQueue do
       {:ok, entries} ->
         messages = Enum.map(entries, &parse_entry/1)
         {:ok, messages}
-      
+
       error ->
         error
     end
@@ -62,14 +62,15 @@ defmodule Shared.Infrastructure.DeadLetterQueue do
     # TODO: Firestore のクエリ機能を使用して最適化
     case Repository.list(@collection, limit: limit) do
       {:ok, entries} ->
-        filtered = entries
-        |> Enum.map(&parse_entry/1)
-        |> Enum.filter(fn entry -> 
-          entry.message_type == to_string(message_type)
-        end)
-        
+        filtered =
+          entries
+          |> Enum.map(&parse_entry/1)
+          |> Enum.filter(fn entry ->
+            entry.message_type == to_string(message_type)
+          end)
+
         {:ok, filtered}
-      
+
       error ->
         error
     end
@@ -80,11 +81,12 @@ defmodule Shared.Infrastructure.DeadLetterQueue do
   """
   def mark_for_retry(entry_id) do
     with {:ok, data} <- Repository.get(@collection, entry_id) do
-      updated = Map.merge(data, %{
-        "retry_count" => (data["retry_count"] || 0) + 1,
-        "updated_at" => DateTime.utc_now()
-      })
-      
+      updated =
+        Map.merge(data, %{
+          "retry_count" => (data["retry_count"] || 0) + 1,
+          "updated_at" => DateTime.utc_now()
+        })
+
       Repository.save(@collection, entry_id, updated)
     end
   end
@@ -101,23 +103,24 @@ defmodule Shared.Infrastructure.DeadLetterQueue do
   """
   def cleanup_old_entries(days_to_keep \\ 30) do
     cutoff_date = DateTime.add(DateTime.utc_now(), -days_to_keep * 24 * 60 * 60, :second)
-    
+
     # TODO: バッチ削除の実装
     case Repository.list(@collection, []) do
       {:ok, entries} ->
-        old_entries = Enum.filter(entries, fn entry ->
-          case parse_datetime(entry["created_at"] || entry[:created_at]) do
-            nil -> false
-            created_at -> DateTime.compare(created_at, cutoff_date) == :lt
-          end
-        end)
-        
+        old_entries =
+          Enum.filter(entries, fn entry ->
+            case parse_datetime(entry["created_at"] || entry[:created_at]) do
+              nil -> false
+              created_at -> DateTime.compare(created_at, cutoff_date) == :lt
+            end
+          end)
+
         Enum.each(old_entries, fn entry ->
           delete(entry["id"] || entry[:id])
         end)
-        
+
         {:ok, length(old_entries)}
-      
+
       error ->
         error
     end
@@ -144,11 +147,13 @@ defmodule Shared.Infrastructure.DeadLetterQueue do
 
   defp parse_datetime(nil), do: nil
   defp parse_datetime(%DateTime{} = dt), do: dt
+
   defp parse_datetime(string) when is_binary(string) do
     case DateTime.from_iso8601(string) do
       {:ok, datetime, _} -> datetime
       _ -> nil
     end
   end
+
   defp parse_datetime(_), do: nil
 end

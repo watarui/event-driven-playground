@@ -57,11 +57,11 @@ defmodule Shared.Infrastructure.Firestore.Repository do
   @impl true
   def transaction(fun) do
     alias Shared.Infrastructure.Firestore.Transaction
-    
+
     Transaction.run(fn tx ->
       # トランザクションコンテキストを Process に保存
       Process.put(:firestore_transaction, tx)
-      
+
       try do
         result = fun.()
         Process.delete(:firestore_transaction)
@@ -78,18 +78,18 @@ defmodule Shared.Infrastructure.Firestore.Repository do
   def query(collection, filters, opts \\ []) do
     with {:ok, conn} <- Client.get_connection(),
          project_id <- Client.get_project_id(:shared) do
-      
       query = build_query(collection, filters, opts)
       parent = "projects/#{project_id}/databases/(default)/documents"
-      
+
       case Projects.firestore_projects_databases_documents_run_query(
-        conn,
-        parent,
-        body: query
-      ) do
+             conn,
+             parent,
+             body: query
+           ) do
         {:ok, responses} ->
           documents = extract_documents_from_responses(responses)
           {:ok, Enum.map(documents, &parse_document/1)}
+
         error ->
           Logger.error("Query failed: #{inspect(error)}")
           error
@@ -111,38 +111,47 @@ defmodule Shared.Infrastructure.Firestore.Repository do
   end
 
   defp add_filters(query, filters) when map_size(filters) == 0, do: query
-  defp add_filters(query, filters) do
-    filter_conditions = Enum.map(filters, fn {field, value} ->
-      %{
-        fieldFilter: %{
-          field: %{fieldPath: to_string(field)},
-          op: "EQUAL",
-          value: build_value(value)
-        }
-      }
-    end)
 
-    where_clause = case filter_conditions do
-      [single] -> single
-      multiple -> %{
-        compositeFilter: %{
-          op: "AND",
-          filters: multiple
+  defp add_filters(query, filters) do
+    filter_conditions =
+      Enum.map(filters, fn {field, value} ->
+        %{
+          fieldFilter: %{
+            field: %{fieldPath: to_string(field)},
+            op: "EQUAL",
+            value: build_value(value)
+          }
         }
-      }
-    end
+      end)
+
+    where_clause =
+      case filter_conditions do
+        [single] ->
+          single
+
+        multiple ->
+          %{
+            compositeFilter: %{
+              op: "AND",
+              filters: multiple
+            }
+          }
+      end
 
     put_in(query[:structuredQuery][:where], where_clause)
   end
 
   defp add_ordering(query, opts) do
     case Keyword.get(opts, :order_by) do
-      nil -> query
+      nil ->
+        query
+
       {field, direction} ->
         order = %{
           field: %{fieldPath: to_string(field)},
           direction: to_string(direction) |> String.upcase()
         }
+
         put_in(query[:structuredQuery][:orderBy], [order])
     end
   end
