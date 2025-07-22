@@ -77,6 +77,12 @@ variable "google_oauth_client_id" {
   sensitive   = true
 }
 
+variable "github_actions_service_account" {
+  description = "GitHub Actions service account email for Workload Identity Federation"
+  type        = string
+  default     = ""
+}
+
 variable "google_oauth_client_secret" {
   description = "Google OAuth Client Secret for Firebase Authentication"
   type        = string
