@@ -36,7 +36,7 @@ jobs:
           path: |
             deps
             _build
-          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}-${{ hashFiles('**/mix.exs') }}
           restore-keys: |
             ${{ runner.os }}-mix-
 
@@ -44,6 +44,9 @@ jobs:
         run: |
           mix local.hex --force
           mix local.rebar --force
+          # Clean any cached ecto dependencies
+          mix deps.clean --all
+          rm -rf _build
           mix deps.get
 
       - name: Setup Firestore Emulator
