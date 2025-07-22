@@ -15,7 +15,7 @@ defmodule CommandService.Application.Handlers.OrderCommandHandler do
   require Logger
 
   def handle(%OrderCommands.CreateOrder{} = command) do
-    with_idempotency command, "create_order", key_fields: [:user_id, :items] do
+    # TODO: 冪等性の処理を Firestore で実装
       UnitOfWork.transaction(fn ->
         case OrderAggregate.create(command.user_id, command.items) do
           {:ok, order} ->
@@ -46,11 +46,10 @@ defmodule CommandService.Application.Handlers.OrderCommandHandler do
             {:error, BusinessRuleError, %{rule: "order_creation", context: %{reason: reason}}}
         end
       end)
-    end
   end
 
   def handle(%OrderCommands.ConfirmOrder{} = command) do
-    with_idempotency command, "confirm_order", key_fields: [:order_id] do
+    # TODO: 冪等性の処理を Firestore で実装
       UnitOfWork.transaction(fn ->
         {:ok, repo} = RepositoryContext.get_repository(:order)
 
@@ -72,11 +71,10 @@ defmodule CommandService.Application.Handlers.OrderCommandHandler do
             {:error, BusinessRuleError, %{rule: "order_confirmation", context: %{reason: reason}}}
         end
       end)
-    end
   end
 
   def handle(%OrderCommands.CancelOrder{} = command) do
-    with_idempotency command, "cancel_order", key_fields: [:order_id, :reason] do
+    # TODO: 冪等性の処理を Firestore で実装
       UnitOfWork.transaction(fn ->
         {:ok, repo} = RepositoryContext.get_repository(:order)
 
@@ -105,7 +103,6 @@ defmodule CommandService.Application.Handlers.OrderCommandHandler do
             {:error, BusinessRuleError, %{rule: "order_cancellation", context: %{reason: reason}}}
         end
       end)
-    end
   end
 
   def handle(%OrderCommands.ReserveInventory{} = command) do

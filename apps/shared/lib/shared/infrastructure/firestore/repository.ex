@@ -56,17 +56,111 @@ defmodule Shared.Infrastructure.Firestore.Repository do
 
   @impl true
   def transaction(fun) do
-    # Firestore トランザクションの実装
-    # TODO: 実装が複雑なため、後で詳細実装
-    Logger.warning("Firestore transaction not fully implemented yet")
-    fun.()
+    alias Shared.Infrastructure.Firestore.Transaction
+    
+    Transaction.run(fn tx ->
+      # トランザクションコンテキストを Process に保存
+      Process.put(:firestore_transaction, tx)
+      
+      try do
+        result = fun.()
+        Process.delete(:firestore_transaction)
+        result
+      rescue
+        e ->
+          Process.delete(:firestore_transaction)
+          reraise e, __STACKTRACE__
+      end
+    end)
   end
 
   @impl true
-  def query(_collection, _filters, _opts \\ []) do
-    # TODO: Firestore クエリの実装
-    Logger.warning("Firestore query not fully implemented yet")
-    {:ok, []}
+  def query(collection, filters, opts \\ []) do
+    with {:ok, conn} <- Client.get_connection(),
+         project_id <- Client.get_project_id(:shared) do
+      
+      query = build_query(collection, filters, opts)
+      parent = "projects/#{project_id}/databases/(default)/documents"
+      
+      case Projects.firestore_projects_databases_documents_run_query(
+        conn,
+        parent,
+        body: query
+      ) do
+        {:ok, responses} ->
+          documents = extract_documents_from_responses(responses)
+          {:ok, Enum.map(documents, &parse_document/1)}
+        error ->
+          Logger.error("Query failed: #{inspect(error)}")
+          error
+      end
+    end
+  end
+
+  defp build_query(collection, filters, opts) do
+    base_query = %{
+      structuredQuery: %{
+        from: [%{collectionId: collection}]
+      }
+    }
+
+    base_query
+    |> add_filters(filters)
+    |> add_ordering(opts)
+    |> add_limit(opts)
+  end
+
+  defp add_filters(query, filters) when map_size(filters) == 0, do: query
+  defp add_filters(query, filters) do
+    filter_conditions = Enum.map(filters, fn {field, value} ->
+      %{
+        fieldFilter: %{
+          field: %{fieldPath: to_string(field)},
+          op: "EQUAL",
+          value: build_value(value)
+        }
+      }
+    end)
+
+    where_clause = case filter_conditions do
+      [single] -> single
+      multiple -> %{
+        compositeFilter: %{
+          op: "AND",
+          filters: multiple
+        }
+      }
+    end
+
+    put_in(query[:structuredQuery][:where], where_clause)
+  end
+
+  defp add_ordering(query, opts) do
+    case Keyword.get(opts, :order_by) do
+      nil -> query
+      {field, direction} ->
+        order = %{
+          field: %{fieldPath: to_string(field)},
+          direction: to_string(direction) |> String.upcase()
+        }
+        put_in(query[:structuredQuery][:orderBy], [order])
+    end
+  end
+
+  defp add_limit(query, opts) do
+    case Keyword.get(opts, :limit) do
+      nil -> query
+      limit -> put_in(query[:structuredQuery][:limit], limit)
+    end
+  end
+
+  defp extract_documents_from_responses(responses) do
+    Enum.flat_map(responses, fn response ->
+      case response do
+        %{document: doc} when not is_nil(doc) -> [doc]
+        _ -> []
+      end
+    end)
   end
 
   # Private functions
