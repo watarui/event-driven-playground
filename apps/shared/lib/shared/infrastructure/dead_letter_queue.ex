@@ -126,6 +126,89 @@ defmodule Shared.Infrastructure.DeadLetterQueue do
     end
   end
 
+  @doc """
+  条件に基づいてメッセージをリストする
+  """
+  def list_messages(opts \\ []) do
+    source = Keyword.get(opts, :source)
+    status = Keyword.get(opts, :status)
+    limit = Keyword.get(opts, :limit, 100)
+
+    # Firestore クエリオプションの構築
+    list_opts = [limit: limit, order_by: {:created_at, :desc}]
+
+    case Repository.list(@collection, list_opts) do
+      {:ok, entries} ->
+        messages =
+          entries
+          |> Enum.map(&parse_entry/1)
+          |> filter_by_source(source)
+          |> filter_by_status(status)
+          |> Enum.take(limit)
+
+        {:ok, messages}
+
+      error ->
+        error
+    end
+  end
+
+  @doc """
+  メッセージを再処理する
+  """
+  def reprocess(entry_id, processor_fn) when is_function(processor_fn, 1) do
+    with {:ok, data} <- Repository.get(@collection, entry_id) do
+      entry = parse_entry(data)
+
+      # 再処理を実行
+      case processor_fn.(entry.message) do
+        :ok ->
+          # 成功した場合は DLQ から削除
+          delete(entry_id)
+          {:ok, :processed}
+
+        {:ok, _} ->
+          # 成功した場合は DLQ から削除
+          delete(entry_id)
+          {:ok, :processed}
+
+        {:error, reason} ->
+          # 失敗した場合はリトライカウントを増やす
+          mark_for_retry(entry_id)
+          {:error, reason}
+
+        other ->
+          # 予期しない返り値の場合
+          Logger.warning("Unexpected reprocess result: #{inspect(other)}")
+          mark_for_retry(entry_id)
+          {:error, :unexpected_result}
+      end
+    end
+  end
+
+  @doc """
+  DLQ の統計情報を取得する
+  """
+  def get_stats do
+    case Repository.list(@collection, []) do
+      {:ok, entries} ->
+        stats =
+          entries
+          |> Enum.map(&parse_entry/1)
+          |> Enum.reduce(%{total: 0, by_type: %{}, by_status: %{}}, fn entry, acc ->
+            acc
+            |> Map.update!(:total, &(&1 + 1))
+            |> update_in([:by_type, entry.message_type], &((&1 || 0) + 1))
+            |> update_by_status(entry)
+          end)
+
+        {:ok, stats}
+
+      error ->
+        error
+    end
+  end
+
   # Private functions
 
   defp format_error(error) when is_binary(error), do: error
@@ -156,4 +239,33 @@ defmodule Shared.Infrastructure.DeadLetterQueue do
   end
 
   defp parse_datetime(_), do: nil
+
+  defp filter_by_source(messages, nil), do: messages
+
+  defp filter_by_source(messages, source) do
+    Enum.filter(messages, fn msg ->
+      msg.metadata[:source] == source || msg.metadata["source"] == source
+    end)
+  end
+
+  defp filter_by_status(messages, nil), do: messages
+
+  defp filter_by_status(messages, status) do
+    Enum.filter(messages, fn msg ->
+      get_message_status(msg) == status
+    end)
+  end
+
+  defp get_message_status(message) do
+    cond do
+      message.retry_count == 0 -> :pending
+      message.retry_count > 5 -> :failed
+      true -> :retrying
+    end
+  end
+
+  defp update_by_status(acc, entry) do
+    status = get_message_status(entry)
+    update_in(acc, [:by_status, status], &((&1 || 0) + 1))
+  end
 end

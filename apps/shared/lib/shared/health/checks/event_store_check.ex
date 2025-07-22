@@ -22,9 +22,8 @@ defmodule Shared.Health.Checks.EventStoreCheck do
   end
 
   defp perform_check do
-    with :ok <- check_write(),
-         :ok <- check_read() do
-      :ok
+    with :ok <- check_write() do
+      check_read()
     end
   end
 

@@ -27,9 +27,8 @@ defmodule Shared.Health.Checks.FirestoreCheck do
 
   defp check_operations do
     with :ok <- check_write(),
-         :ok <- check_read(),
-         :ok <- check_delete() do
-      :ok
+         :ok <- check_read() do
+      check_delete()
     end
   end
 
