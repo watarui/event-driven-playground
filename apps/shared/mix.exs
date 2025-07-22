@@ -27,7 +27,6 @@ defmodule Shared.MixProject do
   defp deps do
     [
       {:plug, "~> 1.15"},
-      {:ecto, "~> 3.11"},
       {:jason, "~> 1.4"},
       {:decimal, "~> 2.1"},
       {:elixir_uuid, "~> 1.2"},
