@@ -112,32 +112,3 @@ make seed               # サンプルデータを投入
 # その他
 make help               # 利用可能なコマンドを表示
 ```
-
-## セキュリティに関する注意事項
-
-このアプリケーションは CQRS/Event Sourcing パターンの学習・デモンストレーション用として公開されています。そのため、以下のような設定になっています：
-
-- **パブリックアクセス**: デモ用として `allUsers` でアクセス可能
-- **最小インスタンス**: コスト削減のため 0 に設定
-
-**本番環境での利用時は、[セキュリティベストプラクティス](docs/security-best-practices.md)を参照し、適切な IAM 設定とアクセス制御を実装してください。**
-
-## ライセンス
-
-MIT License## Production Environment
-
-### URLs
-
-- Client Service: https://client-service-741925348867.asia-northeast1.run.app
-- Command Service: https://command-service-741925348867.asia-northeast1.run.app
-- Query Service: https://query-service-741925348867.asia-northeast1.run.app
-
-### Database
-
-- Firestore in asia-northeast1 region
-
-### Deployment
-
-```bash
-gcloud builds submit --config=build/cloudbuild/firestore-simple.yaml --project=event-driven-playground-prod --substitutions=SHORT_SHA=$(git rev-parse --short HEAD)
-```
