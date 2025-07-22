@@ -49,27 +49,27 @@ jobs:
           gcloud builds submit \
             --config=build/cloudbuild/firestore-simple.yaml \
             --substitutions=SHORT_SHA=${GITHUB_SHA::7} \
-            --project=${PROJECT_ID} || true
+            --project=${PROJECT_ID}
           
-          # ビルドの完了を待つ
-          BUILD_ID=$(gcloud builds list --limit=1 --format="value(id)" --project=${PROJECT_ID})
-          echo "Waiting for build ${BUILD_ID} to complete..."
+          # ビルドの完了を待つ（Cloud Build submit は同期的に実行されるのでこのステップは不要）
+          echo "✅ Build submitted successfully"
           
-          # ビルドステータスを確認
-          MAX_WAIT=300  # 5分
-          ELAPSED=0
-          while [ $ELAPSED -lt $MAX_WAIT ]; do
-            STATUS=$(gcloud builds describe ${BUILD_ID} --project=${PROJECT_ID} --format="value(status)")
-            if [[ "${STATUS}" == "SUCCESS" ]]; then
-              echo "✅ Build completed successfully"
-              break
-            elif [[ "${STATUS}" == "FAILURE" || "${STATUS}" == "TIMEOUT" || "${STATUS}" == "CANCELLED" ]]; then
-              echo "❌ Build failed with status: ${STATUS}"
-              exit 1
+          # ビルドされたイメージの確認
+          echo "🔍 Verifying built images..."
+          IMAGE_TAG=${GITHUB_SHA::7}
+          
+          # 各サービスのイメージが存在するか確認
+          for SERVICE in command-service query-service client-service; do
+            IMAGE_URI="${ARTIFACT_REGISTRY}/${SERVICE}:${IMAGE_TAG}"
+            echo "Checking image: ${IMAGE_URI}"
+            
+            if gcloud container images describe ${IMAGE_URI} --project=${PROJECT_ID} >/dev/null 2>&1; then
+              echo "✅ ${SERVICE} image found"
             else
-              echo "⏳ Build status: ${STATUS}. Elapsed: ${ELAPSED}s/${MAX_WAIT}s"
-              sleep 5
-              ELAPSED=$((ELAPSED + 5))
+              echo "❌ ${SERVICE} image not found at ${IMAGE_URI}"
+              echo "Listing available tags for ${SERVICE}:"
+              gcloud container images list-tags ${ARTIFACT_REGISTRY}/${SERVICE} --limit=5 --project=${PROJECT_ID}
+              exit 1
             fi
           done
       
