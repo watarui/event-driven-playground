@@ -105,7 +105,7 @@ jobs:
             --tag=${REVISION_TAG} \
             --no-traffic \
             --update-env-vars=DATABASE_ADAPTER=firestore,FIRESTORE_PROJECT_ID=${PROJECT_ID} \
-            --async &
+ &
           PID_COMMAND=$!
           
           gcloud run deploy query-service \
@@ -116,7 +116,7 @@ jobs:
             --tag=${REVISION_TAG} \
             --no-traffic \
             --update-env-vars=DATABASE_ADAPTER=firestore,FIRESTORE_PROJECT_ID=${PROJECT_ID} \
-            --async &
+ &
           PID_QUERY=$!
           
           gcloud run deploy client-service \
@@ -127,7 +127,7 @@ jobs:
             --tag=${REVISION_TAG} \
             --no-traffic \
             --update-env-vars=DATABASE_ADAPTER=firestore,FIRESTORE_PROJECT_ID=${PROJECT_ID} \
-            --async &
+ &
           PID_CLIENT=$!
           
           # 全デプロイの完了を待つ
@@ -135,6 +135,38 @@ jobs:
           wait $PID_COMMAND $PID_QUERY $PID_CLIENT
           
           echo "✅ All services deployed successfully"
+
+      # デプロイが完了するまで待機
+      - name: Wait for Deployments to Complete
+        run: |
+          IMAGE_TAG=${GITHUB_SHA::7}
+          REVISION_TAG="sha-${IMAGE_TAG}"
+          MAX_WAIT=300  # 5分
+          ELAPSED=0
+          
+          echo "⏳ Waiting for deployments to complete..."
+          
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            # 各サービスのリビジョンステータスを確認
+            COMMAND_READY=$(gcloud run revisions list --service=command-service --region=${REGION} --project=${PROJECT_ID} --format="value(status.conditions[0].status)" --filter="metadata.name:*${REVISION_TAG}" | head -1)
+            QUERY_READY=$(gcloud run revisions list --service=query-service --region=${REGION} --project=${PROJECT_ID} --format="value(status.conditions[0].status)" --filter="metadata.name:*${REVISION_TAG}" | head -1)
+            CLIENT_READY=$(gcloud run revisions list --service=client-service --region=${REGION} --project=${PROJECT_ID} --format="value(status.conditions[0].status)" --filter="metadata.name:*${REVISION_TAG}" | head -1)
+            
+            if [ "$COMMAND_READY" = "True" ] && [ "$QUERY_READY" = "True" ] && [ "$CLIENT_READY" = "True" ]; then
+              echo "✅ All deployments are ready"
+              break
+            else
+              echo "Command Service: ${COMMAND_READY:-Not found}, Query Service: ${QUERY_READY:-Not found}, Client Service: ${CLIENT_READY:-Not found}"
+              echo "Waiting... (${ELAPSED}s/${MAX_WAIT}s)"
+              sleep 10
+              ELAPSED=$((ELAPSED + 10))
+            fi
+          done
+          
+          if [ $ELAPSED -ge $MAX_WAIT ]; then
+            echo "❌ Timeout waiting for deployments"
+            exit 1
+          fi
 
       # ヘルスチェック
       - name: Health Check New Versions
