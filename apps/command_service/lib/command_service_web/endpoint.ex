@@ -16,7 +16,7 @@ defmodule CommandServiceWeb.Endpoint do
 
   def start_link(_opts \\ []) do
     # 開発環境用のポート設定
-    default_port = "8080"
+    default_port = "8081"
     # Cloud Run は PORT 環境変数を設定するので、それを優先的に使用
     port =
       System.get_env("PORT", System.get_env("COMMAND_SERVICE_PORT", default_port))

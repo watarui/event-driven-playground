@@ -15,10 +15,16 @@ defmodule CommandService.Application do
       # コマンドバス
       CommandService.Infrastructure.CommandBus,
       # コマンドリスナー（PubSub経由でコマンドを受信）
-      CommandService.Infrastructure.CommandListener,
-      # HTTP エンドポイント（ヘルスチェック用）
-      CommandServiceWeb.Endpoint
+      CommandService.Infrastructure.CommandListener
     ]
+
+    # テスト環境以外でHTTPエンドポイントを起動
+    children =
+      if Mix.env() != :test do
+        children ++ [CommandServiceWeb.Endpoint]
+      else
+        children
+      end
 
     opts = [strategy: :one_for_one, name: CommandService.Supervisor]
 

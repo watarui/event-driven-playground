@@ -22,9 +22,13 @@ defmodule QueryService.Application do
       QueryService.Infrastructure.QueryListener
     ]
 
-    # 本番環境では HTTP エンドポイントを起動
-    # Mix.env() は Elixir リリースでは使用できないため、常に起動する
-    children = children ++ [QueryServiceWeb.Endpoint]
+    # テスト環境以外でHTTPエンドポイントを起動
+    children =
+      if Mix.env() != :test do
+        children ++ [QueryServiceWeb.Endpoint]
+      else
+        children
+      end
 
     opts = [strategy: :one_for_one, name: QueryService.Supervisor]
 

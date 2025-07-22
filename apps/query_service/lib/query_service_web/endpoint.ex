@@ -16,8 +16,11 @@ defmodule QueryServiceWeb.Endpoint do
 
   def start_link(_opts \\ []) do
     # 開発環境用のポート設定
-    default_port = "8080"
-    port = System.get_env("PORT", default_port) |> String.to_integer()
+    default_port = "8082"
+    # Cloud Run は PORT 環境変数を設定するので、それを優先的に使用
+    port =
+      System.get_env("PORT", System.get_env("QUERY_SERVICE_PORT", default_port))
+      |> String.to_integer()
 
     require Logger
     Logger.info("Starting QueryService HTTP endpoint on port #{port}")
