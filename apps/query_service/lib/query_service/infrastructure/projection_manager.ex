@@ -268,8 +268,8 @@ defmodule QueryService.Infrastructure.ProjectionManager do
           _e in [DBConnection.ConnectionError, Postgrex.Error] ->
             {:error, :database_timeout}
 
-          _e in [Ecto.StaleEntryError] ->
-            {:error, :concurrent_modification}
+          # Firestore では StaleEntryError は発生しないため、この処理は削除
+          # 将来的に同時実行制御が必要な場合は、Firestore のトランザクションを使用
 
           e ->
             # その他のエラーはリトライ不可能として扱う

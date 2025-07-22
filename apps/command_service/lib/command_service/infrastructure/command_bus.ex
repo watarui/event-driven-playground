@@ -187,9 +187,8 @@ defmodule CommandService.Infrastructure.CommandBus do
           _e in [DBConnection.ConnectionError, Postgrex.Error] ->
             {:error, :database_timeout}
 
-          # 楽観的ロック競合
-          _e in [Ecto.StaleEntryError] ->
-            {:error, :concurrent_modification}
+          # Firestore では StaleEntryError は発生しないため、この処理は削除
+          # 将来的に同時実行制御が必要な場合は、Firestore のトランザクションを使用
 
           # イベントストアのバージョン競合
           _e in Shared.Infrastructure.EventStore.VersionConflictError ->

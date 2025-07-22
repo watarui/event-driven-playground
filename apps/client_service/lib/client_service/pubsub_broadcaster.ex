@@ -20,7 +20,7 @@ defmodule ClientService.PubSubBroadcaster do
 
   def broadcast_message(topic, message_type, payload, source_service \\ nil) do
     message = %{
-      id: Ecto.UUID.generate(),
+      id: UUID.uuid4(),
       topic: topic,
       message_type: message_type,
       payload: payload,

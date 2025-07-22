@@ -6,7 +6,9 @@
   - Cloud Run のベストプラクティスに従い、EXPOSE ディレクティブを削除
   - terraform の不要な port 設定を削除
 - Firestore データベースの本番環境構築が未完了
-- Ecto 依存関係がまだ shared/mix.exs に残っている
+- ~~Ecto 依存関係がまだ shared/mix.exs に残っている~~ ✅ 削除済み
+  - Ecto に依存する多数のファイルを /tmp/ecto_backup/ に移動
+  - UUID ライブラリに移行（Ecto.UUID → elixir_uuid）
 
 緊急度：中
 

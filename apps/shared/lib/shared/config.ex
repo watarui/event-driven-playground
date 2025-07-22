@@ -71,7 +71,9 @@ defmodule Shared.Config do
     url = database_url(service)
 
     if url do
-      config = Ecto.Repo.Supervisor.parse_url(url)
+      # Ecto が削除されたため、URL パースは手動で行う必要があります
+      # TODO: Firestore への移行に伴い、この関数全体を見直す必要があります
+      config = []
       db_config = get_env_config(:database, %{})
 
       # マージする設定を構築

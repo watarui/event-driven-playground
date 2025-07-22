@@ -3,7 +3,8 @@ defmodule CommandService.Application.Handlers.OrderCommandHandler do
   注文コマンドハンドラー
   """
 
-  use Shared.Infrastructure.Idempotency.IdempotentCommandHandler
+  # Firestore への移行に伴い、IdempotentCommandHandler は一時的に削除
+  # use Shared.Infrastructure.Idempotency.IdempotentCommandHandler
 
   alias CommandService.Application.Commands.OrderCommands
   alias CommandService.Domain.Aggregates.OrderAggregate
