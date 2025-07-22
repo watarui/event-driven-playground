@@ -50,27 +50,6 @@ resource "google_project_iam_member" "github_actions_logs_viewer" {
   member  = "serviceAccount:${var.github_actions_service_account}"
 }
 
-# Cloud Run Invoker ロール - 特定のサービスに対してのみ付与
-# command-service への権限
-resource "google_cloud_run_service_iam_member" "github_actions_command_invoker" {
-  count    = var.github_actions_service_account != "" ? 1 : 0
-  service  = "command-service"
-  location = var.region
-  role     = "roles/run.invoker"
-  member   = "serviceAccount:${var.github_actions_service_account}"
-  project  = var.project_id
-}
-
-# query-service への権限
-resource "google_cloud_run_service_iam_member" "github_actions_query_invoker" {
-  count    = var.github_actions_service_account != "" ? 1 : 0
-  service  = "query-service"
-  location = var.region
-  role     = "roles/run.invoker"
-  member   = "serviceAccount:${var.github_actions_service_account}"
-  project  = var.project_id
-}
-
 # Workload Identity Federation の設定
 # GitHub Actions がサービスアカウントになりすますことを許可
 resource "google_service_account_iam_member" "github_actions_wif" {

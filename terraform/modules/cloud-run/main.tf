@@ -118,11 +118,11 @@ resource "google_cloud_run_v2_service" "services" {
 }
 
 # IAM policy for public access
-# client-service: 全体を公開（GraphQL エンドポイント）
-# その他のサービス: ヘルスチェックのみ公開したいが、Cloud Run は URL パスベースの認証をサポートしていないため、
-# 現在は内部アクセスのみ。将来的に API Gateway や Load Balancer を使用して細かい制御を実装予定。
+# すべてのサービスでヘルスチェックエンドポイントを公開アクセス可能にする
+# Cloud Run は URL パスベースの認証をサポートしていないため、サービス全体が公開される
+# 将来的に API Gateway や Load Balancer を使用して細かい制御を実装予定
 resource "google_cloud_run_service_iam_member" "public_access" {
-  for_each = { for k, v in var.services : k => v if k == "client-service" }
+  for_each = var.services
   
   service  = google_cloud_run_v2_service.services[each.key].name
   location = google_cloud_run_v2_service.services[each.key].location
@@ -131,9 +131,9 @@ resource "google_cloud_run_service_iam_member" "public_access" {
 }
 
 # サービス間通信用の認証設定
-# command-service と query-service はサービスアカウントのみアクセス可能
+# サービスアカウントからのアクセスも許可（内部通信用）
 resource "google_cloud_run_service_iam_member" "service_account_access" {
-  for_each = { for k, v in var.services : k => v if k != "client-service" }
+  for_each = var.services
   
   service  = google_cloud_run_v2_service.services[each.key].name
   location = google_cloud_run_v2_service.services[each.key].location
