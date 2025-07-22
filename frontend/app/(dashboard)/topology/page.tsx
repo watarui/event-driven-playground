@@ -219,7 +219,89 @@ interface ServiceHealth {
     status: "healthy" | "warning" | "error"
     latency: number
     throughput: number
+    memoryUsage?: number
+    processCount?: number
   }
+}
+
+interface HealthCheckResult {
+  health: {
+    status: string
+    checks: Array<{
+      name: string
+      status: string
+      message: string
+      duration_ms: number
+      details?: any
+    }>
+  }
+  memoryInfo: {
+    total_mb: number
+    process_mb: number
+    binary_mb: number
+    ets_mb: number
+    process_count: number
+    port_count: number
+  }
+}
+
+const HEALTH_CHECK_QUERY = `
+  query HealthCheck {
+    health {
+      status
+      checks {
+        name
+        status
+        message
+        duration_ms
+        details
+      }
+    }
+    memoryInfo {
+      total_mb
+      process_mb
+      binary_mb
+      ets_mb
+      process_count
+      port_count
+    }
+  }
+`
+
+async function fetchHealthMetrics(): Promise<HealthCheckResult | null> {
+  try {
+    const response = await fetch("/api/graphql", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        query: HEALTH_CHECK_QUERY,
+      }),
+    })
+
+    if (!response.ok) {
+      console.error("Health check failed:", response.status)
+      return null
+    }
+
+    const data = await response.json()
+    return data.data as HealthCheckResult
+  } catch (error) {
+    console.error("Error fetching health metrics:", error)
+    return null
+  }
+}
+
+function mapHealthCheckToNodeId(checkName: string): string | null {
+  const mapping: { [key: string]: string } = {
+    services: "client",
+    command_service: "command",
+    query_service: "query",
+    firestore: "event-store",
+    event_store: "event-store",
+  }
+  return mapping[checkName.toLowerCase()] || null
 }
 
 export default function TopologyPage() {
@@ -228,38 +310,77 @@ export default function TopologyPage() {
   const [serviceHealth, setServiceHealth] = useState<ServiceHealth>({})
 
   useEffect(() => {
-    // Simulate service health monitoring
-    const updateHealth = () => {
-      const health: ServiceHealth = {}
-      nodes.forEach((node) => {
-        const random = Math.random()
-        health[node.id] = {
-          status: random > 0.9 ? "error" : random > 0.8 ? "warning" : "healthy",
-          latency: Math.floor(Math.random() * 100) + 10,
-          throughput: Math.floor(Math.random() * 1000) + 100,
-        }
-      })
-      setServiceHealth(health)
+    // Fetch real service health metrics
+    const updateHealth = async () => {
+      const metrics = await fetchHealthMetrics()
 
-      // Update node styles based on health
-      setNodes((nds) =>
-        nds.map((node) => {
-          const nodeHealth = health[node.id]
-          if (!nodeHealth) return node
+      if (metrics) {
+        const health: ServiceHealth = {}
 
-          let borderColor = "#22c55e" // healthy
-          if (nodeHealth.status === "warning") borderColor = "#f59e0b"
-          if (nodeHealth.status === "error") borderColor = "#ef4444"
-
-          return {
-            ...node,
-            style: {
-              ...node.style,
-              border: `3px solid ${borderColor}`,
-            },
+        // Extract service-specific health data
+        metrics.health.checks.forEach((check) => {
+          const nodeId = mapHealthCheckToNodeId(check.name)
+          if (nodeId) {
+            health[nodeId] = {
+              status:
+                check.status === "healthy"
+                  ? "healthy"
+                  : check.status === "degraded"
+                    ? "warning"
+                    : "error",
+              latency: check.duration_ms || 0,
+              throughput: 0, // TODO: Extract from metrics if available
+              memoryUsage: nodeId === "client" ? metrics.memoryInfo.total_mb : undefined,
+              processCount: nodeId === "client" ? metrics.memoryInfo.process_count : undefined,
+            }
           }
         })
-      )
+
+        // Set default health for nodes without specific checks
+        nodes.forEach((node) => {
+          if (!health[node.id]) {
+            health[node.id] = {
+              status: "healthy",
+              latency: 0,
+              throughput: 0,
+            }
+          }
+        })
+
+        setServiceHealth(health)
+
+        // Update node styles based on health
+        setNodes((nds) =>
+          nds.map((node) => {
+            const nodeHealth = health[node.id]
+            if (!nodeHealth) return node
+
+            let borderColor = "#22c55e" // healthy
+            if (nodeHealth.status === "warning") borderColor = "#f59e0b"
+            if (nodeHealth.status === "error") borderColor = "#ef4444"
+
+            return {
+              ...node,
+              style: {
+                ...node.style,
+                border: `3px solid ${borderColor}`,
+              },
+            }
+          })
+        )
+      } else {
+        // Fallback to simulated data if real metrics are unavailable
+        const health: ServiceHealth = {}
+        nodes.forEach((node) => {
+          const random = Math.random()
+          health[node.id] = {
+            status: random > 0.9 ? "error" : random > 0.8 ? "warning" : "healthy",
+            latency: Math.floor(Math.random() * 100) + 10,
+            throughput: Math.floor(Math.random() * 1000) + 100,
+          }
+        })
+        setServiceHealth(health)
+      }
     }
 
     updateHealth()
@@ -385,10 +506,24 @@ export default function TopologyPage() {
                         <span className="text-gray-500">Latency:</span>{" "}
                         <span className="font-medium">{health.latency}ms</span>
                       </div>
-                      <div>
-                        <span className="text-gray-500">Throughput:</span>{" "}
-                        <span className="font-medium">{health.throughput}/s</span>
-                      </div>
+                      {health.memoryUsage !== undefined && (
+                        <div>
+                          <span className="text-gray-500">Memory:</span>{" "}
+                          <span className="font-medium">{health.memoryUsage.toFixed(1)}MB</span>
+                        </div>
+                      )}
+                      {health.processCount !== undefined && (
+                        <div>
+                          <span className="text-gray-500">Processes:</span>{" "}
+                          <span className="font-medium">{health.processCount}</span>
+                        </div>
+                      )}
+                      {health.throughput > 0 && (
+                        <div>
+                          <span className="text-gray-500">Throughput:</span>{" "}
+                          <span className="font-medium">{health.throughput}/s</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )

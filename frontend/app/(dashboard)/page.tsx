@@ -360,7 +360,11 @@ export default function Home() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 gap-4">
-              <a href="https://console.cloud.google.com/firestore" target="_blank" rel="noopener noreferrer">
+              <a
+                href="https://console.cloud.google.com/firestore"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <motion.div
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
