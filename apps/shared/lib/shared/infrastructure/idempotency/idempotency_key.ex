@@ -12,8 +12,7 @@ defmodule Shared.Infrastructure.Idempotency.IdempotencyKey do
     params_string =
       params
       |> Enum.sort_by(fn {k, _v} -> to_string(k) end)
-      |> Enum.map(fn {k, v} -> "#{k}:#{v}" end)
-      |> Enum.join(",")
+      |> Enum.map_join(",", fn {k, v} -> "#{k}:#{v}" end)
 
     # SHA256でハッシュ化
     data = "#{command_type}|#{aggregate_id}|#{user_id}|#{params_string}"
