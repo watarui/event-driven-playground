@@ -6,7 +6,7 @@ import { getAdminAuth, setUserRole } from "@/lib/server/firebase-admin"
 // 管理者が一人もいない場合のみ、自分自身を管理者に設定できる
 export async function POST(request: NextRequest) {
   console.log("[init-admin] Request received")
-  
+
   try {
     // 認証トークンを検証
     const authHeader = request.headers.get("authorization")
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     console.log("[init-admin] Setting user as admin...")
     await setUserRole(currentUserId, "admin")
     console.log("[init-admin] Admin role set successfully")
-    
+
     // カスタムクレームが設定されたことを確認
     const updatedUser = await adminAuth.getUser(currentUserId)
     console.log("[init-admin] Updated user claims:", updatedUser.customClaims)
@@ -87,21 +87,23 @@ export async function POST(request: NextRequest) {
       success: true,
       message: `Successfully set ${currentUserEmail} as admin`,
       requiresTokenRefresh: true,
-      debug: config.env.isDevelopment ? {
-        uid: currentUserId,
-        email: currentUserEmail,
-        customClaims: updatedUser.customClaims,
-      } : undefined,
+      debug: config.env.isDevelopment
+        ? {
+            uid: currentUserId,
+            email: currentUserEmail,
+            customClaims: updatedUser.customClaims,
+          }
+        : undefined,
     })
   } catch (error) {
     console.error("[init-admin] Error:", error)
     const errorMessage = error instanceof Error ? error.message : "Unknown error"
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         message: "Internal server error",
-        error: config.env.isDevelopment ? errorMessage : undefined
-      }, 
+        error: config.env.isDevelopment ? errorMessage : undefined,
+      },
       { status: 500 }
     )
   }

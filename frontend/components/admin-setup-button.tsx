@@ -48,7 +48,10 @@ export function AdminSetupButton() {
       const data = await response.json()
 
       if (response.ok) {
-        setMessage({ type: "success", text: data.message || "管理者権限を設定しました。ページを再読み込みします..." })
+        setMessage({
+          type: "success",
+          text: data.message || "管理者権限を設定しました。ページを再読み込みします...",
+        })
         // Firebase カスタムクレームの反映のため、必ずページをリロード
         setTimeout(() => {
           window.location.reload()
@@ -59,16 +62,16 @@ export function AdminSetupButton() {
           statusText: response.statusText,
           data,
         })
-        setMessage({ 
-          type: "error", 
-          text: data.message || `Failed to setup admin role (${response.status})`
+        setMessage({
+          type: "error",
+          text: data.message || `Failed to setup admin role (${response.status})`,
         })
       }
     } catch (error) {
       console.error("Admin setup error:", error)
-      setMessage({ 
-        type: "error", 
-        text: error instanceof Error ? error.message : "Failed to setup admin role"
+      setMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : "Failed to setup admin role",
       })
     } finally {
       setIsLoading(false)
