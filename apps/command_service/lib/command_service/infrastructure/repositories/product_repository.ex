@@ -1,192 +1,167 @@
 defmodule CommandService.Infrastructure.Repositories.ProductRepository do
   @moduledoc """
-  商品リポジトリの実装
-
-  商品アグリゲートの永続化とイベントストアからの復元を行います。
+  商品エンティティのリポジトリ実装（Firestore版）
   """
 
-  import Ecto.Query
+  alias CommandService.Domain.Models.Product
+  alias Shared.Infrastructure.Firestore.Repository
 
-  alias CommandService.Repo
-  alias CommandService.Domain.Aggregates.ProductAggregate
-  alias Shared.Infrastructure.EventStore.EventStore
+  @collection "products"
 
-  @behaviour CommandService.Domain.Repositories.ProductRepository
+  @doc """
+  商品を保存する
+  """
+  def save(%Product{} = product) do
+    data = %{
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      price: Decimal.to_float(product.price),
+      stock_quantity: product.stock_quantity,
+      category_id: product.category_id,
+      created_at: product.created_at,
+      updated_at: DateTime.utc_now()
+    }
 
-  # スキーマ定義
-  defmodule ProductSchema do
-    @moduledoc """
-    商品のEctoスキーマ定義
-    """
-    use Ecto.Schema
-    import Shared.SchemaHelpers
-
-    command_schema()
-    @primary_key {:id, :binary_id, autogenerate: false}
-    @foreign_key_type :binary_id
-
-    schema "products" do
-      field(:name, :string)
-      field(:description, :string)
-      field(:category_id, :binary_id)
-      field(:price_amount, :decimal)
-      field(:price_currency, :string)
-      field(:stock_quantity, :integer)
-      field(:active, :boolean, default: true)
-      field(:version, :integer, default: 0)
-      field(:metadata, :map, default: %{})
-
-      timestamps()
+    case Repository.save(@collection, product.id, data) do
+      {:ok, _} -> {:ok, product}
+      error -> error
     end
   end
 
-  @impl true
+  @doc """
+  ID で商品を取得する
+  """
   def get(id) do
-    case Repo.get(ProductSchema, id) do
-      nil ->
-        {:error, :not_found}
+    case Repository.get(@collection, id) do
+      {:ok, data} ->
+        product = %Product{
+          id: data["id"] || data[:id],
+          name: data["name"] || data[:name],
+          description: data["description"] || data[:description],
+          price: parse_decimal(data["price"] || data[:price]),
+          stock_quantity: data["stock_quantity"] || data[:stock_quantity] || 0,
+          category_id: data["category_id"] || data[:category_id],
+          created_at: parse_datetime(data["created_at"] || data[:created_at]),
+          updated_at: parse_datetime(data["updated_at"] || data[:updated_at])
+        }
 
-      schema ->
-        # イベントストアから履歴を取得して再構築
-        case EventStore.get_events(id) do
-          {:ok, events} ->
-            aggregate = rebuild_aggregate(schema, events)
-            {:ok, aggregate}
+        {:ok, product}
 
-          {:error, reason} ->
-            {:error, reason}
-        end
+      error ->
+        error
     end
   end
 
-  @impl true
-  def save(%ProductAggregate{} = aggregate) do
-    # 既存のレコードを取得
-    existing_schema = Repo.get(ProductSchema, aggregate.id.value)
-    changeset = build_changeset(aggregate, existing_schema)
+  @doc """
+  すべての商品を取得する
+  """
+  def get_all(opts \\ []) do
+    case Repository.list(@collection, opts) do
+      {:ok, data_list} ->
+        products =
+          Enum.map(data_list, fn data ->
+            %Product{
+              id: data["id"] || data[:id],
+              name: data["name"] || data[:name],
+              description: data["description"] || data[:description],
+              price: parse_decimal(data["price"] || data[:price]),
+              stock_quantity: data["stock_quantity"] || data[:stock_quantity] || 0,
+              category_id: data["category_id"] || data[:category_id],
+              created_at: parse_datetime(data["created_at"] || data[:created_at]),
+              updated_at: parse_datetime(data["updated_at"] || data[:updated_at])
+            }
+          end)
 
-    case Repo.insert_or_update(changeset) do
-      {:ok, _schema} ->
-        {:ok, aggregate}
+        {:ok, products}
 
-      {:error, changeset} ->
-        {:error, changeset}
+      error ->
+        error
     end
   end
 
-  @impl true
-  def exists?(id) do
-    query = from(p in ProductSchema, where: p.id == ^id)
-    Repo.exists?(query)
+  @doc """
+  商品を削除する
+  """
+  def delete(id) do
+    Repository.delete(@collection, id)
   end
 
-  @impl true
-  def find_by_name(name) do
-    query = from(p in ProductSchema, where: p.name == ^name)
+  @doc """
+  カテゴリーIDで商品を検索する
+  """
+  def find_by_category(category_id) do
+    # TODO: Firestore のクエリ機能を使用して実装
+    # 一時的に全件取得してフィルタリング
+    case get_all() do
+      {:ok, products} ->
+        filtered =
+          Enum.filter(products, fn product ->
+            product.category_id == category_id
+          end)
 
-    case Repo.one(query) do
-      nil ->
-        {:error, :not_found}
+        {:ok, filtered}
 
-      schema ->
-        get(schema.id)
+      error ->
+        error
     end
   end
 
-  @impl true
-  def update_stock(product_id, quantity) do
-    query =
-      from(p in ProductSchema,
-        where: p.id == ^product_id,
-        update: [set: [stock_quantity: ^quantity]]
-      )
-
-    case Repo.update_all(query, []) do
-      {1, _} -> :ok
-      {0, _} -> {:error, :not_found}
+  @doc """
+  在庫を更新する
+  """
+  def update_stock(product_id, new_quantity) do
+    with {:ok, product} <- get(product_id) do
+      updated_product = %{product | stock_quantity: new_quantity}
+      save(updated_product)
     end
   end
 
-  @impl true
-  def check_stock(product_id, required_quantity) do
-    query =
-      from(p in ProductSchema,
-        where: p.id == ^product_id,
-        select: p.stock_quantity
-      )
+  @doc """
+  在庫を減らす
+  """
+  def decrement_stock(product_id, quantity) do
+    with {:ok, product} <- get(product_id),
+         new_quantity when new_quantity >= 0 <- product.stock_quantity - quantity do
+      update_stock(product_id, new_quantity)
+    else
+      _ -> {:error, :insufficient_stock}
+    end
+  end
 
-    case Repo.one(query) do
-      nil -> {:error, :not_found}
-      quantity when quantity >= required_quantity -> {:ok, quantity}
-      quantity -> {:error, {:insufficient_stock, quantity}}
+  @doc """
+  在庫を増やす
+  """
+  def increment_stock(product_id, quantity) do
+    with {:ok, product} <- get(product_id) do
+      update_stock(product_id, product.stock_quantity + quantity)
     end
   end
 
   # Private functions
 
-  defp rebuild_aggregate(schema, events) do
-    # スキーマから基本情報を復元
-    base_aggregate = %ProductAggregate{
-      id: schema.id,
-      name: schema.name,
-      description: schema.description,
-      category_id: schema.category_id,
-      price: %{
-        amount: schema.price_amount,
-        currency: schema.price_currency
-      },
-      stock_quantity: schema.stock_quantity,
-      active: schema.active,
-      version: schema.version,
-      deleted: false,
-      created_at: schema.inserted_at,
-      updated_at: schema.updated_at,
-      uncommitted_events: []
-    }
+  defp parse_decimal(nil), do: Decimal.new(0)
+  defp parse_decimal(value) when is_float(value), do: Decimal.from_float(value)
+  defp parse_decimal(value) when is_integer(value), do: Decimal.new(value)
 
-    # イベントを適用して最新状態を復元
-    Enum.reduce(events, base_aggregate, fn event, agg ->
-      ProductAggregate.apply_event(agg, event)
-    end)
+  defp parse_decimal(value) when is_binary(value) do
+    case Decimal.parse(value) do
+      {decimal, _} -> decimal
+      :error -> Decimal.new(0)
+    end
   end
 
-  defp build_changeset(%ProductAggregate{} = aggregate, existing_schema) do
-    data = %{
-      id: aggregate.id.value,
-      name: aggregate.name.value,
-      description: aggregate.description,
-      category_id: aggregate.category_id.value,
-      price_amount: aggregate.price.amount,
-      price_currency: aggregate.price.currency,
-      stock_quantity: aggregate.stock_quantity,
-      active: aggregate.active,
-      version: aggregate.version,
-      metadata: Map.get(aggregate, :metadata, %{})
-    }
+  defp parse_decimal(_), do: Decimal.new(0)
 
-    # 既存のスキーマがある場合はそれを使用、ない場合は新規作成
-    schema = existing_schema || %ProductSchema{}
+  defp parse_datetime(nil), do: nil
+  defp parse_datetime(%DateTime{} = dt), do: dt
 
-    schema
-    |> Ecto.Changeset.cast(data, [
-      :id,
-      :name,
-      :description,
-      :category_id,
-      :price_amount,
-      :price_currency,
-      :stock_quantity,
-      :active,
-      :version,
-      :metadata
-    ])
-    |> Ecto.Changeset.validate_required([
-      :id,
-      :name,
-      :category_id,
-      :price_amount,
-      :price_currency,
-      :stock_quantity
-    ])
+  defp parse_datetime(string) when is_binary(string) do
+    case DateTime.from_iso8601(string) do
+      {:ok, datetime, _} -> datetime
+      _ -> nil
+    end
   end
+
+  defp parse_datetime(_), do: nil
 end

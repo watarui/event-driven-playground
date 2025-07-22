@@ -3,7 +3,8 @@ defmodule CommandService.Application.Handlers.OrderCommandHandler do
   注文コマンドハンドラー
   """
 
-  use Shared.Infrastructure.Idempotency.IdempotentCommandHandler
+  # Firestore への移行に伴い、IdempotentCommandHandler は一時的に削除
+  # use Shared.Infrastructure.Idempotency.IdempotentCommandHandler
 
   alias CommandService.Application.Commands.OrderCommands
   alias CommandService.Domain.Aggregates.OrderAggregate
@@ -14,97 +15,94 @@ defmodule CommandService.Application.Handlers.OrderCommandHandler do
   require Logger
 
   def handle(%OrderCommands.CreateOrder{} = command) do
-    with_idempotency command, "create_order", key_fields: [:user_id, :items] do
-      UnitOfWork.transaction(fn ->
-        case OrderAggregate.create(command.user_id, command.items) do
-          {:ok, order} ->
-            # イベントストアに保存
-            {:ok, repo} = RepositoryContext.get_repository(:order)
-            {:ok, _} = repo.save(order)
+    # TODO: 冪等性の処理を Firestore で実装
+    UnitOfWork.transaction(fn ->
+      case OrderAggregate.create(command.user_id, command.items) do
+        {:ok, order} ->
+          # イベントストアに保存
+          {:ok, repo} = RepositoryContext.get_repository(:order)
+          {:ok, _} = repo.save(order)
 
-            # イベントを発行
-            Enum.each(order.uncommitted_events, fn event ->
-              EventBus.publish_event(event)
-            end)
+          # イベントを発行
+          Enum.each(order.uncommitted_events, fn event ->
+            EventBus.publish_event(event)
+          end)
 
-            # Sagaを開始（OrderCreatedイベントがトリガーとなる）
-            # V2ではイベント駆動でSagaが開始されるため、明示的な開始は不要
-            # OrderCreatedイベントは既に発行されている
+          # Sagaを開始（OrderCreatedイベントがトリガーとなる）
+          # V2ではイベント駆動でSagaが開始されるため、明示的な開始は不要
+          # OrderCreatedイベントは既に発行されている
 
-            Logger.info("Order created, saga will be triggered by OrderCreated event")
-            {:ok, %{order_id: order.id.value}}
+          Logger.info("Order created, saga will be triggered by OrderCreated event")
+          {:ok, %{order_id: order.id.value}}
 
-          {:error, :invalid_items} ->
-            {:error, ValidationError, %{field: "items", reason: "Invalid order items"}}
+        {:error, :invalid_items} ->
+          {:error, ValidationError, %{field: "items", reason: "Invalid order items"}}
 
-          {:error, :invalid_quantity} ->
-            {:error, ValidationError,
-             %{field: "quantity", reason: "Quantity must be greater than zero"}}
+        {:error, :invalid_quantity} ->
+          {:error, ValidationError,
+           %{field: "quantity", reason: "Quantity must be greater than zero"}}
 
-          {:error, reason} ->
-            {:error, BusinessRuleError, %{rule: "order_creation", context: %{reason: reason}}}
-        end
-      end)
-    end
+        {:error, reason} ->
+          {:error, BusinessRuleError, %{rule: "order_creation", context: %{reason: reason}}}
+      end
+    end)
   end
 
   def handle(%OrderCommands.ConfirmOrder{} = command) do
-    with_idempotency command, "confirm_order", key_fields: [:order_id] do
-      UnitOfWork.transaction(fn ->
-        {:ok, repo} = RepositoryContext.get_repository(:order)
+    # TODO: 冪等性の処理を Firestore で実装
+    UnitOfWork.transaction(fn ->
+      {:ok, repo} = RepositoryContext.get_repository(:order)
 
-        with {:ok, order} <- repo.find_by_id(command.order_id),
-             {:ok, updated_order} <- OrderAggregate.confirm(order) do
-          repo.save(updated_order)
-          EventBus.publish_all(updated_order.uncommitted_events)
+      with {:ok, order} <- repo.find_by_id(command.order_id),
+           {:ok, updated_order} <- OrderAggregate.confirm(order) do
+        repo.save(updated_order)
+        EventBus.publish_all(updated_order.uncommitted_events)
 
-          {:ok, %{confirmed: true}}
-        else
-          {:error, :not_found} ->
-            {:error, NotFoundError, %{resource: "Order", id: command.order_id}}
+        {:ok, %{confirmed: true}}
+      else
+        {:error, :not_found} ->
+          {:error, NotFoundError, %{resource: "Order", id: command.order_id}}
 
-          {:error, :already_confirmed} ->
-            {:error, BusinessRuleError,
-             %{rule: "order_already_confirmed", context: %{order_id: command.order_id}}}
+        {:error, :already_confirmed} ->
+          {:error, BusinessRuleError,
+           %{rule: "order_already_confirmed", context: %{order_id: command.order_id}}}
 
-          {:error, reason} ->
-            {:error, BusinessRuleError, %{rule: "order_confirmation", context: %{reason: reason}}}
-        end
-      end)
-    end
+        {:error, reason} ->
+          {:error, BusinessRuleError, %{rule: "order_confirmation", context: %{reason: reason}}}
+      end
+    end)
   end
 
   def handle(%OrderCommands.CancelOrder{} = command) do
-    with_idempotency command, "cancel_order", key_fields: [:order_id, :reason] do
-      UnitOfWork.transaction(fn ->
-        {:ok, repo} = RepositoryContext.get_repository(:order)
+    # TODO: 冪等性の処理を Firestore で実装
+    UnitOfWork.transaction(fn ->
+      {:ok, repo} = RepositoryContext.get_repository(:order)
 
-        with {:ok, order} <- repo.find_by_id(command.order_id),
-             {:ok, updated_order} <- OrderAggregate.cancel(order, command.reason) do
-          repo.save(updated_order)
-          EventBus.publish_all(updated_order.uncommitted_events)
+      with {:ok, order} <- repo.find_by_id(command.order_id),
+           {:ok, updated_order} <- OrderAggregate.cancel(order, command.reason) do
+        repo.save(updated_order)
+        EventBus.publish_all(updated_order.uncommitted_events)
 
-          {:ok, %{cancelled: true}}
-        else
-          {:error, :not_found} ->
-            {:error, NotFoundError, %{resource: "Order", id: command.order_id}}
+        {:ok, %{cancelled: true}}
+      else
+        {:error, :not_found} ->
+          {:error, NotFoundError, %{resource: "Order", id: command.order_id}}
 
-          {:error, :already_cancelled} ->
-            {:error, BusinessRuleError,
-             %{rule: "order_already_cancelled", context: %{order_id: command.order_id}}}
+        {:error, :already_cancelled} ->
+          {:error, BusinessRuleError,
+           %{rule: "order_already_cancelled", context: %{order_id: command.order_id}}}
 
-          {:error, :cannot_cancel} ->
-            {:error, BusinessRuleError,
-             %{
-               rule: "order_cannot_be_cancelled",
-               context: %{order_id: command.order_id, reason: "Order is in final state"}
-             }}
+        {:error, :cannot_cancel} ->
+          {:error, BusinessRuleError,
+           %{
+             rule: "order_cannot_be_cancelled",
+             context: %{order_id: command.order_id, reason: "Order is in final state"}
+           }}
 
-          {:error, reason} ->
-            {:error, BusinessRuleError, %{rule: "order_cancellation", context: %{reason: reason}}}
-        end
-      end)
-    end
+        {:error, reason} ->
+          {:error, BusinessRuleError, %{rule: "order_cancellation", context: %{reason: reason}}}
+      end
+    end)
   end
 
   def handle(%OrderCommands.ReserveInventory{} = command) do

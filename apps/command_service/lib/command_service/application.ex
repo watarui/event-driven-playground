@@ -10,9 +10,8 @@ defmodule CommandService.Application do
     # クラスタリングの初期化
     connect_to_cluster()
 
+    # 基本的な子プロセス
     children = [
-      # Ecto リポジトリ
-      CommandService.Repo,
       # コマンドバス
       CommandService.Infrastructure.CommandBus,
       # コマンドリスナー（PubSub経由でコマンドを受信）

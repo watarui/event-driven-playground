@@ -1,135 +1,199 @@
 defmodule CommandService.Infrastructure.Repositories.OrderRepository do
   @moduledoc """
-  注文リポジトリの実装
+  注文エンティティのリポジトリ実装（Firestore版）
   """
 
-  @behaviour Shared.Domain.Repository
+  alias CommandService.Domain.Models.Order
+  alias Shared.Infrastructure.Firestore.Repository
+  require Logger
 
-  alias CommandService.Domain.Aggregates.OrderAggregate
-  alias Shared.Domain.ValueObjects.EntityId
-  alias Shared.Infrastructure.EventStore.EventStore
+  @collection "orders"
 
-  # アグリゲートタイプ名
-  @aggregate_type "Order"
+  @doc """
+  注文を保存する
+  """
+  def save(%Order{} = order) do
+    data = %{
+      id: order.id,
+      customer_id: order.customer_id,
+      items: Enum.map(order.items, &item_to_map/1),
+      total_amount: Decimal.to_float(order.total_amount),
+      currency: order.currency || "JPY",
+      status: to_string(order.status),
+      created_at: order.created_at,
+      updated_at: DateTime.utc_now()
+    }
 
-  @impl true
+    case Repository.save(@collection, order.id, data) do
+      {:ok, _} -> {:ok, order}
+      error -> error
+    end
+  end
+
+  @doc """
+  ID で注文を取得する
+  """
   def find_by_id(id) do
-    case EntityId.from_string(id) do
-      {:ok, entity_id} ->
-        stream_name = "#{@aggregate_type}-#{entity_id.value}"
+    case Repository.get(@collection, id) do
+      {:ok, data} ->
+        order = build_order_from_data(data)
+        {:ok, order}
 
-        case EventStore.get_events(stream_name, nil) do
-          {:ok, events} when events != [] ->
-            aggregate = rebuild_aggregate_from_events(events)
-            {:ok, aggregate}
-
-          {:ok, []} ->
-            {:error, :not_found}
-
-          {:error, reason} ->
-            {:error, reason}
-        end
-
-      {:error, reason} ->
-        {:error, reason}
+      error ->
+        error
     end
   end
 
-  @impl true
-  def save(aggregate) do
-    # 新しいアグリゲートの場合、バージョンは0から始まる
-    # uncommitted_eventsが適用される前のバージョンを使用
-    expected_version = aggregate.version - length(aggregate.uncommitted_events)
-
-    case EventStore.append_events(
-           aggregate.id.value,
-           @aggregate_type,
-           aggregate.uncommitted_events,
-           expected_version,
-           %{}
-         ) do
-      {:ok, _} ->
-        # uncommitted_events をクリア
-        updated_aggregate = %{
-          aggregate
-          | uncommitted_events: []
-        }
-
-        {:ok, updated_aggregate}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
-  end
-
-  @impl true
-  def aggregate_type, do: :order
-
-  @impl true
-  def delete(_id) do
-    # イベントソーシングでは論理削除を使用
-    {:error, :not_allowed}
-  end
-
-  @impl true
+  @doc """
+  複数の ID で注文を取得する
+  """
   def find_by_ids(ids) when is_list(ids) do
-    results =
-      ids
-      |> Enum.map(&find_by_id/1)
-      |> Enum.reduce({[], []}, fn
-        {:ok, aggregate}, {aggregates, errors} ->
-          {[aggregate | aggregates], errors}
-
-        {:error, error}, {aggregates, errors} ->
-          {aggregates, [error | errors]}
+    orders =
+      Enum.reduce(ids, [], fn id, acc ->
+        case find_by_id(id) do
+          {:ok, order} -> [order | acc]
+          _ -> acc
+        end
       end)
 
-    case results do
-      {aggregates, []} -> {:ok, Enum.reverse(aggregates)}
-      {_, errors} -> {:error, {:partial_failure, errors}}
+    {:ok, Enum.reverse(orders)}
+  end
+
+  @doc """
+  条件で注文を検索する
+  """
+  def find_by(criteria) do
+    # TODO: Firestore のクエリ機能を使用して最適化
+    case Repository.list(@collection, []) do
+      {:ok, data_list} ->
+        orders = Enum.map(data_list, &build_order_from_data/1)
+        filtered = apply_criteria(orders, criteria)
+        {:ok, filtered}
+
+      error ->
+        error
     end
   end
 
-  @impl true
-  def find_by(_criteria) do
-    {:error, :not_supported}
-  end
-
-  @impl true
-  def all(_opts \\ []) do
-    # イベントソーシングでは全件取得は非効率
-    {:error, :not_supported}
-  end
-
-  @impl true
-  def count(_opts \\ []) do
-    # イベントソーシングでは件数取得は非効率
-    {:error, :not_supported}
-  end
-
-  @impl true
-  def exists?(id) do
-    case find_by_id(id) do
+  @doc """
+  注文が存在するかチェック
+  """
+  def exists?(order_id) do
+    case find_by_id(order_id) do
       {:ok, _} -> true
       _ -> false
     end
   end
 
-  @impl true
+  @doc """
+  トランザクション実行（Firestore版）
+  """
   def transaction(fun) do
-    # EventStore already handles transactions
+    # Firestore のトランザクションは現在の実装では限定的なため、
+    # 関数を直接実行
     try do
-      {:ok, fun.()}
+      fun.()
     rescue
-      e -> {:error, e}
+      e ->
+        Logger.error("Transaction failed: #{inspect(e)}")
+        {:error, e}
     end
+  end
+
+  @doc """
+  注文を削除する
+  """
+  def delete(id) do
+    Repository.delete(@collection, id)
   end
 
   # Private functions
 
-  defp rebuild_aggregate_from_events(events) do
-    Enum.reduce(events, OrderAggregate.new(), fn event, aggregate ->
-      OrderAggregate.apply_event(aggregate, event)
+  defp build_order_from_data(data) do
+    %Order{
+      id: data["id"] || data[:id],
+      customer_id: data["customer_id"] || data[:customer_id],
+      items: parse_items(data["items"] || data[:items] || []),
+      total_amount: parse_decimal(data["total_amount"] || data[:total_amount]),
+      currency: data["currency"] || data[:currency] || "JPY",
+      status: parse_status(data["status"] || data[:status]),
+      created_at: parse_datetime(data["created_at"] || data[:created_at]),
+      updated_at: parse_datetime(data["updated_at"] || data[:updated_at])
+    }
+  end
+
+  defp item_to_map(item) do
+    %{
+      product_id: item.product_id,
+      quantity: item.quantity,
+      unit_price: Decimal.to_float(item.unit_price)
+    }
+  end
+
+  defp parse_items(items) when is_list(items) do
+    Enum.map(items, fn item ->
+      %Order.Item{
+        product_id: item["product_id"] || item[:product_id],
+        quantity: item["quantity"] || item[:quantity] || 0,
+        unit_price: parse_decimal(item["unit_price"] || item[:unit_price])
+      }
     end)
   end
+
+  defp parse_items(_), do: []
+
+  defp parse_status("pending"), do: :pending
+  defp parse_status("confirmed"), do: :confirmed
+  defp parse_status("cancelled"), do: :cancelled
+  defp parse_status(:pending), do: :pending
+  defp parse_status(:confirmed), do: :confirmed
+  defp parse_status(:cancelled), do: :cancelled
+  defp parse_status(_), do: :pending
+
+  defp apply_criteria(orders, criteria) do
+    orders
+    |> filter_by_customer(criteria[:customer_id])
+    |> filter_by_status(criteria[:status])
+  end
+
+  defp filter_by_customer(orders, nil), do: orders
+
+  defp filter_by_customer(orders, customer_id) do
+    Enum.filter(orders, fn order ->
+      order.customer_id == customer_id
+    end)
+  end
+
+  defp filter_by_status(orders, nil), do: orders
+
+  defp filter_by_status(orders, status) do
+    Enum.filter(orders, fn order ->
+      order.status == status
+    end)
+  end
+
+  defp parse_decimal(nil), do: Decimal.new(0)
+  defp parse_decimal(value) when is_float(value), do: Decimal.from_float(value)
+  defp parse_decimal(value) when is_integer(value), do: Decimal.new(value)
+
+  defp parse_decimal(value) when is_binary(value) do
+    case Decimal.parse(value) do
+      {decimal, _} -> decimal
+      :error -> Decimal.new(0)
+    end
+  end
+
+  defp parse_decimal(_), do: Decimal.new(0)
+
+  defp parse_datetime(nil), do: nil
+  defp parse_datetime(%DateTime{} = dt), do: dt
+
+  defp parse_datetime(string) when is_binary(string) do
+    case DateTime.from_iso8601(string) do
+      {:ok, datetime, _} -> datetime
+      _ -> nil
+    end
+  end
+
+  defp parse_datetime(_), do: nil
 end

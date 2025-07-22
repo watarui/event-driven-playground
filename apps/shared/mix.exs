@@ -11,9 +11,7 @@ defmodule Shared.MixProject do
       lockfile: "../../mix.lock",
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
-      deps: deps(),
-      # Event Store Repo を追加
-      ecto_repos: [Shared.Infrastructure.EventStore.Repo]
+      deps: deps()
     ]
   end
 
@@ -29,9 +27,6 @@ defmodule Shared.MixProject do
   defp deps do
     [
       {:plug, "~> 1.15"},
-      {:ecto, "~> 3.11"},
-      {:ecto_sql, "~> 3.11"},
-      {:postgrex, "~> 0.17"},
       {:jason, "~> 1.4"},
       {:decimal, "~> 2.1"},
       {:elixir_uuid, "~> 1.2"},
@@ -45,6 +40,7 @@ defmodule Shared.MixProject do
       {:phoenix_pubsub, "~> 2.1"},
       {:finch, "~> 0.18"},
       {:google_api_pub_sub, "~> 0.36"},
+      {:google_api_firestore, "~> 0.26"},
       {:goth, "~> 1.4"}
     ]
   end

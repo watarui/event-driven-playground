@@ -28,7 +28,7 @@ GRAPHQL_URL="http://localhost:$GRAPHQL_PORT/graphql"
 info "GraphQL サービスの接続を確認しています..."
 log_to_file "GraphQL エンドポイント: $GRAPHQL_URL"
 
-if ! check_service_health "$GRAPHQL_URL" "GraphQL"; then
+if ! check_graphql_connection "$GRAPHQL_URL"; then
     log_to_file "エラー: GraphQL サービスに接続できません"
     show_log_on_error "GraphQL サービスに接続できません"
     log "サービスが起動していることを確認してください: ${CYAN}./scripts/start.sh${NC}"

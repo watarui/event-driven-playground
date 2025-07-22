@@ -49,18 +49,6 @@ variable "services" {
   }
 }
 
-variable "supabase_url" {
-  description = "Supabase project URL"
-  type        = string
-  sensitive   = true
-}
-
-variable "supabase_service_key" {
-  description = "Supabase service role key"
-  type        = string
-  sensitive   = true
-}
-
 variable "firebase_config" {
   description = "Firebase configuration"
   type = object({

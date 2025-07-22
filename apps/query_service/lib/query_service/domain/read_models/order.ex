@@ -1,75 +1,133 @@
 defmodule QueryService.Domain.ReadModels.Order do
   @moduledoc """
-  注文の Read Model
+  注文の読み取りモデル
   """
 
-  use Ecto.Schema
-  import Ecto.Changeset
-  import Shared.SchemaHelpers
+  @enforce_keys [:id, :customer_id, :status, :total_amount, :currency, :created_at, :updated_at]
+  defstruct [
+    :id,
+    :customer_id,
+    :status,
+    :items,
+    :total_amount,
+    :currency,
+    :shipping_address,
+    :created_at,
+    :updated_at,
+    :confirmed_at,
+    :shipped_at,
+    :delivered_at,
+    :cancelled_at
+  ]
 
-  query_schema()
-  @primary_key {:id, :string, autogenerate: false}
-  @timestamps_opts [type: :utc_datetime]
+  @type status :: :pending | :confirmed | :shipped | :delivered | :cancelled
 
-  schema "orders" do
-    field(:user_id, :string)
-    field(:total_amount, :decimal)
-    field(:currency, :string)
-    field(:status, :string)
-    field(:items, {:array, :map})
+  @type t :: %__MODULE__{
+          id: String.t(),
+          customer_id: String.t(),
+          status: status(),
+          items: [Item.t()],
+          total_amount: Decimal.t(),
+          currency: String.t(),
+          shipping_address: map() | nil,
+          created_at: DateTime.t(),
+          updated_at: DateTime.t(),
+          confirmed_at: DateTime.t() | nil,
+          shipped_at: DateTime.t() | nil,
+          delivered_at: DateTime.t() | nil,
+          cancelled_at: DateTime.t() | nil
+        }
 
-    # 追加フィールド
-    field(:payment_id, :string)
-    field(:shipping_id, :string)
-    field(:cancellation_reason, :string)
+  defmodule Item do
+    @moduledoc """
+    注文アイテムの構造体
+    """
 
-    # SAGA 関連フィールド
-    field(:saga_id, :string)
-    field(:saga_status, :string)
-    field(:saga_current_step, :string)
+    @enforce_keys [:product_id, :product_name, :quantity, :unit_price, :subtotal]
+    defstruct [
+      :product_id,
+      :product_name,
+      :quantity,
+      :unit_price,
+      :subtotal
+    ]
 
-    # タイムスタンプ
-    field(:confirmed_at, :utc_datetime)
-    field(:payment_processed_at, :utc_datetime)
-    field(:shipped_at, :utc_datetime)
-    field(:delivered_at, :utc_datetime)
-    field(:cancelled_at, :utc_datetime)
-
-    timestamps()
+    @type t :: %__MODULE__{
+            product_id: String.t(),
+            product_name: String.t(),
+            quantity: integer(),
+            unit_price: Decimal.t(),
+            subtotal: Decimal.t()
+          }
   end
 
-  @doc false
-  def changeset(order, attrs) do
-    order
-    |> cast(attrs, [
-      :id,
-      :user_id,
-      :total_amount,
-      :currency,
-      :status,
-      :items,
-      :payment_id,
-      :shipping_id,
-      :cancellation_reason,
-      :saga_id,
-      :saga_status,
-      :saga_current_step,
-      :confirmed_at,
-      :payment_processed_at,
-      :shipped_at,
-      :delivered_at,
-      :cancelled_at
-    ])
-    |> validate_required([:id, :user_id, :total_amount, :currency, :status])
-    |> validate_number(:total_amount, greater_than_or_equal_to: 0)
-    |> validate_inclusion(:status, [
-      "pending",
-      "inventory_reserved",
-      "payment_processed",
-      "shipped",
-      "delivered",
-      "confirmed",
-      "cancelled"
-    ])
+  @doc """
+  注文のサマリーを生成する
+  """
+  def summary(%__MODULE__{} = order) do
+    %{
+      id: order.id,
+      customer_id: order.customer_id,
+      status: order.status,
+      item_count: length(order.items || []),
+      total_amount: Decimal.to_string(order.total_amount),
+      currency: order.currency,
+      created_at: DateTime.to_iso8601(order.created_at)
+    }
+  end
+
+  @doc """
+  ステータスが有効かチェックする
+  """
+  def valid_status?(:pending), do: true
+  def valid_status?(:confirmed), do: true
+  def valid_status?(:shipped), do: true
+  def valid_status?(:delivered), do: true
+  def valid_status?(:cancelled), do: true
+  def valid_status?(_), do: false
+
+  @doc """
+  注文が完了しているかチェックする
+  """
+  def completed?(%__MODULE__{status: :delivered}), do: true
+  def completed?(%__MODULE__{status: :cancelled}), do: true
+  def completed?(_), do: false
+
+  @doc """
+  注文がアクティブかチェックする
+  """
+  def active?(%__MODULE__{} = order), do: !completed?(order)
+
+  defimpl Jason.Encoder do
+    def encode(order, opts) do
+      Jason.Encode.map(
+        %{
+          id: order.id,
+          customer_id: order.customer_id,
+          status: order.status,
+          items: Enum.map(order.items || [], &encode_item/1),
+          total_amount: Decimal.to_string(order.total_amount),
+          currency: order.currency,
+          shipping_address: order.shipping_address,
+          created_at: DateTime.to_iso8601(order.created_at),
+          updated_at: DateTime.to_iso8601(order.updated_at),
+          confirmed_at: order.confirmed_at && DateTime.to_iso8601(order.confirmed_at),
+          shipped_at: order.shipped_at && DateTime.to_iso8601(order.shipped_at),
+          delivered_at: order.delivered_at && DateTime.to_iso8601(order.delivered_at),
+          cancelled_at: order.cancelled_at && DateTime.to_iso8601(order.cancelled_at)
+        },
+        opts
+      )
+    end
+
+    defp encode_item(item) do
+      %{
+        product_id: item.product_id,
+        product_name: item.product_name,
+        quantity: item.quantity,
+        unit_price: Decimal.to_string(item.unit_price),
+        subtotal: Decimal.to_string(item.subtotal)
+      }
+    end
   end
 end

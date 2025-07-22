@@ -1,32 +1,15 @@
 import Config
 
-# 開発環境のデータベース設定
-config :shared, Shared.Infrastructure.EventStore.Repo,
-  username: "postgres",
-  password: "postgres",
-  hostname: "localhost",
-  database: "event_driven_playground_event_dev",
-  port: 5432,
-  pool_size: 10,
-  show_sensitive_data_on_connection_error: true
+# 開発環境の共通設定
+config :shared,
+  environment: :dev,
+  # Firestore を使用する場合は :firestore に変更
+  database_adapter: :firestore
 
-config :command_service, CommandService.Repo,
-  username: "postgres",
-  password: "postgres",
-  hostname: "localhost",
-  database: "event_driven_playground_command_dev",
-  port: 5433,
-  pool_size: 10,
-  show_sensitive_data_on_connection_error: true
-
-config :query_service, QueryService.Repo,
-  username: "postgres",
-  password: "postgres",
-  hostname: "localhost",
-  database: "event_driven_playground_query_dev",
-  port: 5434,
-  pool_size: 10,
-  show_sensitive_data_on_connection_error: true
+# Firestore Emulator の設定（開発環境）
+# 単一の Firestore エミュレータを使用
+System.put_env("FIRESTORE_EMULATOR_HOST", "localhost:8090")
+System.put_env("FIRESTORE_PROJECT_ID", "demo-project")
 
 # Phoenix エンドポイント設定
 config :client_service, ClientServiceWeb.Endpoint,
@@ -39,6 +22,16 @@ config :client_service, ClientServiceWeb.Endpoint,
 
 # 開発環境のルートを有効化
 config :client_service, dev_routes: true
+
+# Query Service エンドポイント設定
+config :query_service, QueryServiceWeb.Endpoint,
+  http: [ip: {127, 0, 0, 1}, port: 4082],
+  server: false
+
+# Command Service エンドポイント設定  
+config :command_service, CommandServiceWeb.Endpoint,
+  http: [ip: {127, 0, 0, 1}, port: 4081],
+  server: false
 
 # ログレベル
 config :logger, :console, format: "[$level] $message\n"

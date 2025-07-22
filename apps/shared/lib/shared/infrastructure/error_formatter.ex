@@ -1,80 +1,93 @@
 defmodule Shared.Infrastructure.ErrorFormatter do
   @moduledoc """
-  エラーレスポンスの統一フォーマッター
+  GraphQL エラーフォーマッター
 
-  ドメインエラーを一貫性のある API レスポンス形式に変換する。
+  エラーメッセージを統一的なフォーマットに変換します。
   """
-
-  alias Shared.Domain.Errors.DomainError
 
   @doc """
-  エラーを GraphQL レスポンス形式に変換する
+  GraphQL エラーをフォーマットする
   """
-  @spec format_graphql_error(module(), map()) :: map()
-  def format_graphql_error(error_module, context \\ %{}) do
-    error_map = DomainError.to_map(error_module, context)
-
+  def format_graphql_error(error_module, context) do
     %{
-      message: error_map.message,
+      message: format_message(error_module, context),
       extensions: %{
-        code: error_map.error_code,
-        details: error_map.details,
-        timestamp: error_map.timestamp
+        code: error_code(error_module),
+        details: error_details(error_module, context)
       }
     }
   end
 
-  @doc """
-  エラーを REST API レスポンス形式に変換する
-  """
-  @spec format_rest_error(module(), map()) :: map()
-  def format_rest_error(error_module, context \\ %{}) do
-    error_map = DomainError.to_map(error_module, context)
-
-    %{
-      error: %{
-        code: error_map.error_code,
-        message: error_map.message,
-        details: error_map.details,
-        timestamp: error_map.timestamp
-      },
-      status: DomainError.http_status(error_module)
-    }
+  # エラーメッセージのフォーマット
+  defp format_message(Shared.Errors.ValidationError, %{message: message}) do
+    "Validation failed: #{message}"
   end
 
-  @doc """
-  複数のエラーをバッチフォーマットする
-  """
-  @spec format_error_batch([{module(), map()}], :graphql | :rest) :: [map()]
-  def format_error_batch(errors, format_type \\ :graphql) do
-    Enum.map(errors, fn {error_module, context} ->
-      case format_type do
-        :graphql -> format_graphql_error(error_module, context)
-        :rest -> format_rest_error(error_module, context)
-      end
-    end)
+  defp format_message(Shared.Errors.NotFoundError, %{resource: resource}) do
+    "#{resource} not found"
   end
 
-  @doc """
-  Ecto.Changeset エラーをドメインエラー形式に変換する
-  """
-  @spec format_changeset_errors(Ecto.Changeset.t()) :: map()
-  def format_changeset_errors(%Ecto.Changeset{} = changeset) do
-    errors =
-      Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-        Enum.reduce(opts, msg, fn {key, value}, acc ->
-          String.replace(acc, "%{#{key}}", to_string(value))
-        end)
-      end)
-
-    format_graphql_error(Shared.Domain.Errors.ValidationError, %{errors: errors})
+  defp format_message(Shared.Errors.ConflictError, %{message: message}) do
+    "Conflict: #{message}"
   end
 
-  @doc """
-  エラーレスポンスにトレース情報を追加する
-  """
-  @spec add_trace_info(map(), map()) :: map()
-  def add_trace_info(error_response, trace_info) do
-    put_in(error_response, [:extensions, :trace], trace_info)
+  defp format_message(Shared.Errors.UnauthorizedError, _) do
+    "Unauthorized access"
+  end
+
+  defp format_message(Shared.Errors.ForbiddenError, _) do
+    "Access forbidden"
+  end
+
+  defp format_message(Shared.Errors.BusinessRuleViolation, %{message: message}) do
+    "Business rule violation: #{message}"
+  end
+
+  defp format_message(Shared.Errors.ConcurrencyError, _) do
+    "Concurrent modification detected. Please retry."
+  end
+
+  defp format_message(Shared.Errors.InternalServerError, _) do
+    "Internal server error"
+  end
+
+  defp format_message(_, %{message: message}) when is_binary(message) do
+    message
+  end
+
+  defp format_message(_, _) do
+    "An error occurred"
+  end
+
+  # エラーコードの取得
+  defp error_code(Shared.Errors.ValidationError), do: "VALIDATION_ERROR"
+  defp error_code(Shared.Errors.NotFoundError), do: "NOT_FOUND"
+  defp error_code(Shared.Errors.ConflictError), do: "CONFLICT"
+  defp error_code(Shared.Errors.UnauthorizedError), do: "UNAUTHORIZED"
+  defp error_code(Shared.Errors.ForbiddenError), do: "FORBIDDEN"
+  defp error_code(Shared.Errors.BusinessRuleViolation), do: "BUSINESS_RULE_VIOLATION"
+  defp error_code(Shared.Errors.ConcurrencyError), do: "CONCURRENCY_ERROR"
+  defp error_code(Shared.Errors.InternalServerError), do: "INTERNAL_SERVER_ERROR"
+  defp error_code(_), do: "UNKNOWN_ERROR"
+
+  # エラー詳細の取得
+  defp error_details(Shared.Errors.ValidationError, %{details: details}) when is_map(details) do
+    details
+  end
+
+  defp error_details(Shared.Errors.ValidationError, %{field: field, reason: reason}) do
+    %{field: field, reason: reason}
+  end
+
+  defp error_details(Shared.Errors.NotFoundError, %{resource: resource, id: id}) do
+    %{resource: resource, id: id}
+  end
+
+  defp error_details(Shared.Errors.BusinessRuleViolation, %{rule: rule}) do
+    %{rule: rule}
+  end
+
+  defp error_details(_, context) do
+    Map.drop(context, [:__struct__, :__exception__])
   end
 end

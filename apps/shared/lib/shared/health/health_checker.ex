@@ -8,6 +8,7 @@ defmodule Shared.Health.HealthChecker do
   alias Shared.Health.Checks.{
     DatabaseCheck,
     EventStoreCheck,
+    FirestoreCheck,
     MemoryCheck,
     ServiceCheck,
     CircuitBreakerCheck
@@ -40,6 +41,7 @@ defmodule Shared.Health.HealthChecker do
 
     checks = [
       run_check("database", &DatabaseCheck.check/0),
+      run_check("firestore", &FirestoreCheck.check/0),
       run_check("event_store", &EventStoreCheck.check/0),
       run_check("memory", &MemoryCheck.check/0),
       run_check("services", &ServiceCheck.check/0),
@@ -87,6 +89,7 @@ defmodule Shared.Health.HealthChecker do
     check =
       case check_name do
         :database -> run_check("database", &DatabaseCheck.check/0)
+        :firestore -> run_check("firestore", &FirestoreCheck.check/0)
         :event_store -> run_check("event_store", &EventStoreCheck.check/0)
         :memory -> run_check("memory", &MemoryCheck.check/0)
         :services -> run_check("services", &ServiceCheck.check/0)

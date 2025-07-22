@@ -1,6 +1,10 @@
 import Config
 
 # 本番環境の設定
+config :shared,
+  environment: :prod,
+  # 本番環境では Firestore を使用
+  database_adapter: :firestore
 
 # Logger を JSON フォーマットで出力（Axiom 用）
 config :logger, :console,

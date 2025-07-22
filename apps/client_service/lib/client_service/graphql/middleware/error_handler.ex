@@ -27,11 +27,7 @@ defmodule ClientService.GraphQL.Middleware.ErrorHandler do
     %{resolution | value: nil, errors: [error]}
   end
 
-  defp handle_errors(%{value: {:error, %Ecto.Changeset{} = changeset}} = resolution) do
-    error = ErrorFormatter.format_changeset_errors(changeset)
-
-    %{resolution | value: nil, errors: [error]}
-  end
+  # Ecto.Changeset の処理は削除（Firestore への移行に伴い不要）
 
   defp handle_errors(%{value: {:error, reason}} = resolution) when is_binary(reason) do
     %{resolution | value: nil, errors: [%{message: reason}]}

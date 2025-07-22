@@ -50,46 +50,26 @@ log_to_file "Docker コンテナの状態を確認中..."
 if ! are_containers_running; then
     log_to_file "エラー: Docker コンテナが起動していません"
     show_log_on_error "Docker コンテナが起動していません"
-    log "先に ${CYAN}./scripts/setup.sh${NC} を実行してください"
+    log "先に ${CYAN}docker compose up -d${NC} を実行してください"
     exit 1
 fi
 log_to_file "Docker コンテナは正常に起動しています"
 
-# データベース接続チェック
-info "データベース接続を確認しています..."
-for port in 5432 5433 5434; do
-    log_to_file "PostgreSQL (port $port) への接続を確認中..."
-    
-    case $port in
-        5432) db_name="Event Store" ;;
-        5433) db_name="Command" ;;
-        5434) db_name="Query" ;;
-    esac
-    
-    echo -n "  $db_name DB への接続を確認"
-    if check_postgres $port; then
-        echo -e " ${GREEN}✓${NC}"
-    else
-        echo -e " ${RED}✗${NC}"
-        log_to_file "エラー: PostgreSQL (port $port) に接続できません"
-        show_log_on_error "PostgreSQL (port $port) に接続できません"
-        exit 1
-    fi
-    if [ $? -ne 0 ]; then
-        log_to_file "エラー: PostgreSQL (port $port) に接続できません"
-        show_log_on_error "PostgreSQL (port $port) に接続できません"
-        exit 1
-    fi
-    log_to_file "PostgreSQL (port $port) への接続成功"
-done
-success "すべてのデータベースに接続できました"
+# Firestore エミュレータ接続チェック
+info "Firestore エミュレータへの接続を確認しています..."
+log_to_file "Firestore エミュレータ (port $FIRESTORE_PORT) への接続を確認中..."
 
-# データベース存在チェック
-if ! database_exists "event_driven_playground_event_dev" 5432; then
-    error "Event Store データベースが存在しません"
-    log "先に ${CYAN}./scripts/setup.sh${NC} を実行してください"
+echo -n "  Firestore エミュレータへの接続を確認"
+if check_firestore_emulator; then
+    echo -e " ${GREEN}✓${NC}"
+    log_to_file "Firestore エミュレータへの接続成功"
+else
+    echo -e " ${RED}✗${NC}"
+    log_to_file "エラー: Firestore エミュレータに接続できません"
+    show_log_on_error "Firestore エミュレータに接続できません"
     exit 1
 fi
+success "Firestore エミュレータに接続できました"
 
 # ==============================================================================
 # 既存プロセスの停止
@@ -114,7 +94,7 @@ section "🔧 バックエンドサービスの起動"
 info "Command Service を起動しています..."
 cd "$PROJECT_ROOT/apps/command_service"
 log_to_file "Command Service を起動: PORT=$COMMAND_PORT"
-PORT=$COMMAND_PORT elixir --name command@127.0.0.1 -S mix run --no-halt > "$LOG_DIR/command_service.log" 2>&1 &
+PORT=$COMMAND_PORT elixir --sname command -S mix run --no-halt > "$LOG_DIR/command_service.log" 2>&1 &
 COMMAND_PID=$!
 log "  PID: $COMMAND_PID (Port: $COMMAND_PORT)"
 log_to_file "Command Service PID: $COMMAND_PID"
@@ -123,7 +103,7 @@ log_to_file "Command Service PID: $COMMAND_PID"
 info "Query Service を起動しています..."
 cd "$PROJECT_ROOT/apps/query_service"
 log_to_file "Query Service を起動: PORT=$QUERY_PORT"
-PORT=$QUERY_PORT elixir --name query@127.0.0.1 -S mix run --no-halt > "$LOG_DIR/query_service.log" 2>&1 &
+PORT=$QUERY_PORT elixir --sname query -S mix run --no-halt > "$LOG_DIR/query_service.log" 2>&1 &
 QUERY_PID=$!
 log "  PID: $QUERY_PID (Port: $QUERY_PORT)"
 log_to_file "Query Service PID: $QUERY_PID"
@@ -132,7 +112,7 @@ log_to_file "Query Service PID: $QUERY_PID"
 info "Client Service (GraphQL) を起動しています..."
 cd "$PROJECT_ROOT/apps/client_service"
 log_to_file "Client Service を起動: PORT=$GRAPHQL_PORT"
-PORT=$GRAPHQL_PORT elixir --name client@127.0.0.1 -S mix phx.server > "$LOG_DIR/client_service.log" 2>&1 &
+PORT=$GRAPHQL_PORT elixir --sname client -S mix phx.server > "$LOG_DIR/client_service.log" 2>&1 &
 CLIENT_PID=$!
 log "  PID: $CLIENT_PID (Port: $GRAPHQL_PORT)"
 log_to_file "Client Service PID: $CLIENT_PID"
@@ -187,9 +167,9 @@ pid=$!
 echo -n "  GraphQL API (Port: $GRAPHQL_PORT)"
 show_spinner $pid
 if wait $pid; then
-    # GraphQL エンドポイントの確認
+    # GraphQL エンドポイントの確認（専用のヘルスチェック関数を使用）
     sleep 2
-    check_service_health "http://localhost:$GRAPHQL_PORT/graphql" "GraphQL" &
+    check_graphql_health "http://localhost:$GRAPHQL_PORT/graphql" "GraphQL" &
     pid=$!
     echo -n "  GraphQL エンドポイント確認"
     show_spinner $pid
@@ -198,7 +178,7 @@ if wait $pid; then
         log_to_file "GraphQL API の起動が完了しました"
     else
         echo -e " ${YELLOW}!${NC} 起動中"
-        log_to_file "GraphQL API は起動中です"
+        log_to_file "GraphQL API は起動中です（ヘルスチェックは継続中）"
     fi
 else
     echo -e " ${RED}✗${NC} 起動失敗"
@@ -219,7 +199,7 @@ if [ "$WITH_FRONTEND" = true ]; then
     log_to_file "Frontend を起動: PORT=$FRONTEND_PORT"
     
     # Next.js の出力をそのまま表示
-    npm run dev &
+    bun run dev &
     FRONTEND_PID=$!
     log "  PID: $FRONTEND_PID (Port: $FRONTEND_PORT)"
     log_to_file "Frontend PID: $FRONTEND_PID"
@@ -261,18 +241,6 @@ log "  ${GREEN}GraphiQL (開発用 UI):${NC} http://localhost:$GRAPHQL_PORT/grap
 if [ "$WITH_FRONTEND" = true ]; then
     log "  ${GREEN}Monitor Dashboard:${NC} http://localhost:$FRONTEND_PORT"
 fi
-log ""
-log "📊 モニタリングツール:"
-log "  ${CYAN}Grafana:${NC} http://localhost:3001 (admin/admin)"
-log "  ${CYAN}Prometheus:${NC} http://localhost:9090"
-log "  ${CYAN}Jaeger UI:${NC} http://localhost:16686"
-log ""
-log "💡 pgweb を起動する場合:"
-log "  ${CYAN}docker compose up -d pgweb-event-store pgweb-command pgweb-query${NC}"
-log "  その後以下の URL でアクセス:"
-log "  - Event Store: http://localhost:5050"
-log "  - Command: http://localhost:5051"
-log "  - Query: http://localhost:5052"
 log ""
 log "📌 便利なコマンド:"
 log "  ログを確認: ${CYAN}./scripts/logs.sh${NC}"

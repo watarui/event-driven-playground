@@ -1,624 +1,212 @@
 defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
   @moduledoc """
-  監視用クエリのリゾルバー
+  監視系のGraphQLリゾルバー（Firestore版）
   """
 
-  alias Shared.Infrastructure.EventStore.Schema.Event
-  alias QueryService.Domain.Models.{Category, Product}
-  alias QueryService.Domain.ReadModels.Order
-  alias ClientService.PubSubBroadcaster
-  alias ClientService.Infrastructure.RemoteQueryBus
-  import Ecto.Query
+  alias Shared.Infrastructure.Firestore.{EventStore, Repository}
+  alias Shared.Health.HealthChecker
+  require Logger
 
   @doc """
   イベントストアの統計情報を取得
   """
   def get_event_store_stats(_parent, _args, _resolution) do
-    try do
-      # 総イベント数
-      total_events = Shared.Infrastructure.EventStore.Repo.aggregate(Event, :count) || 0
+    # TODO: 実際の統計情報を実装
+    stats = %{
+      total_events: 0,
+      total_aggregates: 0,
+      event_types: [],
+      last_event_at: nil
+    }
 
-      # イベントタイプ別の集計
-      events_by_type =
-        try do
-          Event
-          |> group_by(:event_type)
-          |> select([e], %{event_type: e.event_type, count: count(e.id)})
-          |> Shared.Infrastructure.EventStore.Repo.all()
-        rescue
-          _ -> []
-        end
+    {:ok, stats}
+  end
 
-      # アグリゲートタイプ別の集計
-      events_by_aggregate =
-        try do
-          Event
-          |> group_by(:aggregate_type)
-          |> select([e], %{aggregate_type: e.aggregate_type, count: count(e.id)})
-          |> Shared.Infrastructure.EventStore.Repo.all()
-        rescue
-          _ -> []
-        end
+  @doc """
+  イベントリストを取得
+  """
+  def list_events(_parent, args, _resolution) do
+    limit = Map.get(args, :limit, 100)
+    aggregate_id = Map.get(args, :aggregate_id)
 
-      # 最新のシーケンス番号
-      latest_sequence =
-        try do
-          Event
-          |> select([e], max(e.global_sequence))
-          |> Shared.Infrastructure.EventStore.Repo.one()
-        rescue
-          _ -> nil
-        end
+    if aggregate_id do
+      case EventStore.get_events(aggregate_id, 0) do
+        {:ok, events} ->
+          {:ok, Enum.take(events, limit)}
 
-      {:ok,
-       %{
-         total_events: total_events,
-         events_by_type: events_by_type,
-         events_by_aggregate: events_by_aggregate,
-         latest_sequence: latest_sequence
-       }}
-    rescue
-      _ ->
-        {:ok,
-         %{
-           total_events: 0,
-           events_by_type: [],
-           events_by_aggregate: [],
-           latest_sequence: nil
-         }}
+        error ->
+          error
+      end
+    else
+      # TODO: 全イベントの取得を実装
+      {:ok, []}
     end
   end
 
   @doc """
-  イベント一覧を取得
-  """
-  def list_events(_parent, args, _resolution) do
-    query = from(e in Event)
-
-    query =
-      if args[:aggregate_id] do
-        from(e in query, where: e.aggregate_id == ^args.aggregate_id)
-      else
-        query
-      end
-
-    query =
-      if args[:aggregate_type] do
-        from(e in query, where: e.aggregate_type == ^args.aggregate_type)
-      else
-        query
-      end
-
-    query =
-      if args[:event_type] do
-        from(e in query, where: e.event_type == ^args.event_type)
-      else
-        query
-      end
-
-    query =
-      if args[:after_id] do
-        from(e in query, where: e.id > ^args.after_id)
-      else
-        query
-      end
-
-    events =
-      query
-      |> order_by(desc: :id)
-      |> limit(^(args[:limit] || 100))
-      |> Shared.Infrastructure.EventStore.Repo.all()
-      |> Enum.map(fn event ->
-        Map.update!(event, :inserted_at, fn dt ->
-          case dt do
-            %NaiveDateTime{} = dt -> NaiveDateTime.to_string(dt)
-            %DateTime{} = dt -> DateTime.to_string(dt)
-            dt -> to_string(dt)
-          end
-        end)
-      end)
-
-    {:ok, events}
-  end
-
-  @doc """
-  最新のイベントを取得
+  最近のイベントを取得
   """
   def recent_events(_parent, args, _resolution) do
-    limit = args[:limit] || 50
+    _limit = Map.get(args, :limit, 10)
 
-    events =
-      Event
-      |> order_by(desc: :id)
-      |> limit(^limit)
-      |> Shared.Infrastructure.EventStore.Repo.all()
-      |> Enum.map(fn event ->
-        Map.update!(event, :inserted_at, fn dt ->
-          case dt do
-            %NaiveDateTime{} = dt -> NaiveDateTime.to_string(dt)
-            %DateTime{} = dt -> DateTime.to_string(dt)
-            dt -> to_string(dt)
-          end
-        end)
-      end)
-
-    {:ok, events}
+    # TODO: 最近のイベントの取得を実装
+    {:ok, []}
   end
 
   @doc """
-  システム統計を取得
+  システム統計情報を取得
   """
   def get_system_statistics(_parent, _args, _resolution) do
-    # Event Store の統計
-    event_store_count = Shared.Infrastructure.EventStore.Repo.aggregate(Event, :count) || 0
+    memory_info = :erlang.memory()
 
-    # Command DB の統計（カテゴリと商品のみ）
-    categories_cmd_count = get_command_count("categories")
-    products_cmd_count = get_command_count("products")
-    command_db_count = categories_cmd_count + products_cmd_count
+    stats = %{
+      node: node(),
+      uptime: :erlang.statistics(:wall_clock) |> elem(0),
+      process_count: :erlang.system_info(:process_count),
+      memory: %{
+        total: memory_info[:total],
+        processes: memory_info[:processes],
+        binary: memory_info[:binary],
+        ets: memory_info[:ets]
+      }
+    }
 
-    # Query DB の統計
-    # 注: 実際のデータはQuery DBに存在するが、RPC接続の問題により0と表示される場合があります
-    # 実際の値: categories=10, products=17, orders=0
-    categories_count = get_query_count(Category)
-    products_count = get_query_count(Product)
-    orders_count = get_query_count(Order)
-
-    # SAGA の統計
-    saga_stats = get_saga_stats()
-
-    current_time = DateTime.utc_now() |> DateTime.to_string()
-
-    {:ok,
-     %{
-       event_store: %{
-         total_records: event_store_count,
-         last_updated: current_time
-       },
-       command_db: %{
-         total_records: command_db_count,
-         last_updated: current_time
-       },
-       query_db: %{
-         categories: categories_count,
-         products: products_count,
-         orders: orders_count,
-         last_updated: current_time
-       },
-       sagas: saga_stats
-     }}
+    {:ok, stats}
   end
 
   @doc """
   プロジェクションの状態を取得
   """
   def get_projection_status(_parent, _args, _resolution) do
-    # PubSub 経由で Query Service から状態を取得
-    query = %{
-      __struct__: "QueryService.Application.Queries.MonitoringQueries.GetProjectionStatus",
-      query_type: "monitoring.projection_status",
-      metadata: nil
+    # TODO: プロジェクションの状態を実装
+    status = %{
+      projections: [],
+      last_processed_event_id: nil,
+      is_rebuilding: false
     }
 
-    case RemoteQueryBus.send_query(query) do
-      {:ok, status} when is_map(status) ->
-        projections =
-          Enum.map(status, fn {module, info} ->
-            %{
-              name: inspect(module),
-              status: to_string(info.status),
-              last_error: info.last_error,
-              processed_count: info.processed_count
-            }
-          end)
-
-        {:ok, projections}
-
-      {:error, :timeout} ->
-        {:error, "Query Service に接続できません"}
-
-      _ ->
-        {:error, "プロジェクションの状態を取得できません"}
-    end
-  end
-
-  # Private functions
-
-  defp get_query_count(module) do
-    try do
-      # 直接 Query DB に接続して集計
-      table_name =
-        case module do
-          Category -> "categories"
-          Product -> "products"
-          Order -> "orders"
-          _ -> nil
-        end
-
-      if table_name do
-        # Query DB に直接接続
-        conn_config = [
-          database: "event_driven_playground_query_dev",
-          hostname: "localhost",
-          port: 5434,
-          username: "postgres",
-          password: "postgres"
-        ]
-
-        case Postgrex.start_link(conn_config) do
-          {:ok, conn} ->
-            try do
-              case Postgrex.query(conn, "SELECT COUNT(*) FROM #{table_name}", []) do
-                {:ok, %{rows: [[count]]}} ->
-                  GenServer.stop(conn)
-                  count || 0
-
-                _ ->
-                  GenServer.stop(conn)
-                  0
-              end
-            catch
-              _ ->
-                GenServer.stop(conn)
-                0
-            end
-
-          _ ->
-            0
-        end
-      else
-        0
-      end
-    rescue
-      _ -> 0
-    end
-  end
-
-  defp get_command_count(table_name) do
-    # PubSub 経由で Command Service から統計を取得
-    query = %{
-      __struct__: "CommandService.Application.Queries.StatisticsQueries.GetTableCount",
-      query_type: "statistics.table_count",
-      table_name: table_name,
-      metadata: nil
-    }
-
-    case RemoteQueryBus.send_query(query) do
-      {:ok, count} when is_integer(count) -> count
-      _ -> 0
-    end
-  end
-
-  defp get_saga_stats do
-    try do
-      # SAGA テーブルから統計を取得
-      query = """
-      SELECT 
-        COUNT(*) FILTER (WHERE status = 'started') as active,
-        COUNT(*) FILTER (WHERE status = 'completed') as completed,
-        COUNT(*) FILTER (WHERE status = 'failed') as failed,
-        COUNT(*) FILTER (WHERE status = 'compensated') as compensated,
-        COUNT(*) as total
-      FROM event_store.sagas
-      """
-
-      case Shared.Infrastructure.EventStore.Repo.query(query) do
-        {:ok, %{rows: [[active, completed, failed, compensated, total]]}} ->
-          %{
-            active: active || 0,
-            completed: completed || 0,
-            failed: failed || 0,
-            compensated: compensated || 0,
-            total: total || 0
-          }
-
-        _ ->
-          %{active: 0, completed: 0, failed: 0, compensated: 0, total: 0}
-      end
-    rescue
-      _ ->
-        %{active: 0, completed: 0, failed: 0, compensated: 0, total: 0}
-    end
+    {:ok, status}
   end
 
   @doc """
-  Saga の一覧を取得
+  Sagaリストを取得
   """
   def list_sagas(_parent, args, _resolution) do
-    base_query = "SELECT * FROM event_store.sagas"
+    limit = Map.get(args, :limit, 100)
 
-    conditions = []
-    params = []
-    param_index = 1
-
-    # status フィルタ
-    {conditions, params, param_index} =
-      if args[:status] do
-        {["status = $#{param_index}" | conditions], params ++ [args[:status]], param_index + 1}
-      else
-        {conditions, params, param_index}
-      end
-
-    # saga_type フィルタ
-    {conditions, params, param_index} =
-      if args[:saga_type] do
-        {["saga_type = $#{param_index}" | conditions], params ++ [args[:saga_type]],
-         param_index + 1}
-      else
-        {conditions, params, param_index}
-      end
-
-    where_clause =
-      if conditions != [], do: " WHERE " <> Enum.join(Enum.reverse(conditions), " AND "), else: ""
-
-    # LIMIT と OFFSET を追加
-    limit_offset_query =
-      " ORDER BY updated_at DESC LIMIT $#{param_index} OFFSET $#{param_index + 1}"
-
-    query = base_query <> where_clause <> limit_offset_query
-
-    params = params ++ [args[:limit] || 50, args[:offset] || 0]
-
-    case Shared.Infrastructure.EventStore.Repo.query(query, params) do
-      {:ok, %{rows: rows, columns: columns}} ->
-        sagas =
-          Enum.map(rows, fn row ->
-            Enum.zip(columns, row)
-            |> Enum.into(%{})
-            |> format_saga_from_row()
-          end)
-
-        {:ok, sagas}
-
-      {:error, error} ->
-        {:error, "Failed to fetch sagas: #{inspect(error)}"}
+    case Repository.list("sagas", limit: limit) do
+      {:ok, sagas} -> {:ok, sagas}
+      error -> error
     end
   end
 
   @doc """
-  特定の Saga を取得
+  特定のSagaを取得
   """
   def get_saga(_parent, %{id: id}, _resolution) do
-    query = "SELECT * FROM event_store.sagas WHERE id = $1 LIMIT 1"
-
-    # UUID を適切な形式に変換
-    id_binary =
-      case id do
-        # すでにバイナリ形式
-        <<_::288>> = binary ->
-          binary
-
-        string_id ->
-          case Ecto.UUID.dump(string_id) do
-            {:ok, binary} -> binary
-            _ -> id
-          end
-      end
-
-    case Shared.Infrastructure.EventStore.Repo.query(query, [id_binary]) do
-      {:ok, %{rows: [row], columns: columns}} ->
-        saga =
-          Enum.zip(columns, row)
-          |> Enum.into(%{})
-          |> format_saga_from_row()
-
-        {:ok, saga}
-
-      {:ok, %{rows: []}} ->
-        {:error, "Saga not found"}
-
-      {:error, error} ->
-        {:error, "Failed to fetch saga: #{inspect(error)}"}
+    case Repository.get("sagas", id) do
+      {:ok, saga} -> {:ok, saga}
+      {:error, :not_found} -> {:error, "Saga not found"}
+      error -> error
     end
   end
 
   @doc """
-  PubSub メッセージ履歴を取得
+  Pub/Subメッセージリストを取得
   """
   def list_pubsub_messages(_parent, args, _resolution) do
-    # メモリ内キャッシュから取得（リアルタイムモニタリングのため）
-    messages = PubSubBroadcaster.get_recent_messages()
+    _limit = Map.get(args, :limit, 100)
 
-    filtered_messages =
-      messages
-      |> Enum.filter(fn msg ->
-        (is_nil(args[:topic]) || msg.topic == args[:topic]) &&
-          (is_nil(args[:after_timestamp]) ||
-             DateTime.compare(msg.timestamp, args[:after_timestamp]) == :gt)
-      end)
-      |> Enum.take(args[:limit] || 100)
-
-    {:ok, filtered_messages}
+    # TODO: Pub/Subメッセージの取得を実装
+    {:ok, []}
   end
 
   @doc """
-  PubSub トピック統計を取得
+  Pub/Sub統計情報を取得
   """
   def get_pubsub_stats(_parent, _args, _resolution) do
-    stats = PubSubBroadcaster.get_topic_stats()
+    stats = %{
+      topics: [],
+      total_messages: 0,
+      subscribers: []
+    }
+
     {:ok, stats}
   end
 
   @doc """
   クエリ実行履歴を取得
   """
-  def list_query_executions(_parent, _args, _resolution) do
-    # TODO: クエリ実行の追跡を実装
-    {:ok, []}
+  def list_query_executions(_parent, args, _resolution) do
+    limit = Map.get(args, :limit, 100)
+
+    case Repository.list("query_executions", limit: limit) do
+      {:ok, executions} -> {:ok, executions}
+      error -> error
+    end
   end
 
   @doc """
   コマンド実行履歴を取得
   """
-  def list_command_executions(_parent, _args, _resolution) do
-    # TODO: コマンド実行の追跡を実装
-    {:ok, []}
+  def list_command_executions(_parent, args, _resolution) do
+    limit = Map.get(args, :limit, 100)
+
+    case Repository.list("command_executions", limit: limit) do
+      {:ok, executions} -> {:ok, executions}
+      error -> error
+    end
   end
 
   @doc """
   システムトポロジーを取得
   """
   def get_system_topology(_parent, _args, _resolution) do
-    nodes = [
-      %{
-        service_name: "Client Service",
-        node_name: to_string(Node.self()),
-        status: "active",
-        uptime_seconds: get_uptime(),
-        memory_usage_mb: get_memory_usage(),
-        cpu_usage_percent: 0.0,
-        message_queue_size: Process.info(self(), :message_queue_len) |> elem(1),
-        connections: [
+    nodes = [node() | Node.list()]
+
+    topology = %{
+      nodes:
+        Enum.map(nodes, fn n ->
           %{
-            target_service: "Command Service",
-            connection_type: "PubSub",
-            status: "active",
-            latency_ms: 0
-          },
-          %{
-            target_service: "Query Service",
-            connection_type: "PubSub",
-            status: "active",
-            latency_ms: 0
+            name: to_string(n),
+            status: if(n == node(), do: "self", else: "connected"),
+            services: get_node_services(n)
           }
-        ]
-      }
-    ]
+        end)
+    }
 
-    # 他のサービスの状態も追加（本番環境では接続できない可能性があるため、固定値を返す）
-    other_nodes = [
-      %{
-        service_name: "Command Service",
-        node_name: "command@127.0.0.1",
-        status: "active",
-        uptime_seconds: 0,
-        memory_usage_mb: 0,
-        cpu_usage_percent: 0.0,
-        message_queue_size: 0,
-        connections: []
-      },
-      %{
-        service_name: "Query Service",
-        node_name: "query@127.0.0.1",
-        status: "active",
-        uptime_seconds: 0,
-        memory_usage_mb: 0,
-        cpu_usage_percent: 0.0,
-        message_queue_size: 0,
-        connections: []
-      }
-    ]
-
-    {:ok, nodes ++ other_nodes}
+    {:ok, topology}
   end
 
   @doc """
-  統合ダッシュボード統計を取得
+  ダッシュボード統計を取得
   """
   def get_dashboard_stats(_parent, _args, _resolution) do
-    try do
-      total_events = Shared.Infrastructure.EventStore.Repo.aggregate(Event, :count) || 0
-      saga_stats = get_saga_stats()
+    case HealthChecker.check_health() do
+      %{status: status, checks: checks} ->
+        stats = %{
+          health_status: status,
+          health_checks: checks,
+          timestamp: DateTime.utc_now()
+        }
 
-      # イベントレートの計算（1分間のイベント数）
-      one_minute_ago = DateTime.utc_now() |> DateTime.add(-60, :second)
+        {:ok, stats}
 
-      recent_events_count =
-        try do
-          Event
-          |> where([e], e.inserted_at > ^one_minute_ago)
-          |> Shared.Infrastructure.EventStore.Repo.aggregate(:count)
-          |> Kernel.||(0)
-        rescue
-          _ -> 0
-        end
-
-      # イベントレート（分間）
-      events_per_minute = recent_events_count * 1.0
-
-      {:ok,
-       %{
-         total_events: total_events,
-         events_per_minute: events_per_minute,
-         active_sagas: saga_stats.active,
-         # TODO: 実装
-         total_commands: 0,
-         # TODO: 実装
-         total_queries: 0,
-         system_health: determine_system_health(),
-         error_rate: 0.0,
-         average_latency_ms: 0
-       }}
-    rescue
       _ ->
-        {:ok,
-         %{
-           total_events: 0,
-           events_per_minute: 0.0,
-           active_sagas: 0,
-           total_commands: 0,
-           total_queries: 0,
-           system_health: "unknown",
-           error_rate: 0.0,
-           average_latency_ms: 0
-         }}
+        {:error, "Failed to get dashboard stats"}
     end
   end
 
-  # Private helper functions
+  # Private functions
 
-  defp format_saga_from_row(row) do
-    state =
-      case row["state"] do
-        nil ->
-          %{}
+  defp get_node_services(node_name) do
+    node_str = to_string(node_name)
 
-        json_string when is_binary(json_string) ->
-          case Jason.decode(json_string) do
-            {:ok, decoded} -> decoded
-            _ -> %{}
-          end
-
-        _ ->
-          %{}
-      end
-
-    %{
-      id:
-        case row["id"] do
-          <<_::128>> = binary ->
-            case Ecto.UUID.load(binary) do
-              {:ok, uuid} -> uuid
-              _ -> binary
-            end
-
-          id ->
-            id
-        end,
-      saga_type: row["saga_type"],
-      status: row["status"],
-      state: state,
-      # TODO: コマンド履歴の追加
-      commands_dispatched: [],
-      events_handled: Map.get(state, "handled_events", []),
-      created_at: row["created_at"],
-      updated_at: row["updated_at"],
-      correlation_id: Map.get(state, "correlation_id")
-    }
-  end
-
-  defp get_uptime do
-    {uptime, _} = :erlang.statistics(:wall_clock)
-    div(uptime, 1000)
-  end
-
-  defp get_memory_usage do
-    memory = :erlang.memory()
-    div(memory[:total], 1024 * 1024)
-  end
-
-  defp determine_system_health do
-    # TODO: より詳細なヘルスチェック
-    "healthy"
+    cond do
+      String.contains?(node_str, "command") -> ["CommandService"]
+      String.contains?(node_str, "query") -> ["QueryService"]
+      String.contains?(node_str, "client") -> ["ClientService"]
+      true -> []
+    end
   end
 end

@@ -2,15 +2,12 @@ import Config
 
 # 共通設定
 config :shared,
-  ecto_repos: [Shared.Infrastructure.EventStore.Repo],
   generators: [timestamp_type: :utc_datetime]
 
 config :command_service,
-  ecto_repos: [CommandService.Repo],
   generators: [timestamp_type: :utc_datetime]
 
 config :query_service,
-  ecto_repos: [QueryService.Repo],
   generators: [timestamp_type: :utc_datetime]
 
 # Phoenix 設定
@@ -36,6 +33,10 @@ config :logger, :console,
 
 # Elixir の JSON ライブラリ
 config :elixir, :json_library, Jason
+
+# Tesla の警告を抑制
+config :tesla, :adapter, {Tesla.Adapter.Hackney, [recv_timeout: 30_000]}
+config :tesla, disable_deprecated_builder_warning: true
 
 # OpenTelemetry 基本設定
 config :opentelemetry,

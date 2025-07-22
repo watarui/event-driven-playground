@@ -62,10 +62,9 @@ defmodule Shared.Domain.ValueObjects.EntityId do
   end
 
   def to_binary(id) when is_binary(id) and byte_size(id) == 36 do
-    case Ecto.UUID.dump(id) do
-      {:ok, uuid} -> uuid
-      _ -> nil
-    end
+    # UUID ライブラリはバイナリ形式への変換をサポートしていないため、
+    # 文字列形式のまま返す（Firestore では文字列形式で保存）
+    id
   end
 
   def to_binary(id) when is_binary(id) and byte_size(id) == 16 do
@@ -80,10 +79,9 @@ defmodule Shared.Domain.ValueObjects.EntityId do
   """
   @spec from_binary(binary()) :: {:ok, t()} | {:error, String.t()}
   def from_binary(binary) when is_binary(binary) and byte_size(binary) == 16 do
-    case Ecto.UUID.load(binary) do
-      {:ok, uuid} -> {:ok, %__MODULE__{value: uuid}}
-      _ -> {:error, "Invalid binary UUID"}
-    end
+    # UUID ライブラリはバイナリ形式からの変換をサポートしていないため、
+    # この機能は一時的に無効化（Firestore では文字列形式で保存）
+    {:error, "Binary UUID conversion not supported"}
   end
 
   def from_binary(_), do: {:error, "Invalid binary UUID"}

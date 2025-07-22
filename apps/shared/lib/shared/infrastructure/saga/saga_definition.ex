@@ -1,116 +1,88 @@
 defmodule Shared.Infrastructure.Saga.SagaDefinition do
   @moduledoc """
-  Sagaの定義を表すビヘイビア
+  Saga定義のためのビヘイビア
 
-  各Sagaはこのビヘイビアを実装し、ステップの定義、タイムアウト設定、
-  補償処理などを宣言的に記述する。
+  長時間実行されるビジネストランザクションを実装するための
+  インターフェースを定義します。
   """
 
-  @type saga_id :: String.t()
-  @type step_name :: atom()
-  @type saga_state :: map()
-  @type command :: map()
-  @type event :: struct()
-  @type error_reason :: any()
-
-  @type step_result :: {:ok, [command()]} | {:error, error_reason()}
-  @type compensation_result :: {:ok, [command()]} | {:error, error_reason()}
-
-  @type step_definition :: %{
-          name: step_name(),
-          timeout: non_neg_integer(),
-          compensate_on_timeout: boolean(),
-          retry_policy: map() | nil
-        }
-
+  @doc """
+  Saga の名前を返す
+  """
   @callback saga_name() :: String.t()
-  @callback initial_state(event()) :: saga_state()
-  @callback steps() :: [step_definition()]
-  @callback handle_event(event(), saga_state()) :: {:ok, saga_state()} | {:error, error_reason()}
-  @callback execute_step(step_name(), saga_state()) :: step_result()
-  @callback compensate_step(step_name(), saga_state()) :: compensation_result()
-  @callback can_retry_step?(step_name(), error_reason(), saga_state()) :: boolean()
-  @callback is_completed?(saga_state()) :: boolean()
-  @callback is_failed?(saga_state()) :: boolean()
 
   @doc """
-  Sagaの各ステップのタイムアウト設定を取得
+  初期状態を作成する
   """
-  @spec get_step_timeout(module(), step_name()) :: non_neg_integer() | nil
-  def get_step_timeout(saga_module, step_name) do
-    saga_module.steps()
-    |> Enum.find(fn step -> step.name == step_name end)
-    |> case do
-      nil -> nil
-      step -> step.timeout
-    end
-  end
+  @callback initial_state(event :: struct()) :: map()
 
   @doc """
-  タイムアウト時に補償処理を実行するかどうか
+  Saga のステップを定義する
   """
-  @spec compensate_on_timeout?(module(), step_name()) :: boolean()
-  def compensate_on_timeout?(saga_module, step_name) do
-    saga_module.steps()
-    |> Enum.find(fn step -> step.name == step_name end)
-    |> case do
-      nil -> false
-      step -> Map.get(step, :compensate_on_timeout, true)
-    end
-  end
+  @callback steps() :: [atom()]
 
   @doc """
-  ステップのリトライポリシーを取得
+  イベントを処理する
   """
-  @spec get_retry_policy(module(), step_name()) :: map() | nil
-  def get_retry_policy(saga_module, step_name) do
-    saga_module.steps()
-    |> Enum.find(fn step -> step.name == step_name end)
-    |> case do
-      nil -> nil
-      step -> Map.get(step, :retry_policy)
-    end
-  end
+  @callback handle_event(event :: struct(), state :: map()) ::
+              {:ok, new_state :: map()}
+              | {:error, reason :: term()}
 
   @doc """
-  次のステップを取得
+  ステップを実行する
   """
-  @spec get_next_step(module(), saga_state()) :: step_name() | nil
-  def get_next_step(saga_module, saga_state) do
-    steps = saga_module.steps()
-
-    # 現在のステップまたは最後に完了したステップを基準にする
-    current_step = saga_state[:current_step] || List.last(saga_state[:completed_steps] || [])
-
-    if current_step do
-      current_index = Enum.find_index(steps, fn step -> step.name == current_step end)
-
-      if current_index && current_index < length(steps) - 1 do
-        Enum.at(steps, current_index + 1).name
-      else
-        nil
-      end
-    else
-      # 初回実行時は最初のステップを返す
-      case steps do
-        [first_step | _] -> first_step.name
-        [] -> nil
-      end
-    end
-  end
+  @callback execute_step(step :: atom(), state :: map()) ::
+              {:ok, commands :: [struct()]}
+              | {:error, reason :: term()}
 
   @doc """
-  前のステップを取得（補償処理用）
+  ステップを補償する（ロールバック）
   """
-  @spec get_previous_step(module(), step_name()) :: step_name() | nil
-  def get_previous_step(saga_module, current_step) do
-    steps = saga_module.steps()
-    current_index = Enum.find_index(steps, fn step -> step.name == current_step end)
+  @callback compensate_step(step :: atom(), state :: map()) ::
+              {:ok, commands :: [struct()]}
+              | {:error, reason :: term()}
 
-    if current_index && current_index > 0 do
-      Enum.at(steps, current_index - 1).name
-    else
-      nil
+  @doc """
+  ステップがリトライ可能かチェックする
+  """
+  @callback can_retry_step?(step :: atom(), error :: term(), state :: map()) :: boolean()
+
+  @doc """
+  Saga が完了したかチェックする
+  """
+  @callback is_completed?(state :: map()) :: boolean()
+
+  @doc """
+  Saga が失敗したかチェックする
+  """
+  @callback is_failed?(state :: map()) :: boolean()
+
+  @doc """
+  タイムアウト時間を取得する（ミリ秒）
+  """
+  @callback timeout() :: non_neg_integer()
+
+  @doc """
+  最大リトライ回数を取得する
+  """
+  @callback max_retries() :: non_neg_integer()
+
+  # オプショナルコールバック
+  @optional_callbacks [timeout: 0, max_retries: 0]
+
+  @doc """
+  Saga モジュールが必要な関数を実装しているかチェックする
+  """
+  defmacro __using__(_opts) do
+    quote do
+      @behaviour Shared.Infrastructure.Saga.SagaDefinition
+
+      # デフォルト実装
+      # 5分
+      def timeout, do: 300_000
+      def max_retries, do: 3
+
+      defoverridable timeout: 0, max_retries: 0
     end
   end
 end

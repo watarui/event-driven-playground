@@ -27,9 +27,6 @@ defmodule CommandService.MixProject do
   defp deps do
     [
       {:shared, in_umbrella: true},
-      {:ecto, "~> 3.11"},
-      {:ecto_sql, "~> 3.11"},
-      {:postgrex, "~> 0.17"},
       {:jason, "~> 1.4"},
       {:cowlib, "~> 2.13", override: true},
       {:plug, "~> 1.15"},

@@ -15,7 +15,12 @@ defmodule CommandServiceWeb.Endpoint do
   end
 
   def start_link(_opts \\ []) do
-    port = System.get_env("PORT", "8080") |> String.to_integer()
+    # 開発環境用のポート設定
+    default_port = "8080"
+    # Cloud Run は PORT 環境変数を設定するので、それを優先的に使用
+    port =
+      System.get_env("PORT", System.get_env("COMMAND_SERVICE_PORT", default_port))
+      |> String.to_integer()
 
     require Logger
     Logger.info("Starting CommandService HTTP endpoint on port #{port}")

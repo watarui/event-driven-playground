@@ -24,7 +24,8 @@ resource "google_project_service" "required_apis" {
     "cloudbuild.googleapis.com",
     "secretmanager.googleapis.com",
     "firebase.googleapis.com",
-    "identitytoolkit.googleapis.com"
+    "identitytoolkit.googleapis.com",
+    "firestore.googleapis.com"
   ])
   
   project = var.project_id
@@ -58,7 +59,8 @@ resource "google_project_iam_member" "cloud_run_roles" {
     "roles/logging.logWriter",
     "roles/monitoring.metricWriter",
     "roles/cloudtrace.agent",
-    "roles/secretmanager.secretAccessor"
+    "roles/secretmanager.secretAccessor",
+    "roles/datastore.user"
   ])
   
   project = var.project_id
@@ -70,11 +72,9 @@ resource "google_project_iam_member" "cloud_run_roles" {
 module "secrets" {
   source = "../../modules/secrets"
   
-  project_id           = var.project_id
-  supabase_url         = var.supabase_url
-  supabase_service_key = var.supabase_service_key
-  firebase_api_key     = var.firebase_config.api_key
-  secret_key_base      = var.secret_key_base
+  project_id       = var.project_id
+  firebase_api_key = var.firebase_config.api_key
+  secret_key_base  = var.secret_key_base
   
   depends_on = [google_project_service.required_apis]
 }
@@ -130,6 +130,7 @@ module "monitoring" {
   count = var.enable_monitoring ? 1 : 0
   
   project_id   = var.project_id
+  region       = var.region
   environment  = var.environment
   services     = keys(var.services)
   

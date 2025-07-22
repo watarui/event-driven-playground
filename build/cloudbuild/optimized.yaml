@@ -2,20 +2,6 @@
 # Uses multi-stage builds and caching for faster builds
 
 steps:
-  # Step 0: Build migration image with Kaniko (parallel with services)
-  - name: 'gcr.io/kaniko-project/executor:latest'
-    args:
-      - '--dockerfile=build/docker/Dockerfile.migrate'
-      - '--destination=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/migrate:$SHORT_SHA'
-      - '--destination=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/migrate:latest'
-      - '--cache=true'
-      - '--cache-ttl=168h'
-      - '--compressed-caching=false'
-      - '--use-new-run'
-      - '--snapshot-mode=redo'
-    id: 'build-migrate'
-    waitFor: ['-']
-  
   # Step 1: Build all services with the main Dockerfile
   - name: 'gcr.io/cloud-builders/docker'
     args:
@@ -80,19 +66,6 @@ steps:
     id: 'push-cache'
     waitFor: ['tag-cache']
 
-  # Step 6: Update migration job
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    args:
-      - 'gcloud'
-      - 'run'
-      - 'jobs'
-      - 'update'
-      - 'database-migrate'
-      - '--image=asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/migrate:$SHORT_SHA'
-      - '--region=$_REGION'
-      - '--project=$PROJECT_ID'
-    id: 'update-migrate-job'
-    waitFor: ['build-migrate']
 
 
 # Images to push to the registry
@@ -104,7 +77,6 @@ images:
   - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/query-service:latest'
   - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/client-service:$SHORT_SHA'
   - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/client-service:latest'
-  # Migration image is pushed by Kaniko directly
 
 options:
   logging: GCS_ONLY

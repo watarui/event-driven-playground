@@ -6,20 +6,10 @@ defmodule CommandService.Infrastructure.RepositoryContext do
   依存性注入パターンを使用してテスト可能性を確保します。
   """
 
-  alias CommandService.Infrastructure.Repositories.{
-    CategoryRepository,
-    ProductRepository,
-    OrderRepository
-  }
+  alias CommandService.Infrastructure.RepositoryFactory
 
   @type aggregate_type :: :category | :product | :order
   @type repository :: module()
-
-  @repositories %{
-    category: CategoryRepository,
-    product: ProductRepository,
-    order: OrderRepository
-  }
 
   @doc """
   アグリゲートタイプに対応するリポジトリモジュールを取得する
@@ -34,9 +24,11 @@ defmodule CommandService.Infrastructure.RepositoryContext do
   """
   @spec get_repository(aggregate_type()) :: {:ok, repository()} | {:error, :repository_not_found}
   def get_repository(aggregate_type) when is_atom(aggregate_type) do
-    case Map.get(@repositories, aggregate_type) do
-      nil -> {:error, :repository_not_found}
-      repository -> {:ok, repository}
+    try do
+      repository = RepositoryFactory.get_repository(aggregate_type)
+      {:ok, repository}
+    rescue
+      _ -> {:error, :repository_not_found}
     end
   end
 
@@ -64,7 +56,7 @@ defmodule CommandService.Infrastructure.RepositoryContext do
   """
   @spec registered_types() :: [aggregate_type()]
   def registered_types do
-    Map.keys(@repositories)
+    [:category, :product, :order]
   end
 
   @doc """
@@ -72,6 +64,6 @@ defmodule CommandService.Infrastructure.RepositoryContext do
   """
   @spec registered?(aggregate_type()) :: boolean()
   def registered?(aggregate_type) do
-    Map.has_key?(@repositories, aggregate_type)
+    aggregate_type in registered_types()
   end
 end

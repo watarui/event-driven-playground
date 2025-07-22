@@ -1,200 +1,132 @@
 defmodule CommandService.Infrastructure.Repositories.CategoryRepository do
   @moduledoc """
-  カテゴリリポジトリの実装
-
-  カテゴリアグリゲートの永続化とイベントストアからの復元を行います。
+  カテゴリーエンティティのリポジトリ実装（Firestore版）
   """
 
-  import Ecto.Query
+  alias CommandService.Domain.Models.Category
+  alias Shared.Infrastructure.Firestore.Repository
 
-  alias CommandService.Repo
-  alias CommandService.Domain.Aggregates.CategoryAggregate
-  alias Shared.Infrastructure.EventStore.EventStore
+  @collection "categories"
 
-  @behaviour CommandService.Domain.Repositories.CategoryRepository
+  @doc """
+  カテゴリーを保存する
+  """
+  def save(%Category{} = category) do
+    data = %{
+      id: category.id,
+      name: category.name,
+      description: category.description,
+      created_at: category.created_at,
+      updated_at: DateTime.utc_now()
+    }
 
-  # スキーマ定義
-  defmodule CategorySchema do
-    @moduledoc """
-    カテゴリのEctoスキーマ定義
-    """
-    use Ecto.Schema
-    import Shared.SchemaHelpers
-
-    command_schema()
-    @primary_key {:id, :binary_id, autogenerate: false}
-
-    schema "categories" do
-      field(:name, :string)
-      field(:description, :string)
-      field(:parent_id, :binary_id)
-      field(:active, :boolean, default: true)
-      field(:version, :integer, default: 0)
-      field(:metadata, :map, default: %{})
-
-      timestamps()
+    case Repository.save(@collection, category.id, data) do
+      {:ok, _} -> {:ok, category}
+      error -> error
     end
   end
 
-  @impl true
+  @doc """
+  ID でカテゴリーを取得する
+  """
   def get(id) do
-    case Repo.get(CategorySchema, id) do
-      nil ->
-        {:error, :not_found}
+    case Repository.get(@collection, id) do
+      {:ok, data} ->
+        category = %Category{
+          id: data["id"] || data[:id],
+          name: data["name"] || data[:name],
+          description: data["description"] || data[:description],
+          created_at: parse_datetime(data["created_at"] || data[:created_at]),
+          updated_at: parse_datetime(data["updated_at"] || data[:updated_at])
+        }
 
-      schema ->
-        # イベントストアから履歴を取得して再構築
-        case EventStore.get_events(id) do
-          {:ok, events} ->
-            aggregate = rebuild_aggregate(schema, events)
-            {:ok, aggregate}
+        {:ok, category}
 
-          {:error, reason} ->
-            {:error, reason}
-        end
+      error ->
+        error
     end
   end
 
-  @impl true
-  def save(%CategoryAggregate{} = aggregate) do
-    require Logger
-    Logger.debug("CategoryRepository.save - aggregate: #{inspect(aggregate)}")
-    Logger.debug("CategoryRepository.save - aggregate.id: #{inspect(aggregate.id)}")
-    Logger.debug("CategoryRepository.save - aggregate.name: #{inspect(aggregate.name)}")
+  @doc """
+  すべてのカテゴリーを取得する
+  """
+  def get_all(opts \\ []) do
+    case Repository.list(@collection, opts) do
+      {:ok, data_list} ->
+        categories =
+          Enum.map(data_list, fn data ->
+            %Category{
+              id: data["id"] || data[:id],
+              name: data["name"] || data[:name],
+              description: data["description"] || data[:description],
+              created_at: parse_datetime(data["created_at"] || data[:created_at]),
+              updated_at: parse_datetime(data["updated_at"] || data[:updated_at])
+            }
+          end)
 
-    # 既存のレコードを取得
-    id_value =
-      case aggregate.id do
-        %{value: value} -> value
-        value when is_binary(value) -> value
-        _ -> nil
-      end
+        {:ok, categories}
 
-    existing_schema = Repo.get(CategorySchema, id_value)
-    changeset = build_changeset(aggregate, existing_schema)
-
-    case Repo.insert_or_update(changeset) do
-      {:ok, _schema} ->
-        {:ok, aggregate}
-
-      {:error, changeset} ->
-        Logger.error("CategoryRepository.save - changeset error: #{inspect(changeset)}")
-        {:error, changeset}
+      error ->
+        error
     end
   end
 
-  @impl true
-  def exists?(id) do
-    query = from(c in CategorySchema, where: c.id == ^id)
-    Repo.exists?(query)
+  @doc """
+  カテゴリーを削除する
+  """
+  def delete(id) do
+    Repository.delete(@collection, id)
   end
 
-  @impl true
+  @doc """
+  カテゴリー名で検索する
+  """
   def find_by_name(name) do
-    query = from(c in CategorySchema, where: c.name == ^name)
+    # TODO: Firestore のクエリ機能を使用して実装
+    # 一時的に全件取得してフィルタリング
+    case get_all() do
+      {:ok, categories} ->
+        case Enum.find(categories, fn cat -> cat.name == name end) do
+          nil -> {:error, :not_found}
+          category -> {:ok, category}
+        end
 
-    case Repo.one(query) do
-      nil ->
-        {:error, :not_found}
-
-      schema ->
-        get(schema.id)
+      error ->
+        error
     end
   end
 
   @doc """
-  子カテゴリが存在するかチェック
+  カテゴリーに子カテゴリーがあるかチェック
   """
-  @impl true
-  def has_children?(category_id) do
-    query = from(c in CategorySchema, where: c.parent_id == ^category_id)
-    Repo.exists?(query)
+  def has_children?(_category_id) do
+    # 現在の実装では子カテゴリーの概念がないため、常にfalse
+    {:ok, false}
   end
 
   @doc """
-  カテゴリに商品が存在するかチェック
+  カテゴリーに商品があるかチェック
   """
-  @impl true
-  def has_products?(_category_id) do
-    # ProductRepository が実装されたら使用
-    # query = from p in ProductSchema, where: p.category_id == ^category_id
-    # Repo.exists?(query)
-    false
+  def has_products?(category_id) do
+    case CommandService.Infrastructure.Repositories.ProductRepository.find_by_category(
+           category_id
+         ) do
+      {:ok, products} -> {:ok, not Enum.empty?(products)}
+      error -> error
+    end
   end
 
   # Private functions
 
-  defp rebuild_aggregate(schema, events) do
-    # スキーマから基本情報を復元
-    base_aggregate = %CategoryAggregate{
-      id: schema.id,
-      name: schema.name,
-      description: schema.description,
-      parent_id: schema.parent_id,
-      active: schema.active,
-      version: schema.version,
-      deleted: false,
-      created_at: schema.inserted_at,
-      updated_at: schema.updated_at,
-      uncommitted_events: []
-    }
+  defp parse_datetime(nil), do: nil
+  defp parse_datetime(%DateTime{} = dt), do: dt
 
-    # イベントを適用して最新状態を復元
-    Enum.reduce(events, base_aggregate, fn event, agg ->
-      CategoryAggregate.apply_event(agg, event)
-    end)
+  defp parse_datetime(string) when is_binary(string) do
+    case DateTime.from_iso8601(string) do
+      {:ok, datetime, _} -> datetime
+      _ -> nil
+    end
   end
 
-  defp build_changeset(%CategoryAggregate{} = aggregate, existing_schema) do
-    # idフィールドが値オブジェクトかどうかチェック
-    id_value =
-      case aggregate.id do
-        %{value: value} -> value
-        value when is_binary(value) -> value
-        _ -> nil
-      end
-
-    # nameフィールドが値オブジェクトかどうかチェック
-    name_value =
-      case aggregate.name do
-        %{value: value} -> value
-        value when is_binary(value) -> value
-        nil -> nil
-        _ -> nil
-      end
-
-    # parent_idフィールドが値オブジェクトかどうかチェック
-    parent_id_value =
-      case aggregate.parent_id do
-        %{value: value} -> value
-        value when is_binary(value) -> value
-        nil -> nil
-        _ -> nil
-      end
-
-    data = %{
-      id: id_value,
-      name: name_value,
-      description: aggregate.description,
-      parent_id: parent_id_value,
-      active: aggregate.active,
-      version: aggregate.version,
-      metadata: Map.get(aggregate, :metadata, %{})
-    }
-
-    # 既存のスキーマがある場合はそれを使用、ない場合は新規作成
-    schema = existing_schema || %CategorySchema{}
-
-    schema
-    |> Ecto.Changeset.cast(data, [
-      :id,
-      :name,
-      :description,
-      :parent_id,
-      :active,
-      :version,
-      :metadata
-    ])
-    |> Ecto.Changeset.validate_required([:id, :name])
-  end
+  defp parse_datetime(_), do: nil
 end

@@ -15,7 +15,9 @@ defmodule QueryServiceWeb.Endpoint do
   end
 
   def start_link(_opts \\ []) do
-    port = System.get_env("PORT", "8080") |> String.to_integer()
+    # 開発環境用のポート設定
+    default_port = "8080"
+    port = System.get_env("PORT", default_port) |> String.to_integer()
 
     require Logger
     Logger.info("Starting QueryService HTTP endpoint on port #{port}")

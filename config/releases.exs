@@ -10,15 +10,6 @@ config :shared, :secret_key_base,
   System.get_env("SECRET_KEY_BASE") ||
     raise("environment variable SECRET_KEY_BASE is missing.")
 
-# データベース設定（Shared.Config を使用）
-config :shared, Shared.Infrastructure.EventStore.Repo,
-  Shared.Config.database_config(:event_store)
-  
-config :command_service, CommandService.Repo,
-  Shared.Config.database_config(:command_service)
-  
-config :query_service, QueryService.Repo,
-  Shared.Config.database_config(:query_service)
 
 # Phoenix エンドポイント設定（Shared.Config を使用）
 config :client_service, ClientServiceWeb.Endpoint,

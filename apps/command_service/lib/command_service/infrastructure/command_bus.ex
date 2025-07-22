@@ -183,17 +183,10 @@ defmodule CommandService.Infrastructure.CommandBus do
         try do
           route_command(command)
         rescue
-          # データベース関連のエラー
-          _e in [DBConnection.ConnectionError, Postgrex.Error] ->
-            {:error, :database_timeout}
-
-          # 楽観的ロック競合
-          _e in [Ecto.StaleEntryError] ->
-            {:error, :concurrent_modification}
-
-          # イベントストアのバージョン競合
-          _e in Shared.Infrastructure.EventStore.VersionConflictError ->
-            {:error, :concurrent_modification}
+          # HTTP 関連のエラー
+          e in Tesla.Error ->
+            Logger.warning("HTTP error: #{inspect(e)}")
+            {:error, :network_error}
 
           e ->
             # その他のエラーはリトライ不可能として扱う

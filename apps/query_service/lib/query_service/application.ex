@@ -10,9 +10,8 @@ defmodule QueryService.Application do
     # クラスタリングの初期化
     connect_to_cluster()
 
+    # 基本的な子プロセス
     children = [
-      # Ecto リポジトリ
-      QueryService.Repo,
       # キャッシュ
       QueryService.Infrastructure.Cache,
       # クエリバス
@@ -23,13 +22,9 @@ defmodule QueryService.Application do
       QueryService.Infrastructure.QueryListener
     ]
 
-    # テスト環境以外では HTTP エンドポイントを起動
-    children =
-      if Mix.env() != :test do
-        children ++ [QueryServiceWeb.Endpoint]
-      else
-        children
-      end
+    # 本番環境では HTTP エンドポイントを起動
+    # Mix.env() は Elixir リリースでは使用できないため、常に起動する
+    children = children ++ [QueryServiceWeb.Endpoint]
 
     opts = [strategy: :one_for_one, name: QueryService.Supervisor]
 

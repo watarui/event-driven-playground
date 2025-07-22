@@ -49,7 +49,6 @@ defmodule EventDrivenPlayground.MixProject do
       {:opentelemetry, "~> 1.3"},
       {:opentelemetry_exporter, "~> 1.6"},
       {:opentelemetry_phoenix, "~> 1.1"},
-      {:opentelemetry_ecto, "~> 1.1"},
       {:opentelemetry_telemetry, "~> 1.0"},
 
       # Telemetry
@@ -66,14 +65,7 @@ defmodule EventDrivenPlayground.MixProject do
         "compile --warnings-as-errors",
         "credo --strict",
         "dialyzer"
-      ],
-      # Setup all databases
-      "ecto.setup": [
-        "ecto.create",
-        "ecto.migrate"
-      ],
-      "ecto.reset": ["ecto.drop", "ecto.setup"],
-      "ecto.migrate": ["ecto.migrate"]
+      ]
     ]
   end
 end

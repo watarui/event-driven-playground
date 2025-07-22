@@ -10,29 +10,31 @@ defmodule Shared.Application do
     # OpenTelemetry を初期化
     Shared.Telemetry.Setup.init()
 
+    # 基本的な子プロセス
     children = [
       # HTTPクライアント
       {Finch, name: Shared.Finch},
       # PubSub (Cloud Run では必須)
-      {Phoenix.PubSub, name: :event_bus_pubsub},
-      # イベントストアのリポジトリ
-      Shared.Infrastructure.EventStore.Repo,
-      # イベントバス（環境に応じて自動選択）
-      # get_event_bus_module(), # PubSub を直接起動するためコメントアウト
-      # アグリゲートバージョンキャッシュ
-      Shared.Infrastructure.EventStore.AggregateVersionCache,
-      # デッドレターキュー
-      Shared.Infrastructure.DeadLetterQueue,
-      # べき等性ストア
-      Shared.Infrastructure.Idempotency.IdempotencyStore,
-      # Sagaコンポーネント
-      Shared.Infrastructure.Saga.SagaExecutor,
-      # サガメトリクス
-      Shared.Telemetry.SagaMetrics,
-      # Event Sourcing 改善
-      {Shared.Infrastructure.EventStore.EventArchiver,
-       [archive_interval: :timer.hours(24), retention_days: 90]}
+      {Phoenix.PubSub, name: :event_bus_pubsub}
     ]
+
+    # Goth (Google認証) - Firestore 使用時のみ
+    children =
+      if Shared.Config.database_adapter() == :firestore && !using_firestore_emulator?() do
+        children ++ [{Goth, name: Shared.Goth}]
+      else
+        children
+      end
+
+    # Firestore 使用時は Ecto 関連のプロセスを起動しない
+
+    # 共通のプロセス
+    children =
+      children ++
+        [
+          # サガメトリクス
+          Shared.Telemetry.SagaMetrics
+        ]
 
     # サーキットブレーカーをテスト環境では起動しない
     children =
@@ -45,5 +47,10 @@ defmodule Shared.Application do
 
     opts = [strategy: :one_for_one, name: Shared.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  # エミュレータ使用中かチェック（起動時に使用）
+  defp using_firestore_emulator? do
+    System.get_env("FIRESTORE_EMULATOR_HOST") != nil
   end
 end

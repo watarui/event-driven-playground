@@ -3,18 +3,6 @@ variable "project_id" {
   type        = string
 }
 
-variable "supabase_url" {
-  description = "Supabase database URL"
-  type        = string
-  sensitive   = true
-}
-
-variable "supabase_service_key" {
-  description = "Supabase service role key"
-  type        = string
-  sensitive   = true
-}
-
 variable "firebase_api_key" {
   description = "Firebase API key"
   type        = string

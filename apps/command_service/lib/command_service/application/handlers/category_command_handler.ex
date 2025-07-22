@@ -91,20 +91,23 @@ defmodule CommandService.Application.Handlers.CategoryCommandHandler do
   # Private functions
 
   defp check_can_delete(category_id) do
-    # 子カテゴリの存在チェック
-    case CategoryRepository.has_children?(category_id) do
-      false ->
-        # 商品の存在チェック
-        # Note: has_products? は現在常に false を返す実装のため、
-        # 実際の商品チェックが必要な場合は実装を更新する必要があります
-        case CategoryRepository.has_products?(category_id) do
-          false ->
-            :ok
-            # true -> {:error, "Cannot delete category with products"}
-        end
+    # has_children? は現在の実装では常に {:ok, false} を返すため、
+    # 将来の拡張性のために基本的なチェックは残しつつ、警告を回避
+    with {:ok, has_children} <- CategoryRepository.has_children?(category_id),
+         {:ok, has_products} <- CategoryRepository.has_products?(category_id) do
+      cond do
+        has_children ->
+          {:error, "Cannot delete category with sub-categories"}
 
-      true ->
-        {:error, "Cannot delete category with sub-categories"}
+        has_products ->
+          {:error, "Cannot delete category with products"}
+
+        true ->
+          :ok
+      end
+    else
+      error ->
+        error
     end
   end
 end

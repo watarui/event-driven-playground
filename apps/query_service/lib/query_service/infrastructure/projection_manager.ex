@@ -11,7 +11,6 @@ defmodule QueryService.Infrastructure.ProjectionManager do
   use GenServer
 
   alias Shared.Config
-  alias Shared.Infrastructure.EventStore.EventStore
   alias Shared.Infrastructure.Retry.{RetryStrategy, RetryPolicy}
   alias Shared.Infrastructure.DeadLetterQueue
 
@@ -265,11 +264,10 @@ defmodule QueryService.Infrastructure.ProjectionManager do
           projection_module.handle_event(event)
           {:ok, :processed}
         rescue
-          _e in [DBConnection.ConnectionError, Postgrex.Error] ->
-            {:error, :database_timeout}
-
-          _e in [Ecto.StaleEntryError] ->
-            {:error, :concurrent_modification}
+          # HTTP 関連のエラー
+          e in Tesla.Error ->
+            Logger.warning("HTTP error during projection: #{inspect(e)}")
+            {:error, :network_error}
 
           e ->
             # その他のエラーはリトライ不可能として扱う
@@ -338,7 +336,7 @@ defmodule QueryService.Infrastructure.ProjectionManager do
   end
 
   defp process_events_in_batches(projection_module, after_id, processed_count) do
-    case EventStore.get_events_after(after_id, @batch_size) do
+    case Shared.Infrastructure.Firestore.EventStore.get_events_after(after_id, @batch_size) do
       {:ok, []} ->
         Logger.info(
           "Rebuild completed for #{projection_module}. Processed #{processed_count} events."

@@ -1,0 +1,40 @@
+steps:
+  # 統合 Dockerfile を使用してビルド
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-command-service'
+    args: ['build', '-f', 'build/docker/Dockerfile', '--target', 'command_service', '-t', 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/command-service:latest', '.']
+    env:
+      - 'DOCKER_BUILDKIT=1'
+  
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-query-service'
+    args: ['build', '-f', 'build/docker/Dockerfile', '--target', 'query_service', '-t', 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/query-service:latest', '.']
+    env:
+      - 'DOCKER_BUILDKIT=1'
+  
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-client-service'
+    args: ['build', '-f', 'build/docker/Dockerfile', '--target', 'client_service', '-t', 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/client-service:latest', '.']
+    env:
+      - 'DOCKER_BUILDKIT=1'
+  
+  # Push images
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-command-service'
+    waitFor: ['build-command-service']
+    args: ['push', '--all-tags', 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/command-service']
+  
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-query-service'
+    waitFor: ['build-query-service']
+    args: ['push', '--all-tags', 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/query-service']
+  
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-client-service'
+    waitFor: ['build-client-service']
+    args: ['push', '--all-tags', 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/event-driven-playground/client-service']
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'
+timeout: 1800s

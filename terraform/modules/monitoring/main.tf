@@ -1,11 +1,38 @@
+# Storage bucket for logs
+resource "google_storage_bucket" "log_bucket" {
+  name          = "${var.project_id}-cloud-run-logs"
+  location      = var.region
+  storage_class = "STANDARD"
+  
+  lifecycle_rule {
+    condition {
+      age = 30
+    }
+    action {
+      type = "Delete"
+    }
+  }
+  
+  versioning {
+    enabled = false
+  }
+}
+
+# Grant permissions to the log sink's service account
+resource "google_storage_bucket_iam_member" "log_sink_writer" {
+  bucket = google_storage_bucket.log_bucket.name
+  role   = "roles/storage.objectCreator"
+  member = google_logging_project_sink.cloud_run_logs.writer_identity
+}
+
 # Log sink for centralized logging
 resource "google_logging_project_sink" "cloud_run_logs" {
   name        = "cloud-run-logs-${var.environment}"
-  destination = "logging.googleapis.com/projects/${var.project_id}/logs/cloud-run-${var.environment}"
+  destination = "storage.googleapis.com/${google_storage_bucket.log_bucket.name}"
   
   filter = <<-EOT
     resource.type="cloud_run_revision"
-    resource.labels.service_name=~"^(${join("|", var.services)})-${var.environment}$"
+    resource.labels.service_name="client-service" OR resource.labels.service_name="command-service" OR resource.labels.service_name="query-service"
   EOT
   
   unique_writer_identity = true
@@ -22,7 +49,7 @@ resource "google_monitoring_alert_policy" "high_error_rate" {
     condition_threshold {
       filter = <<-EOT
         resource.type = "cloud_run_revision"
-        resource.labels.service_name =~ "^(${join("|", var.services)})-${var.environment}$"
+        (resource.labels.service_name = "client-service" OR resource.labels.service_name = "command-service" OR resource.labels.service_name = "query-service")
         metric.type = "run.googleapis.com/request_count"
         metric.labels.response_code_class != "2xx"
       EOT
@@ -55,7 +82,7 @@ resource "google_monitoring_alert_policy" "high_latency" {
     condition_threshold {
       filter = <<-EOT
         resource.type = "cloud_run_revision"
-        resource.labels.service_name =~ "^(${join("|", var.services)})-${var.environment}$"
+        (resource.labels.service_name = "client-service" OR resource.labels.service_name = "command-service" OR resource.labels.service_name = "query-service")
         metric.type = "run.googleapis.com/request_latencies"
       EOT
       
@@ -133,7 +160,7 @@ resource "google_monitoring_dashboard" "cqrs_dashboard" {
                   timeSeriesFilter = {
                     filter = <<-EOT
                       resource.type="cloud_run_revision"
-                      resource.labels.service_name=~"^(${join("|", var.services)})-${var.environment}$"
+                      (resource.labels.service_name="client-service" OR resource.labels.service_name="command-service" OR resource.labels.service_name="query-service")
                       metric.type="run.googleapis.com/request_count"
                     EOT
                     
@@ -165,7 +192,7 @@ resource "google_monitoring_dashboard" "cqrs_dashboard" {
                   timeSeriesFilter = {
                     filter = <<-EOT
                       resource.type="cloud_run_revision"
-                      resource.labels.service_name=~"^(${join("|", var.services)})-${var.environment}$"
+                      (resource.labels.service_name="client-service" OR resource.labels.service_name="command-service" OR resource.labels.service_name="query-service")
                       metric.type="run.googleapis.com/request_latencies"
                     EOT
                     
@@ -197,7 +224,7 @@ resource "google_monitoring_dashboard" "cqrs_dashboard" {
                   timeSeriesFilter = {
                     filter = <<-EOT
                       resource.type="cloud_run_revision"
-                      resource.labels.service_name=~"^(${join("|", var.services)})-${var.environment}$"
+                      (resource.labels.service_name="client-service" OR resource.labels.service_name="command-service" OR resource.labels.service_name="query-service")
                       metric.type="run.googleapis.com/request_count"
                       metric.labels.response_code_class!="2xx"
                     EOT

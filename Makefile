@@ -86,7 +86,7 @@ backend: docker-up
 .PHONY: frontend
 frontend:
 	@echo -e "$(BLUE)💻 フロントエンドを起動します$(NC)"
-	@cd frontend && npm run dev
+	@cd frontend && bun run dev
 
 ## シードデータ投入
 .PHONY: seed
@@ -124,10 +124,11 @@ status:
 	@echo -e "\n$(CYAN)Elixir ノード:$(NC)"
 	@-epmd -names 2>/dev/null || echo "  EPMDが起動していません"
 	@echo -e "\n$(CYAN)ポート使用状況:$(NC)"
-	@-lsof -i :4000 -P -n | grep LISTEN || echo "  ポート 4000: 未使用"
-	@-lsof -i :4001 -P -n | grep LISTEN || echo "  ポート 4001: 未使用"
-	@-lsof -i :4002 -P -n | grep LISTEN || echo "  ポート 4002: 未使用"
-	@-lsof -i :3000 -P -n | grep LISTEN || echo "  ポート 3000: 未使用"
+	@-lsof -i :4000 -P -n | grep LISTEN || echo "  ポート 4000 (GraphQL): 未使用"
+	@-lsof -i :4081 -P -n | grep LISTEN || echo "  ポート 4081 (Command): 未使用"
+	@-lsof -i :4082 -P -n | grep LISTEN || echo "  ポート 4082 (Query): 未使用"
+	@-lsof -i :3000 -P -n | grep LISTEN || echo "  ポート 3000 (Frontend): 未使用"
+	@-lsof -i :8090 -P -n | grep LISTEN || echo "  ポート 8090 (Firestore): 未使用"
 
 # ==============================================================================
 # ヘルプ
