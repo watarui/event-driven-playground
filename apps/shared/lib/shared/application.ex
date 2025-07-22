@@ -26,33 +26,12 @@ defmodule Shared.Application do
         children
       end
 
-    # PostgreSQL 使用時のみ起動するプロセス
-    children =
-      if Shared.Config.database_adapter() != :firestore do
-        children ++
-          [
-            # イベントストアのリポジトリ
-            Shared.Infrastructure.EventStore.Repo,
-            # アグリゲートバージョンキャッシュ
-            Shared.Infrastructure.EventStore.AggregateVersionCache,
-            # べき等性ストア
-            Shared.Infrastructure.Idempotency.IdempotencyStore,
-            # Event Sourcing 改善
-            {Shared.Infrastructure.EventStore.EventArchiver,
-             [archive_interval: :timer.hours(24), retention_days: 90]}
-          ]
-      else
-        children
-      end
+    # Firestore 使用時は Ecto 関連のプロセスを起動しない
 
     # 共通のプロセス
     children =
       children ++
         [
-          # デッドレターキュー
-          Shared.Infrastructure.DeadLetterQueue,
-          # Sagaコンポーネント
-          Shared.Infrastructure.Saga.SagaExecutor,
           # サガメトリクス
           Shared.Telemetry.SagaMetrics
         ]

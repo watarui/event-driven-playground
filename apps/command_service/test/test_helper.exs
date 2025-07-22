@@ -4,6 +4,4 @@ ExUnit.start()
 {:ok, _} = Application.ensure_all_started(:shared)
 {:ok, _} = Application.ensure_all_started(:command_service)
 
-# Ectoのサンドボックスモードを設定
-Ecto.Adapters.SQL.Sandbox.mode(CommandService.Repo, :manual)
-Ecto.Adapters.SQL.Sandbox.mode(Shared.Infrastructure.EventStore.Repo, :manual)
+# Firestore を使用しているため、Ecto のサンドボックスモードは不要

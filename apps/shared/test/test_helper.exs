@@ -13,5 +13,4 @@ case Process.whereis(Shared.Infrastructure.Resilience.CircuitBreakerSupervisor) 
     :ok
 end
 
-# Ectoのサンドボックスモードを設定
-Ecto.Adapters.SQL.Sandbox.mode(Shared.Infrastructure.EventStore.Repo, :manual)
+# Firestore を使用しているため、Ecto のサンドボックスモードは不要
