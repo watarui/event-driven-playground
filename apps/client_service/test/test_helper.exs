@@ -18,7 +18,6 @@ ClientServiceWeb.Endpoint.start_link()
 
 # Load support files
 Code.require_file("support/test_helpers.ex", __DIR__)
-Code.require_file("support/factory.ex", __DIR__)
 
 # Firestore を使用しているため、Ecto のサンドボックスモードは不要
 

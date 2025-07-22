@@ -104,8 +104,7 @@ jobs:
             --platform=managed \
             --tag=${REVISION_TAG} \
             --no-traffic \
-            --update-env-vars=DATABASE_ADAPTER=firestore,FIRESTORE_PROJECT_ID=${PROJECT_ID} \
- &
+            --update-env-vars=DATABASE_ADAPTER=firestore,FIRESTORE_PROJECT_ID=${PROJECT_ID} &
           PID_COMMAND=$!
           
           gcloud run deploy query-service \
@@ -115,8 +114,7 @@ jobs:
             --platform=managed \
             --tag=${REVISION_TAG} \
             --no-traffic \
-            --update-env-vars=DATABASE_ADAPTER=firestore,FIRESTORE_PROJECT_ID=${PROJECT_ID} \
- &
+            --update-env-vars=DATABASE_ADAPTER=firestore,FIRESTORE_PROJECT_ID=${PROJECT_ID} &
           PID_QUERY=$!
           
           gcloud run deploy client-service \
@@ -126,8 +124,7 @@ jobs:
             --platform=managed \
             --tag=${REVISION_TAG} \
             --no-traffic \
-            --update-env-vars=DATABASE_ADAPTER=firestore,FIRESTORE_PROJECT_ID=${PROJECT_ID} \
- &
+            --update-env-vars=DATABASE_ADAPTER=firestore,FIRESTORE_PROJECT_ID=${PROJECT_ID} &
           PID_CLIENT=$!
           
           # 全デプロイの完了を待つ
