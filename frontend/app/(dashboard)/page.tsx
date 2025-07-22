@@ -356,51 +356,21 @@ export default function Home() {
         {/* データベースビューア */}
         <Card>
           <CardHeader>
-            <CardTitle>Database Viewers</CardTitle>
+            <CardTitle>Database</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <a href={config.databases.eventStore} target="_blank" rel="noopener noreferrer">
+            <div className="grid grid-cols-1 gap-4">
+              <a href="https://console.cloud.google.com/firestore" target="_blank" rel="noopener noreferrer">
                 <motion.div
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   className="p-4 border rounded-lg hover:shadow-lg transition-all cursor-pointer"
                 >
                   <div className="flex items-center space-x-3">
-                    <Database className="w-5 h-5 text-blue-500" />
+                    <Database className="w-5 h-5 text-orange-500" />
                     <div>
-                      <h4 className="font-medium">Event Store</h4>
-                      <p className="text-sm text-muted-foreground">Port 5050</p>
-                    </div>
-                  </div>
-                </motion.div>
-              </a>
-              <a href={config.databases.commandDb} target="_blank" rel="noopener noreferrer">
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="p-4 border rounded-lg hover:shadow-lg transition-all cursor-pointer"
-                >
-                  <div className="flex items-center space-x-3">
-                    <Database className="w-5 h-5 text-green-500" />
-                    <div>
-                      <h4 className="font-medium">Command DB</h4>
-                      <p className="text-sm text-muted-foreground">Port 5051</p>
-                    </div>
-                  </div>
-                </motion.div>
-              </a>
-              <a href={config.databases.queryDb} target="_blank" rel="noopener noreferrer">
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="p-4 border rounded-lg hover:shadow-lg transition-all cursor-pointer"
-                >
-                  <div className="flex items-center space-x-3">
-                    <Database className="w-5 h-5 text-purple-500" />
-                    <div>
-                      <h4 className="font-medium">Query DB</h4>
-                      <p className="text-sm text-muted-foreground">Port 5052</p>
+                      <h4 className="font-medium">Firestore Console</h4>
+                      <p className="text-sm text-muted-foreground">Google Cloud Console</p>
                     </div>
                   </div>
                 </motion.div>
@@ -415,7 +385,7 @@ export default function Home() {
             <CardTitle>Development Tools</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <a href="/graphiql" target="_blank" rel="noopener noreferrer">
                 <motion.div
                   whileHover={{ scale: 1.05 }}
@@ -427,21 +397,6 @@ export default function Home() {
                     <div>
                       <h4 className="font-medium">GraphiQL</h4>
                       <p className="text-sm text-muted-foreground">GraphQL Playground</p>
-                    </div>
-                  </div>
-                </motion.div>
-              </a>
-              <a href={config.external.jaeger} target="_blank" rel="noopener noreferrer">
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="p-4 border rounded-lg hover:shadow-lg transition-all cursor-pointer"
-                >
-                  <div className="flex items-center space-x-3">
-                    <Search className="w-5 h-5 text-orange-500" />
-                    <div>
-                      <h4 className="font-medium">Jaeger UI</h4>
-                      <p className="text-sm text-muted-foreground">Distributed Tracing</p>
                     </div>
                   </div>
                 </motion.div>

@@ -86,19 +86,3 @@ export const METRIC_TIME_SERIES = gql`
     }
   }
 `
-
-export const PROMETHEUS_METRICS = gql`
-  query PrometheusMetrics($filter: MetricsFilter) {
-    prometheusMetrics(filter: $filter) {
-      name
-      help
-      type
-      value
-      labels {
-        name
-        value
-      }
-      timestamp
-    }
-  }
-`

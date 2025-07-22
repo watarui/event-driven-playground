@@ -13,6 +13,9 @@ firebase_config = {
 google_oauth_client_id     = "your-google-oauth-client-id"
 google_oauth_client_secret = "your-google-oauth-client-secret"
 
+# GitHub Actions service account for Workload Identity Federation
+github_actions_service_account = "event-driven-playground-runner@event-driven-playground-prod.iam.gserviceaccount.com"
+
 # Secret key for Phoenix session encryption
 secret_key_base = "your-secret-key-base"
 

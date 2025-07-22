@@ -34,7 +34,7 @@ defmodule Shared.Infrastructure.Firestore.EventStoreAdapter do
   end
 
   @impl true
-  def read_all_events(limit \\ 100) do
+  def read_all_events(_limit \\ 100) do
     # TODO: 全イベントの読み取り実装
     {:ok, []}
   end
@@ -58,8 +58,8 @@ defmodule Shared.Infrastructure.Firestore.EventStoreAdapter do
 
   @impl true
   def get_stream_version(stream_id) do
-    case EventStoreRepository.get_aggregate_version(stream_id) do
-      {:ok, version} -> {:ok, version}
+    case EventStoreRepository.get_events_after_version(stream_id, -1) do
+      {:ok, events} -> {:ok, length(events)}
       {:error, :not_found} -> {:ok, 0}
       error -> error
     end

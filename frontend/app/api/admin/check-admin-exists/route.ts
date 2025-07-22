@@ -36,12 +36,16 @@ export async function GET() {
         stack: error.stack,
       })
     }
-    
+
     return NextResponse.json(
       {
         error: "Failed to check admin existence",
         adminExists: null,
-        details: config.env.isDevelopment ? error instanceof Error ? error.message : String(error) : undefined,
+        details: config.env.isDevelopment
+          ? error instanceof Error
+            ? error.message
+            : String(error)
+          : undefined,
       },
       { status: 500 }
     )

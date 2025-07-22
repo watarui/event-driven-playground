@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
       publicStorageBucket: !!process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
       publicMessagingSenderId: !!process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
       publicAppId: !!process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-      
+
       // サーバー側の設定（Admin SDK）
       projectId: !!process.env.FIREBASE_PROJECT_ID,
       clientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
