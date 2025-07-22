@@ -65,20 +65,31 @@ const initialNodes: CustomNode[] = [
     data: { label: "Event Store\n(Firestore)" },
     position: { x: 250, y: 300 },
     style: {
-      background: "#f97316",
+      background: "#8b5cf6",
       color: "white",
-      border: "1px solid #ea580c",
+      border: "1px solid #7c3aed",
       width: 180,
     },
   },
   {
     id: "saga",
-    data: { label: "SAGA Coordinator" },
+    data: { label: "Order SAGA\n(Orchestrator)" },
     position: { x: 50, y: 450 },
     style: {
       background: "#ef4444",
       color: "white",
       border: "1px solid #dc2626",
+      width: 180,
+    },
+  },
+  {
+    id: "event-bus",
+    data: { label: "Event Bus\n(PubSub)" },
+    position: { x: 250, y: 450 },
+    style: {
+      background: "#6366f1",
+      color: "white",
+      border: "1px solid #4f46e5",
       width: 180,
     },
   },
@@ -147,24 +158,24 @@ const initialEdges: Edge[] = [
     source: "command",
     target: "event-store",
     label: "Events",
-    style: { stroke: "#f97316" },
+    style: { stroke: "#8b5cf6" },
     markerEnd: {
       type: MarkerType.ArrowClosed,
     },
   },
   {
-    id: "event-store-saga",
+    id: "event-store-eventbus",
     source: "event-store",
-    target: "saga",
-    label: "Event Stream",
-    style: { stroke: "#ef4444" },
+    target: "event-bus",
+    label: "Events",
+    style: { stroke: "#6366f1" },
     markerEnd: {
       type: MarkerType.ArrowClosed,
     },
   },
   {
-    id: "event-store-projection",
-    source: "event-store",
+    id: "eventbus-projection",
+    source: "event-bus",
     target: "projection",
     label: "Event Stream",
     style: { stroke: "#06b6d4" },
@@ -173,10 +184,20 @@ const initialEdges: Edge[] = [
     },
   },
   {
+    id: "eventbus-saga",
+    source: "event-bus",
+    target: "saga",
+    label: "Order Events",
+    style: { stroke: "#ef4444" },
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+    },
+  },
+  {
     id: "saga-command",
     source: "saga",
     target: "command",
-    label: "Saga Commands",
+    label: "Compensation\nCommands",
     style: { stroke: "#ef4444", strokeDasharray: "5 5" },
     markerEnd: {
       type: MarkerType.ArrowClosed,
@@ -300,6 +321,7 @@ function mapHealthCheckToNodeId(checkName: string): string | null {
     query_service: "query",
     firestore: "event-store",
     event_store: "event-store",
+    pubsub: "event-bus",
   }
   return mapping[checkName.toLowerCase()] || null
 }
