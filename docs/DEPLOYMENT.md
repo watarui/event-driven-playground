@@ -38,7 +38,7 @@ gcloud firestore databases create \
 ### 3. Firebase プロジェクトの設定
 
 1. [Firebase Console](https://console.firebase.google.com) にアクセス
-2. プロジェクトを追加（既存のGCPプロジェクトを使用）
+2. プロジェクトを追加（既存の GCP プロジェクトを使用）
 3. Authentication を有効化
 4. ウェブアプリを追加して設定情報を取得
 
@@ -143,7 +143,7 @@ VERCEL_PROJECT_ID      # Vercel プロジェクトID
 
 Terraform で自動的に以下のアラートが設定されます：
 
-- メモリ使用率が80%を超えた場合
+- メモリ使用率が 80%を超えた場合
 - データベース接続エラーが発生した場合
 - リクエストレイテンシが閾値を超えた場合
 
@@ -166,21 +166,24 @@ gcloud logging read \
 ### Cloud Run サービスが起動しない
 
 1. ログを確認
+
 ```bash
 gcloud run services describe client-service --region=$REGION
 ```
 
 2. 環境変数が正しく設定されているか確認
-3. ポート設定が正しいか確認（PORT環境変数）
+3. ポート設定が正しいか確認（PORT 環境変数）
 
 ### Firestore 接続エラー
 
 1. サービスアカウントの権限を確認
+
 ```bash
 gcloud projects get-iam-policy $PROJECT_ID
 ```
 
 2. Firestore API が有効になっているか確認
+
 ```bash
 gcloud services list --enabled | grep firestore
 ```
@@ -198,7 +201,7 @@ gcloud run services update-traffic client-service \
 
 ### 開発環境での節約
 
-- Cloud Run の最小インスタンス数を0に設定
+- Cloud Run の最小インスタンス数を 0 に設定
 - 使用しない時は `terraform destroy` でリソースを削除
 
 ### 本番環境での最適化

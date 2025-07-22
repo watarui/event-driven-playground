@@ -45,9 +45,9 @@ jobs:
       - name: Build and Push Service Images
         run: |
           echo "🔨 Building service images (excluding migration)..."
-          # Cloud Build を実行（デプロイ専用設定を使用）
+          # Cloud Build を実行（Firestore版のビルド設定を使用）
           gcloud builds submit \
-            --config=build/cloudbuild/deploy-only.yaml \
+            --config=build/cloudbuild/firestore-simple.yaml \
             --substitutions=SHORT_SHA=${GITHUB_SHA::7} \
             --project=${PROJECT_ID} || true
           
@@ -104,6 +104,7 @@ jobs:
             --platform=managed \
             --tag=${REVISION_TAG} \
             --no-traffic \
+            --update-env-vars=DATABASE_ADAPTER=firestore,FIRESTORE_PROJECT_ID=${PROJECT_ID} \
             --async &
           PID_COMMAND=$!
           
@@ -114,6 +115,7 @@ jobs:
             --platform=managed \
             --tag=${REVISION_TAG} \
             --no-traffic \
+            --update-env-vars=DATABASE_ADAPTER=firestore,FIRESTORE_PROJECT_ID=${PROJECT_ID} \
             --async &
           PID_QUERY=$!
           
@@ -124,6 +126,7 @@ jobs:
             --platform=managed \
             --tag=${REVISION_TAG} \
             --no-traffic \
+            --update-env-vars=DATABASE_ADAPTER=firestore,FIRESTORE_PROJECT_ID=${PROJECT_ID} \
             --async &
           PID_CLIENT=$!
           

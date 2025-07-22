@@ -139,6 +139,5 @@ MIT License## Production Environment
 ### Deployment
 
 ```bash
-gcloud builds submit --config=build/cloudbuild/firestore-simple.yaml --project=event-driven-playground-prod
---substitutions=SHORT_SHA=$(git rev-parse --short HEAD)
+gcloud builds submit --config=build/cloudbuild/firestore-simple.yaml --project=event-driven-playground-prod --substitutions=SHORT_SHA=$(git rev-parse --short HEAD)
 ```
