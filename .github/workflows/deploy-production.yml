@@ -161,8 +161,22 @@ jobs:
             sleep 30
             
             for i in {1..5}; do
-              # 公開エンドポイントにアクセス（認証なし）
-              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${SERVICE_URL}/health" 2>&1 || echo "000")
+              # 認証付きでヘルスチェックエンドポイントにアクセス
+              # client-service は公開されているので認証不要
+              if [ "${SERVICE}" = "client-service" ]; then
+                HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${SERVICE_URL}/health" 2>&1 || echo "000")
+              else
+                # その他のサービスは認証が必要
+                AUTH_TOKEN=$(gcloud auth print-identity-token 2>/dev/null || echo "")
+                if [ -n "${AUTH_TOKEN}" ]; then
+                  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+                    -H "Authorization: Bearer ${AUTH_TOKEN}" \
+                    "${SERVICE_URL}/health" 2>&1 || echo "000")
+                else
+                  echo "⚠️  Failed to get auth token"
+                  HTTP_CODE="000"
+                fi
+              fi
               
               if [ "$HTTP_CODE" = "200" ]; then
                 echo "✅ ${SERVICE} is healthy"
