@@ -8,12 +8,13 @@ CQRS と Event Sourcing パターンを実装した、Elixir/Phoenix ベース�
 
 - **CQRS (Command Query Responsibility Segregation)**: コマンドとクエリを分離
 - **Event Sourcing**: イベントをデータの信頼できる唯一の情報源として使用
-- **マイクロサービス**: Command Service、Query Service、Client Service (GraphQL API) の3つのサービス
+- **マイクロサービス**: Command Service、Query Service、Client Service (GraphQL API) の 3 つのサービス
 - **イベント駆動アーキテクチャ**: Google Cloud Pub/Sub を使用したサービス間通信
 
 ## 技術スタック
 
 ### バックエンド
+
 - **言語**: Elixir
 - **フレームワーク**: Phoenix Framework
 - **GraphQL**: Absinthe
@@ -22,12 +23,14 @@ CQRS と Event Sourcing パターンを実装した、Elixir/Phoenix ベース�
 - **認証**: Firebase Authentication
 
 ### フロントエンド
+
 - **フレームワーク**: Next.js (TypeScript)
 - **UI ライブラリ**: Tailwind CSS, shadcn/ui
 - **状態管理**: React Hooks
 - **GraphQL クライアント**: Apollo Client
 
 ### インフラストラクチャ
+
 - **バックエンドホスティング**: Google Cloud Run
 - **フロントエンドホスティング**: Vercel
 - **CI/CD**: GitHub Actions
@@ -56,10 +59,10 @@ make start
 make backend
 ```
 
-アプリケーションは以下のURLでアクセスできます：
+アプリケーションは以下の URL でアクセスできます：
 
 - GraphQL API: http://localhost:4000/graphql
-- GraphiQL (開発用UI): http://localhost:4000/graphiql
+- GraphiQL (開発用 UI): http://localhost:4000/graphiql
 - フロントエンド: http://localhost:3000
 
 ## プロジェクト構造
@@ -121,4 +124,21 @@ make help               # 利用可能なコマンドを表示
 
 ## ライセンス
 
-MIT License
+MIT License## Production Environment
+
+### URLs
+
+- Client Service: https://client-service-741925348867.asia-northeast1.run.app
+- Command Service: https://command-service-741925348867.asia-northeast1.run.app
+- Query Service: https://query-service-741925348867.asia-northeast1.run.app
+
+### Database
+
+- Firestore in asia-northeast1 region
+
+### Deployment
+
+```bash
+gcloud builds submit --config=build/cloudbuild/firestore-simple.yaml --project=event-driven-playground-prod
+--substitutions=SHORT_SHA=$(git rev-parse --short HEAD)
+```
