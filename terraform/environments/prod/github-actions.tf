@@ -76,6 +76,16 @@ resource "google_project_iam_member" "github_actions_service_usage_consumer" {
   member  = "serviceAccount:${var.github_actions_service_account}"
 }
 
+# Storage Admin ロール - Cloud Build バケットへの完全なアクセス
+resource "google_project_iam_member" "github_actions_storage_admin" {
+  count   = var.github_actions_service_account != "" ? 1 : 0
+  project = var.project_id
+  role    = "roles/storage.admin"
+  member  = "serviceAccount:${var.github_actions_service_account}"
+  
+  depends_on = [google_service_account.github_actions_sa]
+}
+
 # Workload Identity Federation の設定
 # GitHub Actions がサービスアカウントになりすますことを許可
 resource "google_service_account_iam_member" "github_actions_wif" {
