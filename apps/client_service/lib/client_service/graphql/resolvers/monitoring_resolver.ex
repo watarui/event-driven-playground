@@ -59,6 +59,43 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
   def get_system_statistics(_parent, _args, _resolution) do
     memory_info = :erlang.memory()
 
+    # Event Store の統計を取得
+    event_store_db_stats =
+      case get_event_store_stats(nil, %{}, nil) do
+        {:ok, stats} ->
+          %{
+            total_records: stats.total_events,
+            last_updated: stats.last_event_at
+          }
+
+        _ ->
+          %{
+            total_records: 0,
+            last_updated: nil
+          }
+      end
+
+    # ダミーの統計データ（実際はそれぞれのDBから取得する必要がある）
+    command_db_stats = %{
+      total_records: 0,
+      last_updated: nil
+    }
+
+    query_db_stats = %{
+      categories: 0,
+      products: 0,
+      orders: 0,
+      last_updated: nil
+    }
+
+    saga_stats = %{
+      active: 0,
+      completed: 0,
+      failed: 0,
+      compensated: 0,
+      total: 0
+    }
+
     stats = %{
       node: node(),
       uptime: :erlang.statistics(:wall_clock) |> elem(0),
@@ -68,7 +105,11 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
         processes: memory_info[:processes],
         binary: memory_info[:binary],
         ets: memory_info[:ets]
-      }
+      },
+      event_store: event_store_db_stats,
+      command_db: command_db_stats,
+      query_db: query_db_stats,
+      sagas: saga_stats
     }
 
     {:ok, stats}

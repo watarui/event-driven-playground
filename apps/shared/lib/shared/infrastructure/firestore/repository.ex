@@ -37,11 +37,26 @@ defmodule Shared.Infrastructure.Firestore.Repository do
   def list(collection, opts \\ []) do
     limit = Keyword.get(opts, :limit, 100)
 
-    with {:ok, conn} <- Client.get_connection(),
-         project_id <- Client.get_project_id(:shared),
-         {:ok, response} <- list_documents(conn, project_id, collection, limit) do
-      documents = response.documents || []
-      {:ok, Enum.map(documents, &parse_document/1)}
+    with {:ok, conn} <- Client.get_connection() do
+      project_id = Client.get_project_id(:shared)
+
+      # エミュレータを使用している場合
+      if Client.using_emulator?(:shared) do
+        case list_documents_emulator(conn, project_id, collection, limit) do
+          {:ok, documents} -> {:ok, documents}
+          error -> error
+        end
+      else
+        # 本番環境
+        case list_documents(conn, project_id, collection, limit) do
+          {:ok, response} ->
+            documents = response.documents || []
+            {:ok, Enum.map(documents, &parse_document/1)}
+
+          error ->
+            error
+        end
+      end
     end
   end
 
@@ -219,14 +234,42 @@ defmodule Shared.Infrastructure.Firestore.Repository do
 
   defp build_value(value) do
     case value do
-      v when is_binary(v) -> %Value{stringValue: v}
-      v when is_integer(v) -> %Value{integerValue: to_string(v)}
-      v when is_float(v) -> %Value{doubleValue: v}
-      v when is_boolean(v) -> %Value{booleanValue: v}
-      v when is_map(v) -> %Value{mapValue: %{fields: build_map_fields(v)}}
-      v when is_list(v) -> %Value{arrayValue: %{values: Enum.map(v, &build_value/1)}}
-      nil -> %Value{nullValue: "NULL_VALUE"}
-      v -> %Value{stringValue: to_string(v)}
+      v when is_binary(v) ->
+        %Value{stringValue: v}
+
+      v when is_integer(v) ->
+        %Value{integerValue: to_string(v)}
+
+      v when is_float(v) ->
+        %Value{doubleValue: v}
+
+      v when is_boolean(v) ->
+        %Value{booleanValue: v}
+
+      v when is_map(v) ->
+        %Value{mapValue: %{fields: build_map_fields(v)}}
+
+      v when is_list(v) ->
+        %Value{arrayValue: %{values: Enum.map(v, &build_value/1)}}
+
+      nil ->
+        %Value{nullValue: "NULL_VALUE"}
+
+      # Handle DateTime and timestamp tuples
+      %DateTime{} = dt ->
+        %Value{timestampValue: DateTime.to_iso8601(dt)}
+
+      # Handle Erlang timestamp tuples
+      {mega, sec, _micro} when is_integer(mega) and is_integer(sec) ->
+        dt = DateTime.from_unix!(mega * 1_000_000 + sec)
+        %Value{timestampValue: DateTime.to_iso8601(dt)}
+
+      v when is_tuple(v) ->
+        # Convert other tuples to string representation
+        %Value{stringValue: inspect(v)}
+
+      v ->
+        %Value{stringValue: to_string(v)}
     end
   end
 
@@ -236,6 +279,69 @@ defmodule Shared.Infrastructure.Firestore.Repository do
     |> Enum.map(fn {k, v} -> {to_string(k), build_value(v)} end)
     |> Enum.into(%{})
   end
+
+  # エミュレータ用のリスト取得関数
+  defp list_documents_emulator(conn, project_id, collection, limit) do
+    url = "/projects/#{project_id}/databases/(default)/documents/#{collection}"
+
+    case Tesla.get(conn, url, query: [pageSize: limit]) do
+      {:ok, %{status: 200, body: body}} ->
+        documents = body["documents"] || []
+        parsed_documents = Enum.map(documents, &parse_emulator_document/1)
+        {:ok, parsed_documents}
+
+      {:ok, %{status: status, body: body}} ->
+        {:error, "Failed to list documents: #{status} - #{inspect(body)}"}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  # エミュレータのドキュメントをパース
+  defp parse_emulator_document(doc) do
+    fields = doc["fields"] || %{}
+
+    fields
+    |> Enum.map(fn {key, value} -> {key, parse_emulator_value(value)} end)
+    |> Enum.into(%{})
+  end
+
+  # エミュレータの値をパース
+  defp parse_emulator_value(value) when is_map(value) do
+    cond do
+      Map.has_key?(value, "stringValue") ->
+        value["stringValue"]
+
+      Map.has_key?(value, "integerValue") ->
+        String.to_integer(value["integerValue"])
+
+      Map.has_key?(value, "doubleValue") ->
+        value["doubleValue"]
+
+      Map.has_key?(value, "booleanValue") ->
+        value["booleanValue"]
+
+      Map.has_key?(value, "nullValue") ->
+        nil
+
+      Map.has_key?(value, "timestampValue") ->
+        value["timestampValue"]
+
+      Map.has_key?(value, "mapValue") ->
+        fields = value["mapValue"]["fields"] || %{}
+        Enum.map(fields, fn {k, v} -> {k, parse_emulator_value(v)} end) |> Enum.into(%{})
+
+      Map.has_key?(value, "arrayValue") ->
+        values = value["arrayValue"]["values"] || []
+        Enum.map(values, &parse_emulator_value/1)
+
+      true ->
+        value
+    end
+  end
+
+  defp parse_emulator_value(value), do: value
 
   defp parse_document(%Document{fields: fields}) do
     fields

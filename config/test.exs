@@ -36,3 +36,9 @@ config :query_service, QueryServiceWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4003],
   secret_key_base: "test-secret-key-base-at-least-64-bytes-long-for-testing-purposes-only",
   server: false
+
+# Firestore エミュレータを使用
+config :shared, :firestore_emulator_host, "localhost:8090"
+
+# テスト環境では認証不要
+config :goth, disabled: true

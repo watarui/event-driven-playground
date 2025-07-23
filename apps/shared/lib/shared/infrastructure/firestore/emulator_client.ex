@@ -15,10 +15,15 @@ defmodule Shared.Infrastructure.Firestore.EmulatorClient do
     emulator_host = Shared.Infrastructure.Firestore.Client.get_emulator_host(service)
 
     if emulator_host do
-      %{
-        base_url: "http://#{emulator_host}/v1",
-        project_id: Shared.Infrastructure.Firestore.Client.get_project_id(service)
-      }
+      # Tesla client for emulator with Mint adapter
+      Tesla.client(
+        [
+          {Tesla.Middleware.BaseUrl, "http://#{emulator_host}/v1"},
+          {Tesla.Middleware.Headers, [{"authorization", "Bearer owner"}]},
+          Tesla.Middleware.JSON
+        ],
+        {Tesla.Adapter.Mint, []}
+      )
     else
       nil
     end

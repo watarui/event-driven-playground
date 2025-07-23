@@ -172,8 +172,8 @@ defmodule Shared.Health.HealthCheckRouter do
       try do
         # Firestore Event Store の接続確認
         case Shared.Infrastructure.Firestore.EventStoreAdapter.health_check() do
-          {:ok, event_count} ->
-            {"event_store", :ok, %{event_count: event_count}}
+          :ok ->
+            {"event_store", :ok, %{status: "connected"}}
 
           {:error, reason} ->
             {"event_store", :error, inspect(reason)}

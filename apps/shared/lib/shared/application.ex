@@ -51,6 +51,7 @@ defmodule Shared.Application do
 
   # エミュレータ使用中かチェック（起動時に使用）
   defp using_firestore_emulator? do
-    System.get_env("FIRESTORE_EMULATOR_HOST") != nil
+    System.get_env("FIRESTORE_EMULATOR_HOST") != nil ||
+      Application.get_env(:shared, :firestore_emulator_host) != nil
   end
 end

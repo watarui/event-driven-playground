@@ -25,6 +25,35 @@ defmodule QueryService.Application.Handlers.CategoryQueryHandler do
     CategoryRepository.get_all(filters)
   end
 
+  # マップ形式のクエリも受け取る（後方互換性）
+  def handle(%{query_type: "category.get", id: id}) do
+    Logger.info("Getting category by id: #{id}")
+    CategoryRepository.get(id)
+  end
+
+  def handle(%{query_type: "category.list"} = query) do
+    Logger.info("Getting all categories")
+
+    filters = %{
+      limit: Map.get(query, :limit, 20),
+      offset: Map.get(query, :offset, 0)
+    }
+
+    CategoryRepository.get_all(filters)
+  end
+
+  def handle(%{query_type: "category.search"} = query) do
+    Logger.info("Searching categories")
+
+    filters = %{
+      search: Map.get(query, :query, ""),
+      limit: Map.get(query, :limit, 20),
+      offset: Map.get(query, :offset, 0)
+    }
+
+    CategoryRepository.get_all(filters)
+  end
+
   # Private functions
 
   defp build_filters(query) do

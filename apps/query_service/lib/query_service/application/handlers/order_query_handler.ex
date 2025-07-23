@@ -54,6 +54,18 @@ defmodule QueryService.Application.Handlers.OrderQueryHandler do
     OrderRepository.get_all(filters)
   end
 
+  def handle(%{query_type: "order.list_by_user", user_id: user_id} = query) do
+    Logger.info("Listing orders by user: #{user_id}")
+
+    filters =
+      %{user_id: user_id}
+      |> maybe_add_filter(:status, Map.get(query, :status))
+      |> maybe_add_filter(:limit, Map.get(query, :limit))
+      |> maybe_add_filter(:offset, Map.get(query, :offset))
+
+    OrderRepository.get_all(filters)
+  end
+
   def handle(%{query_type: "order.list"} = query) do
     Logger.info("Listing orders")
 

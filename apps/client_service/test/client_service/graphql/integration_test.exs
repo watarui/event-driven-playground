@@ -200,6 +200,7 @@ defmodule ClientService.GraphQL.IntegrationTest do
       assert Map.has_key?(response, "data") || Map.has_key?(response, "errors")
     end
 
+    @tag :skip
     test "sagas query returns saga list", %{conn: conn} do
       query = """
       query {

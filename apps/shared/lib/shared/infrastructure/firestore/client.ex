@@ -48,7 +48,8 @@ defmodule Shared.Infrastructure.Firestore.Client do
   Emulator のホストを取得
   """
   def get_emulator_host(_service) do
-    System.get_env("FIRESTORE_EMULATOR_HOST")
+    System.get_env("FIRESTORE_EMULATOR_HOST") ||
+      Application.get_env(:shared, :firestore_emulator_host)
   end
 
   @doc """

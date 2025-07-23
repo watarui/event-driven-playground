@@ -46,6 +46,36 @@ defmodule QueryService.Application.Handlers.ProductQueryHandler do
     ProductRepository.search(search_term, filters)
   end
 
+  # マップ形式のクエリも受け取る（後方互換性）
+  def handle(%{query_type: "product.get", id: id}) do
+    Logger.info("Getting product by id: #{id}")
+    ProductRepository.get(id)
+  end
+
+  def handle(%{query_type: "product.list"} = query) do
+    Logger.info("Getting products")
+
+    filters = %{
+      limit: Map.get(query, :limit, 20),
+      offset: Map.get(query, :offset, 0)
+    }
+
+    ProductRepository.get_all(filters)
+  end
+
+  def handle(%{query_type: "product.search"} = query) do
+    Logger.info("Searching products")
+
+    search_term = Map.get(query, :query, "")
+
+    filters = %{
+      limit: Map.get(query, :limit, 20),
+      offset: Map.get(query, :offset, 0)
+    }
+
+    ProductRepository.search(search_term, filters)
+  end
+
   # Private functions
 
   defp build_filters(query) do

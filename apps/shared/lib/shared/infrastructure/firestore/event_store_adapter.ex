@@ -65,17 +65,6 @@ defmodule Shared.Infrastructure.Firestore.EventStoreAdapter do
     end
   end
 
-  @impl true
-  def health_check do
-    # Firestore の接続確認
-    case EventStoreRepository.get_events("health_check_stream", from_version: 0) do
-      {:ok, _} -> :ok
-      # ストリームが存在しなくても接続は確認できた
-      {:error, :not_found} -> :ok
-      {:error, reason} -> {:error, reason}
-    end
-  end
-
   # 以下は EventStore ビヘイビアに含まれていない追加メソッド（後方互換性のため）
   def append_events(aggregate_id, aggregate_type, events, expected_version, metadata) do
     # aggregate_id を構築
@@ -119,6 +108,20 @@ defmodule Shared.Infrastructure.Firestore.EventStoreAdapter do
     case EventStoreRepository.get_latest_snapshot(full_aggregate_id) do
       {:ok, {snapshot, _version}} -> {:ok, snapshot}
       error -> error
+    end
+  end
+
+  @doc """
+  Event Store の健全性をチェック
+  """
+  @impl true
+  def health_check do
+    # Firestore の接続確認のために適当なストリームを読み取ってみる
+    case EventStoreRepository.get_events("health_check_stream", from_version: 0) do
+      {:ok, _} -> :ok
+      # ストリームが存在しなくても接続は確認できた
+      {:error, :not_found} -> :ok
+      {:error, _reason} -> {:error, "Event store is not available"}
     end
   end
 end
