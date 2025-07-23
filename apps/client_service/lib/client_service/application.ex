@@ -23,6 +23,8 @@ defmodule ClientService.Application do
       ClientService.Infrastructure.RemoteCommandBus,
       # Remote Query Bus (PubSub経由でクエリを送信)
       ClientService.Infrastructure.RemoteQueryBus,
+      # Saga Executor (Sagaパターンの実行)
+      Shared.Infrastructure.Saga.SagaExecutor,
       # PubSub Broadcaster (リアルタイムモニタリング用)
       ClientService.PubSubBroadcaster,
       # Endpoint

@@ -116,29 +116,13 @@ defmodule Shared.Infrastructure.Firestore.EventStoreAdapter do
   """
   @impl true
   def health_check do
-    # Firestore の接続を確認するために、テスト用のイベントを追加・削除してみる
-    test_aggregate_id = "_health_check:#{:erlang.unique_integer([:positive])}"
-    test_event = %{
-      event_type: :health_check_test,
-      event_data: %{test: true},
-      metadata: %{},
-      occurred_at: DateTime.utc_now(),
-      version: 1
-    }
-    
-    # イベントの追加を試みる（実際には保存されても問題ない）
-    case append_events(test_aggregate_id, [test_event], 0, %{}) do
-      {:ok, _} -> 
-        # 成功した場合は接続OK
+    # Firestore の接続確認のみ行う（インデックスエラーを回避）
+    case Shared.Infrastructure.Firestore.Client.get_connection(:event_store) do
+      {:ok, _conn} -> 
+        # 接続が成功すれば Event Store は利用可能
         :ok
-      {:error, _reason} -> 
-        # エラーの場合でも、404などの場合は接続自体は成功している
-        # 本当の接続エラーかどうかを判断するのは難しいので、
-        # ここではシンプルに Client の接続チェックのみ行う
-        case Shared.Infrastructure.Firestore.Client.get_connection(:event_store) do
-          {:ok, _} -> :ok
-          {:error, reason} -> {:error, "Event store is not available: #{inspect(reason)}"}
-        end
+      {:error, reason} -> 
+        {:error, "Event store is not available: #{inspect(reason)}"}
     end
   end
 end
