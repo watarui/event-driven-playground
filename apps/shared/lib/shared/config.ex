@@ -141,10 +141,13 @@ defmodule Shared.Config do
     port = String.to_integer(System.get_env("PORT") || "8080")
     phoenix_config = get_env_config(:phoenix, %{})
 
+    # Cloud Run ではIPv4を使用
+    ip_tuple = if System.get_env("K_SERVICE"), do: {0, 0, 0, 0}, else: {0, 0, 0, 0}
+    
     base_config = [
       server: true,
       http: [
-        ip: {0, 0, 0, 0},
+        ip: ip_tuple,
         port: port
       ],
       url: [
