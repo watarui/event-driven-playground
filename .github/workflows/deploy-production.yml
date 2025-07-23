@@ -46,29 +46,54 @@ jobs:
         run: |
           echo "🔨 Building service images (excluding migration)..."
           # Cloud Build を実行（Firestore版のビルド設定を使用）
-          # --no-source オプションを使用してバケットアクセスを回避
-          gcloud builds submit \
+          # --async オプションで非同期実行し、ログストリーミングを回避
+          BUILD_OUTPUT=$(gcloud builds submit \
             --config=build/cloudbuild/firestore-simple.yaml \
             --substitutions=SHORT_SHA=${GITHUB_SHA::7},_PROJECT_ID=${PROJECT_ID} \
             --project=${PROJECT_ID} \
-            --suppress-logs \
-            .
+            --async \
+            . 2>&1)
           
-          # ビルドが正常に完了したかを確認
-          BUILD_ID=$(gcloud builds list --limit=1 --project=${PROJECT_ID} --format="value(id)")
-          echo "📋 Latest build ID: ${BUILD_ID}"
+          # ビルドIDを抽出
+          BUILD_ID=$(echo "$BUILD_OUTPUT" | grep -oP 'builds/\K[a-f0-9-]+' | head -1)
           
-          # ビルドステータスを確認
-          BUILD_STATUS=$(gcloud builds describe ${BUILD_ID} --project=${PROJECT_ID} --format="value(status)")
-          echo "📊 Build status: ${BUILD_STATUS}"
-          
-          if [ "${BUILD_STATUS}" != "SUCCESS" ]; then
-            echo "❌ Build failed with status: ${BUILD_STATUS}"
-            echo "🔍 Check the build logs at: https://console.cloud.google.com/cloud-build/builds/${BUILD_ID}?project=${PROJECT_ID}"
+          if [ -z "$BUILD_ID" ]; then
+            echo "❌ Failed to get build ID from output:"
+            echo "$BUILD_OUTPUT"
             exit 1
           fi
           
-          echo "✅ Build completed successfully"
+          echo "📋 Build started with ID: ${BUILD_ID}"
+          echo "🔗 Build logs: https://console.cloud.google.com/cloud-build/builds/${BUILD_ID}?project=${PROJECT_ID}"
+          
+          # ビルドの完了を待機（最大20分）
+          echo "⏳ Waiting for build to complete..."
+          MAX_WAIT=1200  # 20分
+          ELAPSED=0
+          POLL_INTERVAL=30  # 30秒ごとにチェック
+          
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            BUILD_STATUS=$(gcloud builds describe ${BUILD_ID} --project=${PROJECT_ID} --format="value(status)")
+            echo "📊 Build status: ${BUILD_STATUS} (elapsed: ${ELAPSED}s)"
+            
+            if [ "${BUILD_STATUS}" = "SUCCESS" ]; then
+              echo "✅ Build completed successfully"
+              break
+            elif [ "${BUILD_STATUS}" = "FAILURE" ] || [ "${BUILD_STATUS}" = "TIMEOUT" ] || [ "${BUILD_STATUS}" = "CANCELLED" ]; then
+              echo "❌ Build failed with status: ${BUILD_STATUS}"
+              echo "🔍 Check the build logs at: https://console.cloud.google.com/cloud-build/builds/${BUILD_ID}?project=${PROJECT_ID}"
+              exit 1
+            fi
+            
+            sleep $POLL_INTERVAL
+            ELAPSED=$((ELAPSED + POLL_INTERVAL))
+          done
+          
+          if [ $ELAPSED -ge $MAX_WAIT ]; then
+            echo "❌ Timeout waiting for build to complete"
+            echo "🔍 Check the build status at: https://console.cloud.google.com/cloud-build/builds/${BUILD_ID}?project=${PROJECT_ID}"
+            exit 1
+          fi
           
           # ビルドされたイメージの確認
           echo "🔍 Verifying built images..."
