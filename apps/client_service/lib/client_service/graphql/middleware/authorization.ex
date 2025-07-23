@@ -12,6 +12,10 @@ defmodule ClientService.GraphQL.Middleware.Authorization do
     context = resolution.context || %{}
     current_user = Map.get(context, :current_user)
 
+    # デバッグログを追加
+    require Logger
+    Logger.info("Authorization check - permission: #{inspect(permission)}, current_user: #{inspect(current_user)}")
+    
     if Permissions.has_permission?(current_user, permission) do
       resolution
     else
