@@ -116,11 +116,12 @@ defmodule Shared.Infrastructure.Firestore.EventStoreAdapter do
   """
   @impl true
   def health_check do
-    # Firestore の接続確認のために適当なストリームを読み取ってみる
-    case EventStoreRepository.get_events("health_check_stream", from_version: 0) do
-      {:ok, _} -> :ok
-      # ストリームが存在しなくても接続は確認できた
-      {:error, :not_found} -> :ok
+    # Firestore の接続を確認するために、存在しないイベントのバージョンを取得してみる
+    # これは内部的に get_events_after_version を呼び出すが、
+    # aggregate_id に基づいてサブコレクションを直接参照するため、インデックスは不要
+    case get_stream_version("_health_check:#{:erlang.unique_integer([:positive])}") do
+      {:ok, 0} -> :ok  # 存在しないストリームは version 0 を返す
+      {:ok, _} -> :ok  # ストリームが存在する場合
       {:error, _reason} -> {:error, "Event store is not available"}
     end
   end

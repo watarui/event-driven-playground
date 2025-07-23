@@ -223,8 +223,17 @@ defmodule Shared.Infrastructure.Firestore.Repository do
   end
 
   defp build_document(entity) when is_map(entity) do
+    # 構造体の場合は Map.from_struct で変換し、__struct__ フィールドを除外
+    clean_entity = 
+      if is_struct(entity) do
+        Map.from_struct(entity)
+      else
+        entity
+      end
+    
     fields =
-      entity
+      clean_entity
+      |> Map.delete(:__struct__)  # 念のため明示的に削除
       |> Map.to_list()
       |> Enum.map(fn {key, value} -> {to_string(key), build_value(value)} end)
       |> Enum.into(%{})
@@ -274,7 +283,16 @@ defmodule Shared.Infrastructure.Firestore.Repository do
   end
 
   defp build_map_fields(map) do
-    map
+    # ネストされたマップでも __struct__ フィールドを除外
+    clean_map = 
+      if is_struct(map) do
+        Map.from_struct(map)
+      else
+        map
+      end
+    
+    clean_map
+    |> Map.delete(:__struct__)  # 念のため明示的に削除
     |> Map.to_list()
     |> Enum.map(fn {k, v} -> {to_string(k), build_value(v)} end)
     |> Enum.into(%{})
