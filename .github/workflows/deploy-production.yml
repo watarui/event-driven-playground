@@ -174,37 +174,41 @@ jobs:
           
           echo "✅ All services deployed successfully"
 
-      # デプロイが完了するまで待機
-      - name: Wait for Deployments to Complete
+      # デプロイメントの確認（デプロイコマンドが同期的に実行されるため、追加の待機は最小限に）
+      - name: Verify Deployments
         run: |
           IMAGE_TAG=${GITHUB_SHA::7}
           REVISION_TAG="sha-${IMAGE_TAG}"
-          MAX_WAIT=300  # 5分
-          ELAPSED=0
           
-          echo "⏳ Waiting for deployments to complete..."
+          echo "🔍 Verifying deployments..."
           
-          while [ $ELAPSED -lt $MAX_WAIT ]; do
-            # 各サービスのリビジョンステータスを確認
-            COMMAND_READY=$(gcloud run revisions list --service=command-service --region=${REGION} --project=${PROJECT_ID} --format="value(status.conditions[0].status)" --filter="metadata.name:*${REVISION_TAG}" | head -1)
-            QUERY_READY=$(gcloud run revisions list --service=query-service --region=${REGION} --project=${PROJECT_ID} --format="value(status.conditions[0].status)" --filter="metadata.name:*${REVISION_TAG}" | head -1)
-            CLIENT_READY=$(gcloud run revisions list --service=client-service --region=${REGION} --project=${PROJECT_ID} --format="value(status.conditions[0].status)" --filter="metadata.name:*${REVISION_TAG}" | head -1)
+          # デプロイが成功したので、タグ付きリビジョンのURLを確認
+          SERVICES=("command-service" "query-service" "client-service")
+          FAILED=false
+          
+          for SERVICE in "${SERVICES[@]}"; do
+            echo "Checking ${SERVICE}..."
             
-            if [ "$COMMAND_READY" = "True" ] && [ "$QUERY_READY" = "True" ] && [ "$CLIENT_READY" = "True" ]; then
-              echo "✅ All deployments are ready"
-              break
+            # タグ付きリビジョンのURLを取得
+            TAGGED_URL=$(gcloud run services describe ${SERVICE} \
+              --region=${REGION} \
+              --project=${PROJECT_ID} \
+              --format="value(status.traffic[?tags='${REVISION_TAG}'].url)" | head -1)
+            
+            if [ -n "$TAGGED_URL" ]; then
+              echo "✅ ${SERVICE} tagged revision available at: ${TAGGED_URL}"
             else
-              echo "Command Service: ${COMMAND_READY:-Not found}, Query Service: ${QUERY_READY:-Not found}, Client Service: ${CLIENT_READY:-Not found}"
-              echo "Waiting... (${ELAPSED}s/${MAX_WAIT}s)"
-              sleep 10
-              ELAPSED=$((ELAPSED + 10))
+              echo "❌ ${SERVICE} tagged revision not found"
+              FAILED=true
             fi
           done
           
-          if [ $ELAPSED -ge $MAX_WAIT ]; then
-            echo "❌ Timeout waiting for deployments"
+          if [ "$FAILED" = "true" ]; then
+            echo "❌ Some deployments failed verification"
             exit 1
           fi
+          
+          echo "✅ All deployments verified successfully"
 
       # ヘルスチェック
       - name: Health Check New Versions
