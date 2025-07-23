@@ -112,18 +112,21 @@ export default function GraphiQLPage() {
       </div>
 
       {/* 権限に関する情報表示 */}
+      {/* 管理者設定ボタンは viewer または writer の時に表示 */}
+      {(role === "viewer" || role === "writer") && (
+        <div className="p-4">
+          <AdminSetupButton />
+        </div>
+      )}
+      
+      {/* Viewer ロールの警告 */}
       {role === "viewer" && (
-        <>
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 px-4 py-2 text-sm border-b border-yellow-200 dark:border-yellow-800">
-            <span className="text-yellow-800 dark:text-yellow-200">
-              ⚠️ Viewer ロールではクエリのみ実行可能です。Mutation の実行には Writer または Admin
-              権限が必要です。
-            </span>
-          </div>
-          <div className="p-4">
-            <AdminSetupButton />
-          </div>
-        </>
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 px-4 py-2 text-sm border-b border-yellow-200 dark:border-yellow-800">
+          <span className="text-yellow-800 dark:text-yellow-200">
+            ⚠️ Viewer ロールではクエリのみ実行可能です。Mutation の実行には Writer または Admin
+            権限が必要です。
+          </span>
+        </div>
       )}
 
       {/* GraphiQL iframe */}

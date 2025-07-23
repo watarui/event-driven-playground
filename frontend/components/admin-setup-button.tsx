@@ -45,13 +45,28 @@ export function AdminSetupButton() {
   }, [])
 
   const handleSetupAdmin = async () => {
-    if (!user) return
+    console.log("[AdminSetupButton] handleSetupAdmin called", {
+      user: user?.email,
+      hasUser: !!user,
+    })
+    
+    if (!user) {
+      console.error("[AdminSetupButton] No user logged in")
+      setMessage({
+        type: "error",
+        text: "ログインが必要です",
+      })
+      return
+    }
 
     setIsLoading(true)
     setMessage(null)
 
     try {
+      console.log("[AdminSetupButton] Getting ID token...")
       const token = await user.getIdToken()
+      console.log("[AdminSetupButton] Sending request to /api/admin/init-admin")
+      
       const response = await fetch("/api/admin/init-admin", {
         method: "POST",
         headers: {
