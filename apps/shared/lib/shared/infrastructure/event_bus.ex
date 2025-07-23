@@ -138,12 +138,15 @@ defmodule Shared.Infrastructure.EventBus do
   defp get_adapter do
     cond do
       System.get_env("GOOGLE_CLOUD_PROJECT") ->
+        Logger.info("EventBus: Using GoogleCloudAdapter (GOOGLE_CLOUD_PROJECT is set)")
         Shared.Infrastructure.PubSub.GoogleCloudAdapter
 
-      System.get_env("MIX_ENV") == "prod" && System.get_env("CLOUD_RUN_SERVICE_URL") ->
+      System.get_env("MIX_ENV") == "prod" ->
+        Logger.info("EventBus: Using GoogleCloudAdapter (MIX_ENV is prod)")
         Shared.Infrastructure.PubSub.GoogleCloudAdapter
 
       true ->
+        Logger.info("EventBus: Using Phoenix.PubSub.PG2 (local development)")
         Phoenix.PubSub.PG2
     end
   end
