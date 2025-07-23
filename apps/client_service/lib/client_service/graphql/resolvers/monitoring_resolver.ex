@@ -65,7 +65,7 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
         {:ok, stats} ->
           %{
             total_records: stats.total_events,
-            last_updated: stats.last_event_at
+            last_updated: nil  # TODO: 実際の最終更新日時を実装
           }
 
         _ ->
