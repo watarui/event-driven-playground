@@ -51,10 +51,24 @@ jobs:
             --config=build/cloudbuild/firestore-simple.yaml \
             --substitutions=SHORT_SHA=${GITHUB_SHA::7},_PROJECT_ID=${PROJECT_ID} \
             --project=${PROJECT_ID} \
+            --suppress-logs \
             .
           
-          # ビルドの完了を待つ（Cloud Build submit は同期的に実行されるのでこのステップは不要）
-          echo "✅ Build submitted successfully"
+          # ビルドが正常に完了したかを確認
+          BUILD_ID=$(gcloud builds list --limit=1 --project=${PROJECT_ID} --format="value(id)")
+          echo "📋 Latest build ID: ${BUILD_ID}"
+          
+          # ビルドステータスを確認
+          BUILD_STATUS=$(gcloud builds describe ${BUILD_ID} --project=${PROJECT_ID} --format="value(status)")
+          echo "📊 Build status: ${BUILD_STATUS}"
+          
+          if [ "${BUILD_STATUS}" != "SUCCESS" ]; then
+            echo "❌ Build failed with status: ${BUILD_STATUS}"
+            echo "🔍 Check the build logs at: https://console.cloud.google.com/cloud-build/builds/${BUILD_ID}?project=${PROJECT_ID}"
+            exit 1
+          fi
+          
+          echo "✅ Build completed successfully"
           
           # ビルドされたイメージの確認
           echo "🔍 Verifying built images..."
