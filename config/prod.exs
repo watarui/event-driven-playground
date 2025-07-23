@@ -7,8 +7,9 @@ config :shared,
   database_adapter: :firestore
 
 # Logger を JSON フォーマットで出力（Axiom 用）
+# 一時的にテキストフォーマットに変更してデバッグ
 config :logger, :console,
-  format: {Jason, :encode!},
+  format: "$time $metadata[$level] $message\n",
   metadata: [:request_id, :trace_id, :span_id, :aggregate_id, :event_type, :service]
 
 config :logger, level: :info
