@@ -321,13 +321,17 @@ defmodule Shared.Infrastructure.PubSub.GoogleCloudAdapter do
 
   defp format_topic_name(topic, project_id) do
     environment = System.get_env("MIX_ENV", "dev")
-    "projects/#{project_id}/topics/#{topic}-#{environment}"
+    # トピック名に @ が含まれる場合は - に置換（PubSub の制限）
+    sanitized_topic = topic |> to_string() |> String.replace("@", "-at-")
+    "projects/#{project_id}/topics/#{sanitized_topic}-#{environment}"
   end
 
   defp format_subscription_name(topic, project_id) do
     environment = System.get_env("MIX_ENV", "dev")
-    node_name = node() |> to_string() |> String.replace("@", "-")
-    "projects/#{project_id}/subscriptions/#{topic}-#{node_name}-#{environment}"
+    # トピック名とノード名の @ を - に置換
+    sanitized_topic = topic |> to_string() |> String.replace("@", "-at-")
+    node_name = node() |> to_string() |> String.replace("@", "-at-")
+    "projects/#{project_id}/subscriptions/#{sanitized_topic}-#{node_name}-#{environment}"
   end
 
   @impl GenServer
