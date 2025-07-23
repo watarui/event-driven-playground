@@ -14,9 +14,9 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
     # TODO: 実際の統計情報を実装
     stats = %{
       total_events: 0,
-      total_aggregates: 0,
-      event_types: [],
-      last_event_at: nil
+      events_by_type: [],  # [{event_type, count}] の形式
+      events_by_aggregate: [],  # [{aggregate_type, count}] の形式
+      latest_sequence: nil
     }
 
     {:ok, stats}
@@ -161,15 +161,15 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
     # PubSub トピックの統計情報をリスト形式で返す
     stats = [
       %{
-        topic_name: "events",
+        topic: "events",  # topic_name → topic に変更
         message_count: 0,
-        subscriber_count: 0,
+        messages_per_minute: 0.0,
         last_message_at: nil
       },
       %{
-        topic_name: "commands",
+        topic: "commands",  # topic_name → topic に変更
         message_count: 0,
-        subscriber_count: 0,
+        messages_per_minute: 0.0,
         last_message_at: nil
       }
     ]
@@ -207,18 +207,23 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
   def get_system_topology(_parent, _args, _resolution) do
     nodes = [node() | Node.list()]
 
-    topology = %{
-      nodes:
-        Enum.map(nodes, fn n ->
-          %{
-            name: to_string(n),
-            status: if(n == node(), do: "self", else: "connected"),
-            services: get_node_services(n)
-          }
-        end)
-    }
+    # リストを直接返す（topology オブジェクトでラップしない）
+    topology_nodes = Enum.map(nodes, fn n ->
+      node_services = get_node_services(n)
+      
+      %{
+        service_name: Enum.join(node_services, ", ") || "Unknown",  # 必須フィールド
+        node_name: to_string(n),  # 必須フィールド
+        status: if(n == node(), do: "self", else: "connected"),
+        uptime_seconds: nil,  # TODO: 実装
+        memory_usage_mb: nil,  # TODO: 実装
+        cpu_usage_percent: nil,  # TODO: 実装
+        message_queue_size: nil,  # TODO: 実装
+        connections: []  # 空の配列で初期化
+      }
+    end)
 
-    {:ok, topology}
+    {:ok, topology_nodes}
   end
 
   @doc """
