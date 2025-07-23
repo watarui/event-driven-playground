@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     // 環境別の設定
     const { isProduction } = config.env
     const initialAdminEmail = config.auth.initialAdminEmail
-    
+
     // デバッグ: 環境変数の状態をログ出力
     console.log("[init-admin] Environment check:", {
       NODE_ENV: process.env.NODE_ENV,
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     let adminExists = false
     let adminEmail: string | undefined
     let nextPageToken: string | undefined
-    
+
     // すべてのユーザーをチェック（ページネーション対応）
     do {
       const listResult = await adminAuth.listUsers(1000, nextPageToken)
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
       }
       nextPageToken = listResult.pageToken
     } while (nextPageToken)
-    
+
     console.log("[init-admin] Admin exists:", adminExists, adminEmail ? `(${adminEmail})` : "")
 
     if (adminExists) {
@@ -108,11 +108,13 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           message: `あなたは初期管理者になる権限がありません。本番環境では事前に指定されたメールアドレスのみが管理者になれます。`,
-          debug: config.env.isDevelopment ? {
-            currentUserEmail,
-            initialAdminEmail,
-            isProduction,
-          } : undefined,
+          debug: config.env.isDevelopment
+            ? {
+                currentUserEmail,
+                initialAdminEmail,
+                isProduction,
+              }
+            : undefined,
         },
         { status: 403 }
       )

@@ -14,7 +14,7 @@ export function AdminSetupButton() {
   } | null>(null)
   const [adminExists, setAdminExists] = useState<boolean | null>(null)
   const [checkingAdmin, setCheckingAdmin] = useState(true)
-  
+
   // デバッグ: 環境変数の状態を確認
   useEffect(() => {
     console.log("[AdminSetupButton] Environment check:", {
@@ -49,7 +49,7 @@ export function AdminSetupButton() {
       user: user?.email,
       hasUser: !!user,
     })
-    
+
     if (!user) {
       console.error("[AdminSetupButton] No user logged in")
       setMessage({
@@ -66,7 +66,7 @@ export function AdminSetupButton() {
       console.log("[AdminSetupButton] Getting ID token...")
       const token = await user.getIdToken()
       console.log("[AdminSetupButton] Sending request to /api/admin/init-admin")
-      
+
       const response = await fetch("/api/admin/init-admin", {
         method: "POST",
         headers: {
@@ -94,12 +94,12 @@ export function AdminSetupButton() {
         })
         // エラーメッセージをより分かりやすく
         let errorMessage = data.message || `管理者設定に失敗しました (${response.status})`
-        
+
         // 特定のエラーケースに対して追加情報を提供
         if (response.status === 403 && data.adminExists) {
           errorMessage += "\n\n管理者が既に存在します。既存の管理者に権限付与を依頼してください。"
         }
-        
+
         setMessage({
           type: "error",
           text: errorMessage,
@@ -138,7 +138,8 @@ export function AdminSetupButton() {
             {config.env.isProduction ? (
               <>
                 <br />
-                <strong>注意:</strong> 本番環境では事前に指定されたメールアドレスのみが管理者になれます。
+                <strong>注意:</strong>{" "}
+                本番環境では事前に指定されたメールアドレスのみが管理者になれます。
               </>
             ) : (
               "最初のユーザーとして管理者権限を取得できます。"
