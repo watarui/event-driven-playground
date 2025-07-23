@@ -54,15 +54,32 @@ export async function POST(request: NextRequest) {
 
     // すでに管理者が存在するかチェック
     console.log("[init-admin] Checking for existing admins...")
-    const allUsers = await adminAuth.listUsers()
-    const adminExists = allUsers.users.some((user) => user.customClaims?.role === "admin")
-    console.log("[init-admin] Admin exists:", adminExists)
+    let adminExists = false
+    let adminEmail: string | undefined
+    let nextPageToken: string | undefined
+    
+    // すべてのユーザーをチェック（ページネーション対応）
+    do {
+      const listResult = await adminAuth.listUsers(1000, nextPageToken)
+      const adminUser = listResult.users.find((user) => user.customClaims?.role === "admin")
+      if (adminUser) {
+        adminExists = true
+        adminEmail = adminUser.email
+        break
+      }
+      nextPageToken = listResult.pageToken
+    } while (nextPageToken)
+    
+    console.log("[init-admin] Admin exists:", adminExists, adminEmail ? `(${adminEmail})` : "")
 
     if (adminExists) {
+      console.log("[init-admin] Admin already exists, rejecting request")
       return NextResponse.json(
         {
           success: false,
-          message: "Admin already exists. Please contact existing admin to grant permissions.",
+          message: `管理者が既に存在します。既存の管理者に権限付与を依頼してください。`,
+          adminExists: true,
+          debug: config.env.isDevelopment ? { adminEmail } : undefined,
         },
         { status: 403 }
       )
@@ -70,14 +87,20 @@ export async function POST(request: NextRequest) {
 
     // 本番環境では指定されたメールアドレスのみ管理者になれる
     if (isProduction && currentUserEmail !== initialAdminEmail) {
-      console.log("[init-admin] User not authorized:", {
+      console.log("[init-admin] User not authorized in production:", {
         currentUserEmail,
         initialAdminEmail,
+        match: currentUserEmail === initialAdminEmail,
       })
       return NextResponse.json(
         {
           success: false,
-          message: "You are not authorized to become the initial admin",
+          message: `あなたは初期管理者になる権限がありません。本番環境では事前に指定されたメールアドレスのみが管理者になれます。`,
+          debug: config.env.isDevelopment ? {
+            currentUserEmail,
+            initialAdminEmail,
+            isProduction,
+          } : undefined,
         },
         { status: 403 }
       )
@@ -94,13 +117,15 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Successfully set ${currentUserEmail} as admin`,
+      message: `${currentUserEmail} を管理者として設定しました`,
       requiresTokenRefresh: true,
       debug: config.env.isDevelopment
         ? {
             uid: currentUserId,
             email: currentUserEmail,
             customClaims: updatedUser.customClaims,
+            isProduction,
+            initialAdminEmail,
           }
         : undefined,
     })

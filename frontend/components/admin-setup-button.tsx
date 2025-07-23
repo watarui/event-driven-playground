@@ -3,6 +3,7 @@
 import { AlertCircle, CheckCircle, Shield } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/auth-context"
+import { config } from "@/lib/config"
 
 export function AdminSetupButton() {
   const { user, role, loading } = useAuth()
@@ -65,9 +66,17 @@ export function AdminSetupButton() {
           statusText: response.statusText,
           data,
         })
+        // エラーメッセージをより分かりやすく
+        let errorMessage = data.message || `管理者設定に失敗しました (${response.status})`
+        
+        // 特定のエラーケースに対して追加情報を提供
+        if (response.status === 403 && data.adminExists) {
+          errorMessage += "\n\n管理者が既に存在します。既存の管理者に権限付与を依頼してください。"
+        }
+        
         setMessage({
           type: "error",
-          text: data.message || `Failed to setup admin role (${response.status})`,
+          text: errorMessage,
         })
       }
     } catch (error) {
@@ -99,7 +108,15 @@ export function AdminSetupButton() {
             管理者権限の初期設定
           </h3>
           <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
-            まだ管理者が設定されていません。最初のユーザーとして管理者権限を取得できます。
+            まだ管理者が設定されていません。
+            {config.env.isProduction && config.auth.initialAdminEmail ? (
+              <>
+                <br />
+                <strong>注意:</strong> 本番環境では事前に指定されたメールアドレスのみが管理者になれます。
+              </>
+            ) : (
+              "最初のユーザーとして管理者権限を取得できます。"
+            )}
           </p>
 
           <button
@@ -121,11 +138,11 @@ export function AdminSetupButton() {
               }`}
             >
               {message.type === "success" ? (
-                <CheckCircle className="w-4 h-4 mt-0.5" />
+                <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
               ) : (
-                <AlertCircle className="w-4 h-4 mt-0.5" />
+                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
               )}
-              <span>{message.text}</span>
+              <span className="whitespace-pre-wrap">{message.text}</span>
             </div>
           )}
         </div>

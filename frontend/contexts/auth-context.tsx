@@ -40,36 +40,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // すでにロールが設定されている場合はそれを使用
           setRole(userRole)
         } else {
-          // 新規ユーザーの場合
-          if (config.auth.initialAdminEmail && user.email === config.auth.initialAdminEmail) {
-            // INITIAL_ADMIN_EMAIL の場合は管理者設定を試みる
-            try {
-              const token = await user.getIdToken()
-              const response = await fetch("/api/admin/init-admin", {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                  "Content-Type": "application/json",
-                },
-              })
-              if (response.ok) {
-                // Firebase カスタムクレームの反映には時間がかかることがあるため、
-                // ページをリロードして確実に新しいトークンを取得
-                console.log("Initial admin setup successful, reloading page...")
-                window.location.reload()
-              } else {
-                // 管理者設定に失敗した場合は writer
-                console.error("Failed to set initial admin:", await response.text())
-                setRole("writer")
-              }
-            } catch (error) {
-              console.error("Error setting initial admin:", error)
-              setRole("writer")
-            }
-          } else {
-            // 通常のログインユーザーは writer
-            setRole("writer")
-          }
+          // 新規ユーザーの場合はデフォルトで writer
+          // 管理者設定は AdminSetupButton から明示的に行う
+          setRole("writer")
         }
       } else {
         // 未ログインユーザーは viewer
