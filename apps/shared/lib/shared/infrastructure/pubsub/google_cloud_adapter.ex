@@ -53,8 +53,15 @@ defmodule Shared.Infrastructure.PubSub.GoogleCloudAdapter do
     Logger.info("GoogleCloudAdapter: Using project_id: #{project_id}")
 
     # Google Cloud 認証情報を設定
-    connection = Connection.new()
-    Logger.info("GoogleCloudAdapter: Connection created")
+    connection = try do
+      conn = Connection.new()
+      Logger.info("GoogleCloudAdapter: Connection created successfully")
+      conn
+    rescue
+      e ->
+        Logger.error("GoogleCloudAdapter: Failed to create connection: #{inspect(e)}")
+        raise e
+    end
 
     state = %State{
       project_id: project_id,

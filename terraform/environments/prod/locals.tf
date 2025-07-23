@@ -35,7 +35,7 @@ locals {
     DATABASE_ADAPTER    = "firestore"
     # Firestore project IDs（本番では単一プロジェクト）
     FIRESTORE_PROJECT_ID = var.project_id
-    # 一時的にローカル PubSub を使用
-    FORCE_LOCAL_PUBSUB  = "true"
+    # GoogleCloudAdapter を使用
+    # FORCE_LOCAL_PUBSUB  = "true"
   }
 }
