@@ -14,11 +14,14 @@ defmodule Shared.Infrastructure.EventBus do
   """
   def child_spec(opts \\ []) do
     adapter = get_adapter()
+    Logger.info("EventBus.child_spec called with adapter: #{inspect(adapter)}")
 
     # GoogleCloudAdapter の場合は独自の child_spec を使用
     if adapter == Shared.Infrastructure.PubSub.GoogleCloudAdapter do
+      Logger.info("EventBus: Using GoogleCloudAdapter child_spec")
       adapter.child_spec([{:name, @pubsub_name}] ++ opts)
     else
+      Logger.info("EventBus: Using Phoenix.PubSub with adapter: #{inspect(adapter)}")
       Phoenix.PubSub.child_spec([{:name, @pubsub_name}, {:adapter, adapter}] ++ opts)
     end
   end
