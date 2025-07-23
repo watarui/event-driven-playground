@@ -68,7 +68,7 @@ defmodule Shared.Telemetry.Setup do
   defp environment do
     cond do
       System.get_env("K_SERVICE") -> "google_cloud_run"
-      Mix.env() == :prod -> "production"
+      System.get_env("MIX_ENV") == "prod" -> "production"
       true -> "development"
     end
   end

@@ -23,8 +23,10 @@ defmodule QueryService.Application do
     ]
 
     # テスト環境以外でHTTPエンドポイントを起動
+    # 本番環境では Mix モジュールが利用できないため、環境変数から取得
+    env = System.get_env("MIX_ENV", "prod")
     children =
-      if Mix.env() != :test do
+      if env != "test" do
         children ++ [QueryServiceWeb.Endpoint]
       else
         children
