@@ -83,8 +83,21 @@ defmodule Shared.Infrastructure.Saga.SagaExecutor do
       timeout_refs: %{}
     }
 
-    # 未完了の Saga を復元
-    {:ok, restore_sagas(state)}
+    # 未完了の Saga を復元（エラーが発生してもサービスは起動する）
+    restored_state = 
+      try do
+        restore_sagas(state)
+      rescue
+        e ->
+          Logger.error("Failed to restore sagas during initialization: #{inspect(e)}")
+          Logger.error("Stacktrace: #{inspect(__STACKTRACE__)}")
+          Logger.info("SagaExecutor starting without restored sagas")
+          state
+      end
+    
+    Logger.info("SagaExecutor initialized with #{map_size(restored_state.saga_instances)} active sagas")
+    
+    {:ok, restored_state}
   end
 
   @impl true
@@ -343,16 +356,31 @@ defmodule Shared.Infrastructure.Saga.SagaExecutor do
     # 未完了の Saga を DB から復元
     case SagaRepository.get_active_sagas() do
       {:ok, sagas} ->
+        Logger.info("Restoring #{length(sagas)} active sagas")
+        
         Enum.reduce(sagas, state, fn saga_data, acc_state ->
           case restore_saga_instance(saga_data, acc_state) do
-            {:ok, new_state} -> new_state
-            {:error, _reason} -> acc_state
+            {:ok, new_state} -> 
+              Logger.debug("Successfully restored saga: #{saga_data.saga_id}")
+              new_state
+              
+            {:error, reason} -> 
+              Logger.error("Failed to restore saga #{saga_data.saga_id}: #{inspect(reason)}")
+              acc_state
           end
         end)
 
-      {:error, _reason} ->
+      {:error, reason} ->
+        Logger.error("Failed to get active sagas during restore: #{inspect(reason)}")
+        Logger.info("SagaExecutor will continue without restoring previous sagas")
         state
     end
+  rescue
+    e ->
+      Logger.error("Exception during saga restoration: #{inspect(e)}")
+      Logger.error("Stacktrace: #{inspect(__STACKTRACE__)}")
+      Logger.info("SagaExecutor will continue without restoring previous sagas")
+      state
   end
 
   defp restore_saga_instance(saga_data, state) do

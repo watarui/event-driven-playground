@@ -125,22 +125,17 @@ defmodule Shared.Infrastructure.Firestore.Repository do
     |> add_limit(opts)
   end
 
-  defp add_filters(query, filters) when map_size(filters) == 0, do: query
+  defp add_filters(query, filters) when is_list(filters) and length(filters) == 0, do: query
+  defp add_filters(query, filters) when is_map(filters) and map_size(filters) == 0, do: query
 
   defp add_filters(query, filters) do
-    filter_conditions =
-      Enum.map(filters, fn {field, value} ->
-        %{
-          fieldFilter: %{
-            field: %{fieldPath: to_string(field)},
-            op: "EQUAL",
-            value: build_value(value)
-          }
-        }
-      end)
+    filter_conditions = build_filter_conditions(filters)
 
     where_clause =
       case filter_conditions do
+        [] ->
+          nil
+
         [single] ->
           single
 
@@ -153,7 +148,85 @@ defmodule Shared.Infrastructure.Firestore.Repository do
           }
       end
 
-    put_in(query[:structuredQuery][:where], where_clause)
+    if where_clause do
+      put_in(query[:structuredQuery][:where], where_clause)
+    else
+      query
+    end
+  end
+
+  defp build_filter_conditions(filters) when is_map(filters) do
+    # Map形式のフィルター: {field => value}
+    Enum.map(filters, fn {field, value} ->
+      %{
+        fieldFilter: %{
+          field: %{fieldPath: to_string(field)},
+          op: "EQUAL",
+          value: build_value(value)
+        }
+      }
+    end)
+  end
+
+  defp build_filter_conditions(filters) when is_list(filters) do
+    # List形式のフィルター: [{field, value}, {field, op, value}, {:field, name, :in, values}]
+    Enum.map(filters, fn
+      # 単純な等価フィルター
+      {field, value} when is_atom(field) or is_binary(field) ->
+        %{
+          fieldFilter: %{
+            field: %{fieldPath: to_string(field)},
+            op: "EQUAL",
+            value: build_value(value)
+          }
+        }
+
+      # 演算子付きフィルター
+      {field, op, value} ->
+        %{
+          fieldFilter: %{
+            field: %{fieldPath: to_string(field)},
+            op: map_operator(op),
+            value: build_value(value)
+          }
+        }
+
+      # IN演算子の特殊形式
+      {:field, field_name, :in, values} when is_list(values) ->
+        %{
+          fieldFilter: %{
+            field: %{fieldPath: to_string(field_name)},
+            op: "IN",
+            value: %Value{
+              arrayValue: %{
+                values: Enum.map(values, &build_value/1)
+              }
+            }
+          }
+        }
+    end)
+  end
+
+  defp map_operator(op) do
+    case op do
+      :eq -> "EQUAL"
+      :equal -> "EQUAL"
+      :ne -> "NOT_EQUAL"
+      :not_equal -> "NOT_EQUAL"
+      :lt -> "LESS_THAN"
+      :less_than -> "LESS_THAN"
+      :le -> "LESS_THAN_OR_EQUAL"
+      :less_than_or_equal -> "LESS_THAN_OR_EQUAL"
+      :gt -> "GREATER_THAN"
+      :greater_than -> "GREATER_THAN"
+      :ge -> "GREATER_THAN_OR_EQUAL"
+      :greater_than_or_equal -> "GREATER_THAN_OR_EQUAL"
+      :in -> "IN"
+      :not_in -> "NOT_IN"
+      :array_contains -> "ARRAY_CONTAINS"
+      :array_contains_any -> "ARRAY_CONTAINS_ANY"
+      _ -> to_string(op) |> String.upcase()
+    end
   end
 
   defp add_ordering(query, opts) do
