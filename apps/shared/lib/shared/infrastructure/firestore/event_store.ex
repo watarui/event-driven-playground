@@ -432,4 +432,31 @@ defmodule Shared.Infrastructure.Firestore.EventStore do
       _ -> timestamp_string
     end
   end
+
+  @doc """
+  イベントを保存する（EventStoreAdapter インターフェース用）
+  """
+  def save_events(aggregate_id, events, expected_version, _metadata \\ %{}) do
+    # aggregate_type を取得（最初のイベントから推測）
+    aggregate_type = 
+      case events do
+        [%{aggregate_type: type} | _] -> type
+        [%{__struct__: module} | _] -> 
+          module 
+          |> Module.split()
+          |> Enum.take(-2)
+          |> List.first()
+          |> to_string()
+        _ -> "Unknown"
+      end
+
+    save_events(aggregate_id, aggregate_type, events, expected_version)
+  end
+
+  @doc """
+  イベントを取得する（EventStoreAdapter インターフェース用）
+  """
+  def get_events(aggregate_id, after_version) do
+    get_events(aggregate_id, after_version)
+  end
 end

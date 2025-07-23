@@ -9,15 +9,23 @@ defmodule Shared.Health.Checks.ServiceCheck do
 
   # ノードに応じて動的にサービスリストを生成
   def critical_services do
-    base_services = [
-      {:saga_executor, Shared.Infrastructure.Saga.SagaExecutor}
-    ]
+    node_str = Atom.to_string(node())
 
-    # client ノード以外では EventBus を critical に含める
-    if String.contains?(Atom.to_string(node()), "client") do
-      base_services
-    else
-      [{:event_bus, Shared.Infrastructure.EventBus} | base_services]
+    cond do
+      String.contains?(node_str, "client") ->
+        # Client Service では SagaExecutor は不要
+        []
+
+      String.contains?(node_str, "command") ->
+        # Command Service では SagaExecutor と EventBus が必須
+        [
+          {:event_bus, Shared.Infrastructure.EventBus},
+          {:saga_executor, Shared.Infrastructure.Saga.SagaExecutor}
+        ]
+
+      true ->
+        # その他のノードでは EventBus のみ必須
+        [{:event_bus, Shared.Infrastructure.EventBus}]
     end
   end
 
