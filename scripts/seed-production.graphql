@@ -1,0 +1,265 @@
+# 本番環境用のシードデータ投入スクリプト
+# GraphiQLで実行するためのMutation集
+
+# ========================================
+# 1. カテゴリの作成
+# ========================================
+
+mutation CreateElectronicsCategory {
+  createCategory(input: {
+    name: "電子機器"
+    description: "パソコン、スマートフォン、タブレットなど"
+  }) {
+    id
+    name
+    description
+  }
+}
+
+mutation CreateBooksCategory {
+  createCategory(input: {
+    name: "書籍"
+    description: "技術書、ビジネス書、小説など"
+  }) {
+    id
+    name
+    description
+  }
+}
+
+mutation CreateClothingCategory {
+  createCategory(input: {
+    name: "衣類"
+    description: "洋服、靴、アクセサリーなど"
+  }) {
+    id
+    name
+    description
+  }
+}
+
+# ========================================
+# 2. 商品の作成
+# ========================================
+
+# 電子機器カテゴリの商品
+mutation CreateLaptop {
+  createProduct(input: {
+    name: "MacBook Pro 14インチ"
+    description: "M3 Pro チップ搭載、メモリ18GB、SSD 512GB"
+    price: 298800
+    stock: 10
+    categoryId: "ELECTRONICS_CATEGORY_ID"  # 上記で作成したカテゴリIDに置き換え
+  }) {
+    id
+    name
+    price
+    stock
+  }
+}
+
+mutation CreateSmartphone {
+  createProduct(input: {
+    name: "iPhone 15 Pro"
+    description: "256GB、ナチュラルチタニウム"
+    price: 174800
+    stock: 15
+    categoryId: "ELECTRONICS_CATEGORY_ID"
+  }) {
+    id
+    name
+    price
+    stock
+  }
+}
+
+# 書籍カテゴリの商品
+mutation CreateDDDBook {
+  createProduct(input: {
+    name: "ドメイン駆動設計入門"
+    description: "ボトムアップでわかる！ドメイン駆動設計の基本"
+    price: 3520
+    stock: 50
+    categoryId: "BOOKS_CATEGORY_ID"
+  }) {
+    id
+    name
+    price
+    stock
+  }
+}
+
+mutation CreateEventSourcingBook {
+  createProduct(input: {
+    name: "実践イベントソーシング"
+    description: "イベント駆動アーキテクチャの実装ガイド"
+    price: 4180
+    stock: 30
+    categoryId: "BOOKS_CATEGORY_ID"
+  }) {
+    id
+    name
+    price
+    stock
+  }
+}
+
+# ========================================
+# 3. 注文の作成（SAGAのテスト）
+# ========================================
+
+# 正常な注文（在庫あり、支払い成功、配送手配成功）
+mutation CreateSuccessfulOrder {
+  createOrder(input: {
+    items: [
+      {
+        productId: "LAPTOP_PRODUCT_ID"
+        quantity: 1
+      },
+      {
+        productId: "DDD_BOOK_PRODUCT_ID"
+        quantity: 2
+      }
+    ]
+  }) {
+    id
+    totalAmount
+    status
+    items {
+      product {
+        name
+      }
+      quantity
+      price
+    }
+  }
+}
+
+# 在庫不足の注文（SAGAが補償トランザクションを実行）
+mutation CreateOutOfStockOrder {
+  createOrder(input: {
+    items: [
+      {
+        productId: "SMARTPHONE_PRODUCT_ID"
+        quantity: 100  # 在庫を超える数量
+      }
+    ]
+  }) {
+    id
+    status
+  }
+}
+
+# ========================================
+# 4. 商品操作のテスト
+# ========================================
+
+# 価格変更（PriceChangedイベント発生）
+mutation UpdateProductPrice {
+  updateProduct(
+    id: "LAPTOP_PRODUCT_ID"
+    input: {
+      price: 278800  # 値下げ
+    }
+  ) {
+    id
+    name
+    price
+  }
+}
+
+# 在庫調整（StockAdjustedイベント発生）
+mutation AdjustProductStock {
+  adjustStock(
+    productId: "SMARTPHONE_PRODUCT_ID"
+    quantity: -3  # 3個販売
+  ) {
+    id
+    stock
+  }
+}
+
+# ========================================
+# 5. クエリでデータ確認
+# ========================================
+
+query GetAllCategories {
+  categories {
+    id
+    name
+    description
+    products {
+      id
+      name
+      price
+      stock
+    }
+  }
+}
+
+query GetAllProducts {
+  products {
+    id
+    name
+    description
+    price
+    stock
+    category {
+      name
+    }
+  }
+}
+
+query GetMyOrders {
+  myOrders {
+    id
+    totalAmount
+    status
+    createdAt
+    items {
+      product {
+        name
+      }
+      quantity
+      price
+    }
+  }
+}
+
+# ========================================
+# 6. イベントストアの確認
+# ========================================
+
+query GetEventStore {
+  eventStore {
+    statistics {
+      collection
+      eventCount
+      oldestEvent
+      newestEvent
+      eventTypes
+    }
+  }
+}
+
+# ========================================
+# 7. システムヘルスチェック
+# ========================================
+
+query SystemHealth {
+  health {
+    status
+    checks {
+      name
+      status
+      message
+      duration_ms
+      details
+    }
+  }
+  memoryInfo {
+    total_mb
+    process_mb
+    process_count
+  }
+}

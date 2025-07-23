@@ -1,11 +1,9 @@
 "use client"
 
-import { createGraphiQLFetcher } from "@graphiql/toolkit"
 import { GraphiQL } from "graphiql"
 import { useEffect, useRef, useState } from "react"
 import ReactDOM from "react-dom/client"
 import { useAuth } from "@/contexts/auth-context"
-import { config } from "@/lib/config"
 
 // GraphiQL の CSS を文字列として定義（CDN から取得）
 const GRAPHIQL_CSS_URL = "https://unpkg.com/graphiql@3/graphiql.min.css"
@@ -90,25 +88,28 @@ export function GraphiQLShadowContainer() {
 
     // 認証付き fetcher を作成
     const createAuthenticatedFetcher = () => {
-      return createGraphiQLFetcher({
-        url: "/api/graphql",
-        headers: async () => {
-          const headers: Record<string, string> = {
-            "Content-Type": "application/json",
-          }
+      return async (graphQLParams: any) => {
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+        }
 
-          if (user) {
-            try {
-              const token = await user.getIdToken()
-              headers.Authorization = `Bearer ${token}`
-            } catch (error) {
-              console.error("Failed to get auth token:", error)
-            }
+        if (user) {
+          try {
+            const token = await user.getIdToken()
+            headers.Authorization = `Bearer ${token}`
+          } catch (error) {
+            console.error("Failed to get auth token:", error)
           }
+        }
 
-          return headers
-        },
-      })
+        const response = await fetch("/api/graphql", {
+          method: "POST",
+          headers,
+          body: JSON.stringify(graphQLParams),
+        })
+
+        return response.json()
+      }
     }
 
     // React 18 の createRoot を使用
