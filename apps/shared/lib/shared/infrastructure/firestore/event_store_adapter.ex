@@ -120,8 +120,10 @@ defmodule Shared.Infrastructure.Firestore.EventStoreAdapter do
     # これは内部的に get_events_after_version を呼び出すが、
     # aggregate_id に基づいてサブコレクションを直接参照するため、インデックスは不要
     case get_stream_version("_health_check:#{:erlang.unique_integer([:positive])}") do
-      {:ok, 0} -> :ok  # 存在しないストリームは version 0 を返す
-      {:ok, _} -> :ok  # ストリームが存在する場合
+      # 存在しないストリームは version 0 を返す
+      {:ok, 0} -> :ok
+      # ストリームが存在する場合
+      {:ok, _} -> :ok
       {:error, _reason} -> {:error, "Event store is not available"}
     end
   end

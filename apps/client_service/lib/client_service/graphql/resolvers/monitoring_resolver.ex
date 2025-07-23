@@ -228,7 +228,8 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
     case HealthChecker.check_health() do
       %{status: status, checks: _checks} ->
         stats = %{
-          system_health: to_string(status),  # atom を string に変換
+          # atom を string に変換
+          system_health: to_string(status),
           total_events: 0,
           events_per_minute: 0.0,
           active_sagas: 0,
