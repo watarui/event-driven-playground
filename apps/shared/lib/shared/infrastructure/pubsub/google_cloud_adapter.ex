@@ -33,7 +33,7 @@ defmodule Shared.Infrastructure.PubSub.GoogleCloudAdapter do
     %{
       id: name,
       start: {__MODULE__, :start_link, [opts]},
-      type: :supervisor
+      type: :worker
     }
   end
 
@@ -47,10 +47,14 @@ defmodule Shared.Infrastructure.PubSub.GoogleCloudAdapter do
 
   @impl GenServer
   def init(opts) do
+    Logger.info("GoogleCloudAdapter: Initializing with opts: #{inspect(opts)}")
+    
     project_id = get_project_id(opts)
+    Logger.info("GoogleCloudAdapter: Using project_id: #{project_id}")
 
     # Google Cloud 認証情報を設定
     connection = Connection.new()
+    Logger.info("GoogleCloudAdapter: Connection created")
 
     state = %State{
       project_id: project_id,
@@ -60,6 +64,7 @@ defmodule Shared.Infrastructure.PubSub.GoogleCloudAdapter do
       subscription_workers: %{}
     }
 
+    Logger.info("GoogleCloudAdapter: Initialized successfully")
     {:ok, state}
   end
 
@@ -77,6 +82,16 @@ defmodule Shared.Infrastructure.PubSub.GoogleCloudAdapter do
   def direct_broadcast(adapter_name, _node_name, topic, message, dispatcher) do
     # Cloud Pub/Sub では全ノードに配信されるため、通常の broadcast と同じ
     broadcast(adapter_name, topic, message, dispatcher)
+  end
+
+  @impl Phoenix.PubSub.Adapter
+  def subscribe(adapter_name, pid, topic, opts \\ []) do
+    GenServer.call(adapter_name, {:subscribe, pid, topic})
+  end
+
+  @impl Phoenix.PubSub.Adapter
+  def unsubscribe(adapter_name, pid, topic) do
+    GenServer.call(adapter_name, {:unsubscribe, pid, topic})
   end
 
   # GenServer callbacks
