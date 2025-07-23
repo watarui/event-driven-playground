@@ -1,28 +1,57 @@
 "use client"
 
-import { Shield, ShieldAlert } from "lucide-react"
-import dynamic from "next/dynamic"
+import { RefreshCw, Shield, ShieldAlert } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
 import { AdminSetupButton } from "@/components/admin-setup-button"
 import { useAuth } from "@/contexts/auth-context"
 
-// Shadow DOM コンテナを動的インポート（SSR 無効化）
-const GraphiQLShadowContainer = dynamic(
-  () => import("@/components/graphiql-shadow-container").then((mod) => mod.GraphiQLShadowContainer),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 dark:border-white mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading GraphiQL...</p>
-        </div>
-      </div>
-    ),
-  }
-)
-
 export default function GraphiQLPage() {
   const { user, role, loading } = useAuth()
+  const iframeRef = useRef<HTMLIFrameElement>(null)
+  const [isIframeLoading, setIsIframeLoading] = useState(true)
+
+  // iframe がロードされたらローディング状態を解除
+  const handleIframeLoad = () => {
+    setIsIframeLoading(false)
+  }
+
+  // トークンが更新されたら iframe に通知
+  const refreshToken = async () => {
+    if (user) {
+      try {
+        const newToken = await user.getIdToken(true)
+        // Cookie に新しいトークンを設定
+        document.cookie = `auth-token=${newToken}; path=/; samesite=strict`
+        // iframe に更新を通知
+        if (iframeRef.current) {
+          iframeRef.current.contentWindow?.postMessage(
+            { type: "AUTH_TOKEN_UPDATED" },
+            window.location.origin
+          )
+        }
+      } catch (error) {
+        console.error("Failed to refresh token:", error)
+      }
+    }
+  }
+
+  // 認証情報が変更されたら Cookie を更新
+  useEffect(() => {
+    const updateAuthCookie = async () => {
+      if (user) {
+        try {
+          const token = await user.getIdToken()
+          document.cookie = `auth-token=${token}; path=/; samesite=strict`
+        } catch (error) {
+          console.error("Failed to set auth cookie:", error)
+        }
+      } else {
+        // ユーザーがログアウトした場合は Cookie を削除
+        document.cookie = "auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+      }
+    }
+    updateAuthCookie()
+  }, [user])
 
   if (loading) {
     return (
@@ -63,6 +92,15 @@ export default function GraphiQLPage() {
 
         <div className="flex items-center gap-2 text-sm">
           <span className="text-gray-600 dark:text-gray-400">{user?.email}</span>
+          <button
+            type="button"
+            onClick={refreshToken}
+            className="flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            title="Refresh authentication token"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span>Refresh</span>
+          </button>
         </div>
       </div>
 
@@ -84,9 +122,23 @@ export default function GraphiQLPage() {
         </div>
       )}
 
-      {/* GraphiQL Shadow DOM Container */}
-      <div className="flex-1">
-        <GraphiQLShadowContainer />
+      {/* GraphiQL iframe */}
+      <div className="flex-1 relative">
+        {isIframeLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 dark:border-white mx-auto"></div>
+              <p className="mt-4 text-gray-600 dark:text-gray-400">Loading GraphiQL...</p>
+            </div>
+          </div>
+        )}
+        <iframe
+          ref={iframeRef}
+          src="/api/graphiql-standalone"
+          className="w-full h-full border-0"
+          onLoad={handleIframeLoad}
+          title="GraphiQL Explorer"
+        />
       </div>
     </div>
   )
