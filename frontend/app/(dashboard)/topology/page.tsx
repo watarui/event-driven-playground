@@ -30,7 +30,7 @@ const initialNodes: CustomNode[] = [
     id: "client",
     type: "input",
     data: { label: "Client Service\n(GraphQL API)" },
-    position: { x: 250, y: 0 },
+    position: { x: 400, y: 0 },
     style: {
       background: "#60a5fa",
       color: "white",
@@ -38,10 +38,36 @@ const initialNodes: CustomNode[] = [
       width: 180,
     },
   },
+  // Remote Bus層
+  {
+    id: "remote-command-bus",
+    data: { label: "Remote Command Bus\n(PubSub)" },
+    position: { x: 200, y: 150 },
+    style: {
+      background: "#f59e0b",
+      color: "white",
+      border: "1px solid #d97706",
+      width: 180,
+      fontSize: "12px",
+    },
+  },
+  {
+    id: "remote-query-bus",
+    data: { label: "Remote Query Bus\n(PubSub)" },
+    position: { x: 600, y: 150 },
+    style: {
+      background: "#10b981",
+      color: "white",
+      border: "1px solid #059669",
+      width: 180,
+      fontSize: "12px",
+    },
+  },
+  // Service層
   {
     id: "command",
     data: { label: "Command Service\n(Write Model)" },
-    position: { x: 50, y: 150 },
+    position: { x: 200, y: 300 },
     style: {
       background: "#f59e0b",
       color: "white",
@@ -52,7 +78,7 @@ const initialNodes: CustomNode[] = [
   {
     id: "query",
     data: { label: "Query Service\n(Read Model)" },
-    position: { x: 450, y: 150 },
+    position: { x: 600, y: 300 },
     style: {
       background: "#10b981",
       color: "white",
@@ -60,10 +86,11 @@ const initialNodes: CustomNode[] = [
       width: 180,
     },
   },
+  // サービス内コンポーネント層
   {
     id: "saga",
     data: { label: "Saga Executor\n(in Command Service)" },
-    position: { x: 50, y: 280 },
+    position: { x: 50, y: 450 },
     style: {
       background: "#ef4444",
       color: "white",
@@ -73,9 +100,22 @@ const initialNodes: CustomNode[] = [
     },
   },
   {
+    id: "projection",
+    data: { label: "Projection Manager\n(in Query Service)" },
+    position: { x: 750, y: 450 },
+    style: {
+      background: "#06b6d4",
+      color: "white",
+      border: "1px solid #0891b2",
+      width: 180,
+      fontSize: "12px",
+    },
+  },
+  // Event Store層
+  {
     id: "event-store",
     data: { label: "Event Store\n(Firestore)" },
-    position: { x: 250, y: 350 },
+    position: { x: 400, y: 600 },
     style: {
       background: "#8b5cf6",
       color: "white",
@@ -83,10 +123,11 @@ const initialNodes: CustomNode[] = [
       width: 180,
     },
   },
+  // Event Bus層
   {
     id: "event-bus",
     data: { label: "Event Bus\n(PubSub)" },
-    position: { x: 250, y: 480 },
+    position: { x: 400, y: 750 },
     style: {
       background: "#6366f1",
       color: "white",
@@ -94,21 +135,11 @@ const initialNodes: CustomNode[] = [
       width: 180,
     },
   },
-  {
-    id: "projection",
-    data: { label: "Projection Manager" },
-    position: { x: 450, y: 480 },
-    style: {
-      background: "#06b6d4",
-      color: "white",
-      border: "1px solid #0891b2",
-      width: 180,
-    },
-  },
+  // データストア層
   {
     id: "saga-db",
     data: { label: "Saga State\n(Firestore)" },
-    position: { x: 50, y: 480 },
+    position: { x: 50, y: 900 },
     style: {
       background: "#a855f7",
       color: "white",
@@ -120,7 +151,7 @@ const initialNodes: CustomNode[] = [
     id: "command-db",
     type: "output",
     data: { label: "Command State\n(Firestore)" },
-    position: { x: 50, y: 630 },
+    position: { x: 250, y: 900 },
     style: {
       background: "#f97316",
       color: "white",
@@ -132,7 +163,7 @@ const initialNodes: CustomNode[] = [
     id: "query-db",
     type: "output",
     data: { label: "Read Model\n(Firestore)" },
-    position: { x: 450, y: 630 },
+    position: { x: 550, y: 900 },
     style: {
       background: "#f97316",
       color: "white",
@@ -143,10 +174,11 @@ const initialNodes: CustomNode[] = [
 ]
 
 const initialEdges: Edge[] = [
+  // Client to Remote Bus
   {
-    id: "client-command",
+    id: "client-remote-command",
     source: "client",
-    target: "command",
+    target: "remote-command-bus",
     label: "Commands",
     animated: true,
     style: { stroke: "#f59e0b" },
@@ -155,9 +187,9 @@ const initialEdges: Edge[] = [
     },
   },
   {
-    id: "client-query",
+    id: "client-remote-query",
     source: "client",
-    target: "query",
+    target: "remote-query-bus",
     label: "Queries",
     animated: true,
     style: { stroke: "#10b981" },
@@ -165,6 +197,30 @@ const initialEdges: Edge[] = [
       type: MarkerType.ArrowClosed,
     },
   },
+  // Remote Bus to Services
+  {
+    id: "remote-command-command",
+    source: "remote-command-bus",
+    target: "command",
+    label: "PubSub",
+    animated: true,
+    style: { stroke: "#f59e0b", strokeDasharray: "5 5" },
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+    },
+  },
+  {
+    id: "remote-query-query",
+    source: "remote-query-bus",
+    target: "query",
+    label: "PubSub",
+    animated: true,
+    style: { stroke: "#10b981", strokeDasharray: "5 5" },
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+    },
+  },
+  // Command Service connections
   {
     id: "command-event-store",
     source: "command",
@@ -176,70 +232,31 @@ const initialEdges: Edge[] = [
     },
   },
   {
-    id: "event-store-eventbus",
-    source: "event-store",
-    target: "event-bus",
-    label: "Events",
-    style: { stroke: "#6366f1" },
-    markerEnd: {
-      type: MarkerType.ArrowClosed,
-    },
-  },
-  {
-    id: "eventbus-projection",
-    source: "event-bus",
-    target: "projection",
-    label: "Event Stream",
-    style: { stroke: "#06b6d4" },
-    markerEnd: {
-      type: MarkerType.ArrowClosed,
-    },
-  },
-  {
     id: "command-saga",
     source: "command",
     target: "saga",
-    label: "Saga\nManagement",
+    label: "Manages",
     style: { stroke: "#ef4444" },
     markerEnd: {
       type: MarkerType.ArrowClosed,
     },
   },
   {
-    id: "eventbus-saga",
-    source: "event-bus",
-    target: "saga",
-    label: "Domain Events",
-    style: { stroke: "#ef4444" },
+    id: "command-command-db",
+    source: "command",
+    target: "command-db",
+    label: "State",
+    style: { stroke: "#f59e0b" },
     markerEnd: {
       type: MarkerType.ArrowClosed,
     },
   },
+  // Query Service connections
   {
-    id: "saga-eventbus",
-    source: "saga",
-    target: "event-bus",
-    label: "Saga Commands",
-    style: { stroke: "#ef4444", strokeDasharray: "5 5" },
-    markerEnd: {
-      type: MarkerType.ArrowClosed,
-    },
-  },
-  {
-    id: "saga-saga-db",
-    source: "saga",
-    target: "saga-db",
-    label: "Saga State",
-    style: { stroke: "#a855f7" },
-    markerEnd: {
-      type: MarkerType.ArrowClosed,
-    },
-  },
-  {
-    id: "projection-query-db",
-    source: "projection",
-    target: "query-db",
-    label: "Updates",
+    id: "query-projection",
+    source: "query",
+    target: "projection",
+    label: "Manages",
     style: { stroke: "#06b6d4" },
     markerEnd: {
       type: MarkerType.ArrowClosed,
@@ -255,12 +272,66 @@ const initialEdges: Edge[] = [
       type: MarkerType.ArrowClosed,
     },
   },
+  // Event Store to Event Bus
   {
-    id: "command-command-db",
-    source: "command",
-    target: "command-db",
-    label: "State Update",
-    style: { stroke: "#f59e0b" },
+    id: "event-store-eventbus",
+    source: "event-store",
+    target: "event-bus",
+    label: "Events",
+    style: { stroke: "#6366f1" },
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+    },
+  },
+  // Event Bus connections
+  {
+    id: "eventbus-projection",
+    source: "event-bus",
+    target: "projection",
+    label: "Events",
+    style: { stroke: "#06b6d4" },
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+    },
+  },
+  {
+    id: "eventbus-saga",
+    source: "event-bus",
+    target: "saga",
+    label: "Events",
+    style: { stroke: "#ef4444" },
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+    },
+  },
+  // Saga connections
+  {
+    id: "saga-command",
+    source: "saga",
+    target: "command",
+    label: "Commands",
+    style: { stroke: "#ef4444", strokeDasharray: "5 5" },
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+    },
+  },
+  {
+    id: "saga-saga-db",
+    source: "saga",
+    target: "saga-db",
+    label: "State",
+    style: { stroke: "#a855f7" },
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+    },
+  },
+  // Projection Manager connections
+  {
+    id: "projection-query-db",
+    source: "projection",
+    target: "query-db",
+    label: "Updates",
+    style: { stroke: "#06b6d4" },
     markerEnd: {
       type: MarkerType.ArrowClosed,
     },
@@ -355,6 +426,9 @@ function mapHealthCheckToNodeId(checkName: string): string | null {
     event_store: "event-store",
     pubsub: "event-bus",
     saga_executor: "saga",
+    remote_command_bus: "remote-command-bus",
+    remote_query_bus: "remote-query-bus",
+    projection_manager: "projection",
   }
   return mapping[checkName.toLowerCase()] || null
 }
