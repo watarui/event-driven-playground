@@ -1,14 +1,14 @@
 {
-	"buildCommand": "bun run build",
-	"installCommand": "bun install",
-	"framework": "nextjs",
-	"regions": ["hnd1"],
-	"functions": {
-		"app/api/graphql/route.ts": {
-			"maxDuration": 30
-		},
-		"app/api/admin/*/route.ts": {
-			"maxDuration": 10
-		}
-	}
+  "buildCommand": "bun run build",
+  "installCommand": "bun install",
+  "framework": "nextjs",
+  "regions": ["hnd1"],
+  "functions": {
+    "app/api/graphql/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/admin/*/route.ts": {
+      "maxDuration": 10
+    }
+  }
 }

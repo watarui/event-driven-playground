@@ -1,4 +1,4 @@
-import { gql } from "@apollo/client";
+import { gql } from "@apollo/client"
 
 // Order Queries
 export const GET_ORDERS = gql`
@@ -23,7 +23,7 @@ export const GET_ORDERS = gql`
       updatedAt
     }
   }
-`;
+`
 
 export const GET_ORDER_BY_ID = gql`
   query GetOrderById($id: ID!) {
@@ -47,7 +47,7 @@ export const GET_ORDER_BY_ID = gql`
       updatedAt
     }
   }
-`;
+`
 
 // Product Queries
 export const GET_PRODUCTS = gql`
@@ -68,7 +68,7 @@ export const GET_PRODUCTS = gql`
       }
     }
   }
-`;
+`
 
 export const GET_PRODUCT_BY_ID = gql`
   query GetProductById($id: ID!) {
@@ -89,7 +89,7 @@ export const GET_PRODUCT_BY_ID = gql`
       }
     }
   }
-`;
+`
 
 // Category Queries
 export const GET_CATEGORIES = gql`
@@ -100,7 +100,7 @@ export const GET_CATEGORIES = gql`
       description
     }
   }
-`;
+`
 
 export const GET_CATEGORY_BY_ID = gql`
   query GetCategoryById($id: ID!) {
@@ -119,4 +119,4 @@ export const GET_CATEGORY_BY_ID = gql`
       }
     }
   }
-`;
+`

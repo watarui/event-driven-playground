@@ -1,4 +1,4 @@
-import { gql } from "@apollo/client";
+import { gql } from "@apollo/client"
 
 // Event Subscriptions
 export const EVENT_CREATED_SUBSCRIPTION = gql`
@@ -14,7 +14,7 @@ export const EVENT_CREATED_SUBSCRIPTION = gql`
       insertedAt
     }
   }
-`;
+`
 
 // Order Subscriptions
 export const ORDER_UPDATED_SUBSCRIPTION = gql`
@@ -39,7 +39,7 @@ export const ORDER_UPDATED_SUBSCRIPTION = gql`
       updatedAt
     }
   }
-`;
+`
 
 // Product Subscriptions
 export const PRODUCT_UPDATED_SUBSCRIPTION = gql`
@@ -60,7 +60,7 @@ export const PRODUCT_UPDATED_SUBSCRIPTION = gql`
       }
     }
   }
-`;
+`
 
 // Category Subscriptions
 export const CATEGORY_UPDATED_SUBSCRIPTION = gql`
@@ -71,7 +71,7 @@ export const CATEGORY_UPDATED_SUBSCRIPTION = gql`
       description
     }
   }
-`;
+`
 
 // SAGA Subscriptions
 export const SAGA_STATUS_SUBSCRIPTION = gql`
@@ -89,7 +89,7 @@ export const SAGA_STATUS_SUBSCRIPTION = gql`
       updatedAt
     }
   }
-`;
+`
 
 // System Events Subscription
 export const SYSTEM_EVENT_SUBSCRIPTION = gql`
@@ -100,4 +100,4 @@ export const SYSTEM_EVENT_SUBSCRIPTION = gql`
       timestamp
     }
   }
-`;
+`

@@ -1,4 +1,4 @@
-import { gql } from "@apollo/client";
+import { gql } from "@apollo/client"
 
 export const METRICS_OVERVIEW = gql`
   query MetricsOverview {
@@ -44,7 +44,7 @@ export const METRICS_OVERVIEW = gql`
       timestamp
     }
   }
-`;
+`
 
 export const METRICS_STREAM_SUBSCRIPTION = gql`
   subscription MetricsStream {
@@ -69,7 +69,7 @@ export const METRICS_STREAM_SUBSCRIPTION = gql`
       timestamp
     }
   }
-`;
+`
 
 export const METRIC_TIME_SERIES = gql`
   query MetricTimeSeries($metricNames: [String!]!, $duration: Int) {
@@ -85,4 +85,4 @@ export const METRIC_TIME_SERIES = gql`
       }
     }
   }
-`;
+`
