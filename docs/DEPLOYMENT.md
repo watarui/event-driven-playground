@@ -4,6 +4,13 @@
 
 このガイドでは、Event Driven Playground を Google Cloud Platform (バックエンド) と Vercel (フロントエンド) にデプロイする手順を説明します。
 
+### アーキテクチャ
+
+- **バックエンド**: Cloud Run でマイクロサービスを実行
+- **データストア**: Firestore (Event Store, Read Model, Saga State)
+- **メッセージング**: Cloud Pub/Sub
+- **フロントエンド**: Vercel で Next.js アプリをホスティング
+
 ## 前提条件
 
 - Google Cloud プロジェクトが作成済み
@@ -61,6 +68,14 @@ terraform plan
 terraform apply
 ```
 
+#### Terraform で作成されるリソース
+
+- Artifact Registry リポジトリ
+- Cloud Run サービス (client-service, command-service, query-service)
+- Pub/Sub トピック
+- IAM ロールとサービスアカウント
+- Cloud Monitoring アラート
+
 ### 5. Docker イメージのビルドとプッシュ
 
 ```bash
@@ -68,9 +83,16 @@ cd ../../../  # プロジェクトルートに戻る
 
 # Cloud Build でイメージをビルド
 gcloud builds submit \
-  --config=build/cloudbuild/optimized.yaml \
+  --config=build/cloudbuild/firestore-simple.yaml \
+  --substitutions=SHORT_SHA=$(git rev-parse --short HEAD),_PROJECT_ID=$PROJECT_ID \
   --project=$PROJECT_ID
 ```
+
+#### ビルド構成
+
+- マルチステージ Docker ビルド
+- Elixir Release による最適化
+- Alpine Linux ベースの軽量イメージ
 
 ### 6. Cloud Run サービスのデプロイ
 
@@ -120,22 +142,39 @@ vercel
 
 ### GitHub Actions の設定
 
-`.github/workflows/deploy.yml` が設定されており、以下のトリガーで自動デプロイされます：
+`.github/workflows/deploy-production.yml` が設定されており、以下のトリガーで自動デプロイされます：
 
 - `main` ブランチへのプッシュ時
-- タグ作成時（`v*` パターン）
+- 手動実行 (workflow_dispatch)
+
+#### デプロイフロー
+
+1. **ビルドフェーズ**
+   - Cloud Build で Docker イメージをビルド
+   - ビルドステータスのポーリング
+   - イメージの検証
+
+2. **デプロイフェーズ**
+   - Cloud Run サービスの並列デプロイ
+   - リビジョンタグの付与
+   - トラフィックを切り替えずにデプロイ
+
+3. **検証フェーズ**
+   - ヘルスチェックの実行
+   - コールドスタート対策の待機
+   - 失敗時のログ確認
+
+4. **トラフィック切り替え**
+   - 全サービスのトラフィックを並列で切り替え
+   - リビジョンタグを使用した段階的デプロイ
 
 ### 必要な GitHub Secrets
 
-以下のシークレットを GitHub リポジトリに設定：
+```
+WIF_PROVIDER           # Workload Identity Federation プロバイダー
+WIF_SERVICE_ACCOUNT    # サービスアカウント (GitHub Actions 用)
+```
 
-```
-GCP_PROJECT_ID          # Google Cloud プロジェクトID
-GCP_SA_KEY             # サービスアカウントキー（JSON）
-VERCEL_TOKEN           # Vercel APIトークン
-VERCEL_ORG_ID          # Vercel 組織ID
-VERCEL_PROJECT_ID      # Vercel プロジェクトID
-```
 
 ## 本番環境の監視
 
@@ -191,10 +230,24 @@ gcloud services list --enabled | grep firestore
 ### デプロイのロールバック
 
 ```bash
-# 前のリビジョンにロールバック
+# 特定のリビジョンにロールバック
+gcloud run services update-traffic client-service \
+  --to-tags=sha-PREVIOUS_SHA=100 \
+  --region=$REGION
+
+# または、前のリビジョンにロールバック
 gcloud run services update-traffic client-service \
   --to-revisions=PREV=100 \
   --region=$REGION
+```
+
+### ヘルスチェックの確認
+
+```bash
+# 各サービスのヘルスチェックエンドポイント
+curl https://client-service-xxxxx-an.a.run.app/health
+curl https://command-service-xxxxx-an.a.run.app/health
+curl https://query-service-xxxxx-an.a.run.app/health
 ```
 
 ## コスト最適化
@@ -209,3 +262,18 @@ gcloud run services update-traffic client-service \
 - Cloud Run の同時実行数を調整
 - Firestore の使用量を監視
 - Cloud CDN を活用してエグレス料金を削減
+
+## セキュリティ
+
+### サービスアカウント
+
+各サービスは専用のサービスアカウントで実行され、最小権限の原則に従って設定されます。
+
+### Workload Identity Federation
+
+GitHub Actions からのデプロイには Workload Identity Federation を使用し、サービスアカウントキーの漏洩リスクを最小化します。
+
+### ネットワークセキュリティ
+
+- すべての通信は HTTPS/TLS で暗号化
+- Cloud Run のプライベートサービスを使用して内部通信を保護

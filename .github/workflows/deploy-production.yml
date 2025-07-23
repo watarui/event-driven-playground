@@ -115,18 +115,6 @@ jobs:
           done
       
 
-      # マイグレーションは別ワークフローで実行
-      # - name: Run Database Migrations
-      #   マイグレーションは .github/workflows/run-migration.yml で手動実行
-      #   GitHub Actions タブから "Run Database Migration" ワークフローを選択して実行
-      #   
-      #   実行方法:
-      #   1. GitHub リポジトリの "Actions" タブを開く
-      #   2. 左側のワークフロー一覧から "Run Database Migration" を選択
-      #   3. "Run workflow" ボタンをクリック
-      #   4. confirm フィールドに "migrate" と入力
-      #   5. migration_type を選択（ecto または workaround）
-      #   6. "Run workflow" をクリックして実行
 
       # サービスのデプロイ（並列実行）
       - name: Deploy Services in Parallel

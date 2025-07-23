@@ -56,6 +56,7 @@ apps/
 │   │   │   ├── resolvers/       # GraphQL リゾルバー
 │   │   │   └── plugs/           # 認証などのミドルウェア
 │   │   └── client_service/      # ビジネスロジック
+│   │       └── infrastructure/  # Remote Bus 実装
 │   └── test/
 ├── command_service/     # コマンド処理
 │   ├── lib/
@@ -69,7 +70,7 @@ apps/
 │   │   └── query_service/
 │   │       ├── projections/     # イベントハンドラー
 │   │       ├── queries/         # クエリハンドラー
-│   │       └── infrastructure/  # リポジトリ実装
+│   │       └── infrastructure/  # Projection Manager
 │   └── test/
 └── shared/             # 共通ライブラリ
     ├── lib/
@@ -77,6 +78,7 @@ apps/
     │       ├── domain/          # ドメインモデル
     │       ├── value_objects/   # 値オブジェクト
     │       └── infrastructure/  # 共通インフラ
+    │           └── saga/        # Saga Executor
     └── test/
 ```
 
@@ -92,6 +94,7 @@ apps/
 4. **イベントハンドラーの実装** (`apps/query_service/lib/query_service/projections/`)
 5. **GraphQL スキーマの更新** (`apps/client_service/lib/client_service_web/schema/`)
 6. **リゾルバーの実装** (`apps/client_service/lib/client_service_web/resolvers/`)
+7. **Saga の定義**（必要な場合）(`apps/shared/lib/shared/domain/sagas/`)
 
 ### 2. テストの実行
 
@@ -117,6 +120,9 @@ mix credo
 
 # 型チェック
 mix dialyzer
+
+# フロントエンドのフォーマット
+cd frontend && bun run biome:format
 ```
 
 ## ローカル開発のTips
@@ -163,6 +169,11 @@ make seed
 - `FIRESTORE_EMULATOR_HOST=localhost:8090`
 - `DATABASE_ADAPTER=firestore`
 - `MIX_ENV=dev`
+- `PHX_SERVER=true`
+- `PORT=4000` (Client Service)
+- `PORT=4001` (Command Service)  
+- `PORT=4002` (Query Service)
+- `EVENT_BUS_MODULE=LocalEventBus` (ローカルイベントバス使用)
 
 ## トラブルシューティング
 
@@ -207,4 +218,41 @@ make reset             # データをリセット
 make seed              # シードデータを投入
 make status            # サービスの状態を確認
 make clean             # ビルドアーティファクトを削除
+```
+
+## Saga の実装
+
+分散トランザクションを実装する場合：
+
+### 1. Saga 定義の作成
+
+```elixir
+defmodule Shared.Domain.Sagas.OrderProcessingSaga do
+  use Shared.Infrastructure.Saga.SagaDefinition
+
+  saga "order_processing" do
+    step :reserve_inventory, 
+      compensation: :cancel_inventory_reservation
+    
+    step :process_payment,
+      compensation: :refund_payment
+      
+    step :arrange_shipping,
+      compensation: :cancel_shipping
+  end
+end
+```
+
+### 2. ステップハンドラーの実装
+
+各ステップと補償ハンドラーを実装します。
+
+### 3. Saga の起動
+
+```elixir
+# コマンドハンドラー内で Saga を起動
+SagaExecutor.start_saga(
+  OrderProcessingSaga,
+  %{order_id: order.id, items: order.items}
+)
 ```

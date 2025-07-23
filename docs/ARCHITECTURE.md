@@ -9,27 +9,46 @@ Event Driven Playground は、CQRS (Command Query Responsibility Segregation) �
 ```mermaid
 graph TB
     subgraph "Frontend"
-        UI[Next.js App]
+        UI[Next.js App<br/>React + TypeScript]
     end
     
-    subgraph "Backend Services"
-        GQL[Client Service<br/>GraphQL API]
-        CMD[Command Service]
-        QRY[Query Service]
+    subgraph "Client Service"
+        GQL[GraphQL API<br/>Phoenix + Absinthe]
+        RCB[Remote Command Bus]
+        RQB[Remote Query Bus]
+    end
+    
+    subgraph "Command Service"
+        CMD[Command Handler]
+        SAGA[Saga Executor]
+    end
+    
+    subgraph "Query Service"
+        QRY[Query Handler]
+        PROJ[Projection Manager]
     end
     
     subgraph "Infrastructure"
-        PS[Cloud Pub/Sub]
-        FS[Firestore]
+        PS[Cloud Pub/Sub<br/>Event Bus]
+        FS1[Firestore<br/>Event Store]
+        FS2[Firestore<br/>Read Model]
+        FS3[Firestore<br/>Saga State]
     end
     
     UI --> |GraphQL| GQL
-    GQL --> |Commands| CMD
-    GQL --> |Queries| QRY
-    CMD --> |Events| PS
-    PS --> |Events| QRY
-    CMD --> |Event Store| FS
-    QRY --> |Read Model| FS
+    GQL --> RCB
+    GQL --> RQB
+    RCB --> |PubSub| CMD
+    RQB --> |PubSub| QRY
+    CMD --> SAGA
+    CMD --> |Events| FS1
+    FS1 --> |Events| PS
+    PS --> |Events| PROJ
+    PS --> |Events| SAGA
+    SAGA --> |Commands| CMD
+    SAGA --> |State| FS3
+    PROJ --> |Updates| FS2
+    QRY --> |Read| FS2
 ```
 
 ## 主要コンポーネント
@@ -42,6 +61,9 @@ graph TB
   - GraphQL スキーマの定義と実行
   - 認証・認可（Firebase Authentication）
   - コマンドとクエリのルーティング
+- **通信**:
+  - RemoteCommandBus: PubSub 経由で Command Service と通信
+  - RemoteQueryBus: PubSub 経由で Query Service と通信
 
 ### 2. Command Service
 
@@ -51,6 +73,10 @@ graph TB
   - イベントの生成と永続化
   - ドメインの整合性保証
 - **パターン**: アグリゲートパターンを使用
+- **コンポーネント**:
+  - CommandHandler: コマンドの実行
+  - SagaExecutor: 分散トランザクションの管理
+  - UnitOfWork: トランザクション境界の管理
 
 ### 3. Query Service
 
@@ -59,6 +85,46 @@ graph TB
   - Read Model の構築と管理
   - 最適化されたクエリの実行
   - イベントからの投影（Projection）
+- **コンポーネント**:
+  - QueryHandler: クエリの実行
+  - ProjectionManager: イベントから Read Model への投影
+  - Cache: クエリ結果のキャッシング
+
+### 4. Saga Executor
+
+- **役割**: 分散トランザクションの管理
+- **機能**:
+  - 複数のサービスにまたがるビジネスプロセスの調整
+  - 補償トランザクション（Compensating Transaction）の実行
+  - タイムアウトとリトライの管理
+- **実装**:
+  - GenServer による Saga ライフサイクル管理
+  - GenStateMachine による状態遷移管理
+  - Firestore での Saga 状態の永続化
+- **実装例**:
+  - 注文処理 Saga（在庫確保 → 決済処理 → 配送手配）
+
+### 5. Remote Bus 層
+
+- **Remote Command Bus**:
+  - Client Service から Command Service への非同期コマンド送信
+  - Cloud Pub/Sub を使用した疎結合通信
+  - リクエスト/レスポンスパターンの実装
+  - サーキットブレーカーによる障害対策
+
+- **Remote Query Bus**:
+  - Client Service から Query Service への非同期クエリ送信
+  - 同様に Pub/Sub を使用
+  - タイムアウト管理とエラーハンドリング
+
+### 6. Projection Manager
+
+- **役割**: イベントから Read Model への投影管理
+- **機能**:
+  - リアルタイムイベント処理
+  - プロジェクションの再構築
+  - バッチ処理による効率的な更新
+  - Dead Letter Queue によるエラー処理
 
 ## CQRS と Event Sourcing
 
@@ -74,7 +140,7 @@ defmodule CommandService.Products.CreateProduct do
   end
 end
 
-# クエリ側（Query Service）
+# クエリ側（Query Service）  
 defmodule QueryService.Products.GetProduct do
   def execute(product_id) do
     # Read Model から最適化されたデータを取得
@@ -134,7 +200,8 @@ firestore/
 ├── command_service/           # Command側の状態
 │   ├── categories/
 │   ├── products/
-│   └── orders/
+│   ├── orders/
+│   └── sagas/               # Saga の状態
 └── query_service/            # Read Model
     ├── categories/
     ├── products/
@@ -193,3 +260,20 @@ firestore/
 - 構造化ログ（JSON形式）
 - Cloud Logging への集約
 - エラーログの自動アラート
+
+## デプロイメント
+
+### CI/CD パイプライン
+
+- GitHub Actions による自動デプロイ
+- Cloud Build での Docker イメージビルド
+- Cloud Run への段階的デプロイ
+- ヘルスチェックによる検証
+
+### インフラストラクチャ
+
+- **Cloud Run**: サーバーレスコンテナ実行環境
+- **Firestore**: マネージド NoSQL データベース
+- **Cloud Pub/Sub**: メッセージングサービス
+- **Artifact Registry**: Docker イメージレジストリ
+- **Cloud Load Balancing**: 負荷分散とルーティング

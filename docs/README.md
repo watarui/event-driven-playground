@@ -2,6 +2,11 @@
 
 CQRS と Event Sourcing パターンを実装した、Elixir/Phoenix ベースのマイクロサービスアーキテクチャのサンプルプロジェクトです。
 
+## デモサイト
+
+- **フロントエンド**: https://event-driven-playground.vercel.app/
+- **GraphQL API**: https://client-service-\*.run.app/graphql
+
 ## 概要
 
 このプロジェクトは、以下の技術とパターンを使用して構築されています：
@@ -10,6 +15,7 @@ CQRS と Event Sourcing パターンを実装した、Elixir/Phoenix ベース�
 - **Event Sourcing**: イベントをデータの信頼できる唯一の情報源として使用
 - **マイクロサービス**: Command Service、Query Service、Client Service (GraphQL API) の 3 つのサービス
 - **イベント駆動アーキテクチャ**: Google Cloud Pub/Sub を使用したサービス間通信
+- **Saga パターン**: 分散トランザクションの管理
 
 ## 技術スタック
 
@@ -71,9 +77,13 @@ make backend
 .
 ├── apps/                    # Elixir アプリケーション
 │   ├── client_service/     # GraphQL API (Phoenix)
+│   │   └── infrastructure/# Remote Command/Query Bus
 │   ├── command_service/    # コマンド処理サービス
 │   ├── query_service/      # クエリ処理サービス
+│   │   └── infrastructure/# Projection Manager
 │   └── shared/             # 共通ライブラリ
+│       └── infrastructure/
+│           └── saga/      # Saga Executor
 ├── frontend/               # Next.js フロントエンド
 ├── terraform/              # インフラストラクチャ定義
 ├── build/                  # ビルド設定（Docker, Cloud Build）
@@ -87,13 +97,15 @@ make backend
 - **在庫管理**: リアルタイムな在庫追跡
 - **注文処理**: 注文の作成とステータス管理
 - **イベント履歴**: すべての変更履歴を追跡可能
+- **分散トランザクション**: Saga パターンによる複数サービス間のトランザクション管理
+- **システムモニタリング**: ヘルスチェックとトポロジー可視化
 
 ## ドキュメント
 
-- [アーキテクチャ](docs/architecture.md) - システム設計と技術的な詳細
-- [開発ガイド](docs/development.md) - ローカル開発環境の詳細なセットアップ
-- [デプロイガイド](docs/deployment.md) - GCP と Vercel へのデプロイ手順
-- [API リファレンス](docs/api-reference.md) - GraphQL API の仕様
+- [アーキテクチャ](ARCHITECTURE.md) - システム設計と技術的な詳細
+- [開発ガイド](DEVELOPMENT.md) - ローカル開発環境の詳細なセットアップ
+- [デプロイガイド](DEPLOYMENT.md) - GCP と Vercel へのデプロイ手順
+- [API リファレンス](api-reference.md) - GraphQL API の仕様
 
 ## 開発コマンド
 
@@ -112,3 +124,9 @@ make seed               # サンプルデータを投入
 # その他
 make help               # 利用可能なコマンドを表示
 ```
+
+## CI/CD
+
+- **GitHub Actions**: `main` ブランチへのプッシュで自動デプロイ
+- **Cloud Build**: Docker イメージのビルド
+- **ヘルスチェック**: デプロイ前の自動検証

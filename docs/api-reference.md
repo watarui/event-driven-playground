@@ -3,7 +3,8 @@
 ## GraphQL エンドポイント
 
 - **開発環境**: `http://localhost:4000/graphql`
-- **本番環境**: `https://your-api-domain.com/graphql`
+- **本番環境**: `https://client-service-*.run.app/graphql`
+- **GraphQL Playground**: エンドポイントに GET リクエストでアクセス可能
 
 ## 認証
 
@@ -11,6 +12,13 @@ Firebase Authentication を使用しています。すべてのリクエスト�
 
 ```
 Authorization: Bearer <firebase-id-token>
+```
+
+### トークンの取得
+
+```javascript
+// Firebase SDK を使用
+const token = await firebase.auth().currentUser.getIdToken();
 ```
 
 ## スキーマ
@@ -52,6 +60,8 @@ type Order {
   items: [OrderItem!]!
   totalAmount: Int!
   status: OrderStatus!
+  paymentStatus: PaymentStatus
+  shippingStatus: ShippingStatus
   createdAt: DateTime!
   updatedAt: DateTime!
 }
@@ -66,8 +76,26 @@ type OrderItem {
 enum OrderStatus {
   PENDING
   CONFIRMED
-  PAID
+  PROCESSING
+  COMPLETED
   CANCELLED
+  FAILED
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum ShippingStatus {
+  PENDING
+  PREPARING
+  SHIPPED
+  DELIVERED
+  RETURNED
 }
 ```
 
@@ -199,6 +227,7 @@ mutation CreateCategory($input: CreateCategoryInput!) {
 input CreateCategoryInput {
   name: String!
   parentId: ID
+  description: String
 }
 
 # カテゴリ更新
@@ -327,6 +356,7 @@ subscription OnStockChanged($productId: ID!) {
     productId
     oldStock
     newStock
+    timestamp
   }
 }
 
@@ -336,6 +366,17 @@ subscription OnOrderStatusChanged($orderId: ID!) {
     orderId
     oldStatus
     newStatus
+    timestamp
+  }
+}
+
+# リアルタイムイベント監視（開発用）
+subscription OnEventReceived {
+  eventReceived {
+    eventType
+    aggregateId
+    payload
+    timestamp
   }
 }
 ```
@@ -366,6 +407,9 @@ subscription OnOrderStatusChanged($orderId: ID!) {
 - `INVALID_INPUT`: 入力値が不正
 - `BUSINESS_RULE_VIOLATION`: ビジネスルール違反
 - `INTERNAL_ERROR`: サーバーエラー
+- `SERVICE_UNAVAILABLE`: サービス利用不可（サーキットブレーカー作動時など）
+- `TIMEOUT`: タイムアウト
+- `SAGA_FAILED`: Saga 処理失敗
 
 ## レート制限
 
@@ -388,6 +432,49 @@ query GetProducts($limit: Int, $offset: Int) {
     pageInfo {
       hasNextPage
       totalCount
+    }
+  }
+}
+```
+
+## ヘルスチェック
+
+### システムヘルスチェック
+
+```graphql
+query HealthCheck {
+  health {
+    status
+    checks {
+      name
+      status
+      message
+      duration_ms
+      details
+    }
+  }
+  memoryInfo {
+    total_mb
+    process_mb
+    binary_mb
+    ets_mb
+    process_count
+    port_count
+  }
+}
+```
+
+### イベントストア情報
+
+```graphql
+query EventStoreInfo {
+  eventStore {
+    statistics {
+      collection
+      eventCount
+      oldestEvent
+      newestEvent
+      eventTypes
     }
   }
 }
