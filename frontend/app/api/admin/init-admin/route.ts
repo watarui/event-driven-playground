@@ -35,6 +35,16 @@ export async function POST(request: NextRequest) {
     // 環境別の設定
     const { isProduction } = config.env
     const initialAdminEmail = config.auth.initialAdminEmail
+    
+    // デバッグ: 環境変数の状態をログ出力
+    console.log("[init-admin] Environment check:", {
+      NODE_ENV: process.env.NODE_ENV,
+      VERCEL_ENV: process.env.VERCEL_ENV,
+      isProduction,
+      initialAdminEmailFromConfig: initialAdminEmail,
+      initialAdminEmailFromEnv: process.env.INITIAL_ADMIN_EMAIL,
+      hasInitialAdminEmail: !!initialAdminEmail,
+    })
 
     // 本番環境では INITIAL_ADMIN_EMAIL が必須
     if (isProduction && !initialAdminEmail) {
@@ -47,9 +57,11 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
-    console.log("[init-admin] Environment:", {
-      isProduction,
+    console.log("[init-admin] Email validation:", {
+      currentUserEmail,
       initialAdminEmail,
+      isProduction,
+      emailsMatch: currentUserEmail === initialAdminEmail,
     })
 
     // すでに管理者が存在するかチェック

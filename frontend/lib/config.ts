@@ -24,6 +24,7 @@ export const config = {
   auth: {
     // 初期管理者のメールアドレス
     // 開発環境では任意、本番環境では必須
+    // サーバーサイドのみで使用されるため、NEXT_PUBLIC_ プレフィックスは不要
     initialAdminEmail: process.env.INITIAL_ADMIN_EMAIL,
   },
 

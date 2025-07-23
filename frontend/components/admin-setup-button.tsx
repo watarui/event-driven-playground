@@ -14,6 +14,17 @@ export function AdminSetupButton() {
   } | null>(null)
   const [adminExists, setAdminExists] = useState<boolean | null>(null)
   const [checkingAdmin, setCheckingAdmin] = useState(true)
+  
+  // デバッグ: 環境変数の状態を確認
+  useEffect(() => {
+    console.log("[AdminSetupButton] Environment check:", {
+      isProduction: config.env.isProduction,
+      // クライアントサイドでは INITIAL_ADMIN_EMAIL にアクセスできない
+      initialAdminEmail: "(not accessible on client side)",
+      currentUserEmail: user?.email,
+      role,
+    })
+  }, [user, role])
 
   // 管理者が存在するかチェック
   useEffect(() => {
@@ -109,7 +120,7 @@ export function AdminSetupButton() {
           </h3>
           <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
             まだ管理者が設定されていません。
-            {config.env.isProduction && config.auth.initialAdminEmail ? (
+            {config.env.isProduction ? (
               <>
                 <br />
                 <strong>注意:</strong> 本番環境では事前に指定されたメールアドレスのみが管理者になれます。
