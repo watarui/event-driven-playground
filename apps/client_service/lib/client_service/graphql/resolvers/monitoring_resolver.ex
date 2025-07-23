@@ -96,16 +96,8 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
       total: 0
     }
 
+    # GraphQL スキーマに合わせた構造を返す
     stats = %{
-      node: node(),
-      uptime: :erlang.statistics(:wall_clock) |> elem(0),
-      process_count: :erlang.system_info(:process_count),
-      memory: %{
-        total: memory_info[:total],
-        processes: memory_info[:processes],
-        binary: memory_info[:binary],
-        ets: memory_info[:ets]
-      },
       event_store: event_store_db_stats,
       command_db: command_db_stats,
       query_db: query_db_stats,
@@ -234,11 +226,9 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
   """
   def get_dashboard_stats(_parent, _args, _resolution) do
     case HealthChecker.check_health() do
-      %{status: status, checks: checks} ->
+      %{status: status, checks: _checks} ->
         stats = %{
-          system_health: status,
-          health_checks: checks,
-          timestamp: DateTime.utc_now(),
+          system_health: to_string(status),  # atom を string に変換
           total_events: 0,
           events_per_minute: 0.0,
           active_sagas: 0,
