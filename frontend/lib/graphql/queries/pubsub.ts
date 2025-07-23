@@ -1,4 +1,4 @@
-import { gql } from "@apollo/client"
+import { gql } from "@apollo/client";
 
 export const LIST_PUBSUB_MESSAGES = gql`
   query ListPubSubMessages($topic: String, $limit: Int, $afterTimestamp: DateTime) {
@@ -11,7 +11,7 @@ export const LIST_PUBSUB_MESSAGES = gql`
       sourceService
     }
   }
-`
+`;
 
 export const PUBSUB_STATS = gql`
   query PubSubStats {
@@ -22,7 +22,7 @@ export const PUBSUB_STATS = gql`
       lastMessageAt
     }
   }
-`
+`;
 
 export const PUBSUB_MESSAGE_STREAM = gql`
   subscription PubSubMessageStream($topic: String) {
@@ -35,7 +35,7 @@ export const PUBSUB_MESSAGE_STREAM = gql`
       sourceService
     }
   }
-`
+`;
 
 export const DASHBOARD_STATS = gql`
   query DashboardStats {
@@ -50,7 +50,7 @@ export const DASHBOARD_STATS = gql`
       averageLatencyMs
     }
   }
-`
+`;
 
 export const DASHBOARD_STATS_STREAM = gql`
   subscription DashboardStatsStream {
@@ -65,4 +65,4 @@ export const DASHBOARD_STATS_STREAM = gql`
       averageLatencyMs
     }
   }
-`
+`;

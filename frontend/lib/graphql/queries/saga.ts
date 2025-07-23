@@ -1,4 +1,4 @@
-import { gql } from "@apollo/client"
+import { gql } from "@apollo/client";
 
 export const LIST_SAGAS = gql`
   query ListSagas($status: String, $sagaType: String, $limit: Int, $offset: Int) {
@@ -18,7 +18,7 @@ export const LIST_SAGAS = gql`
       correlationId
     }
   }
-`
+`;
 
 export const GET_SAGA = gql`
   query GetSaga($id: ID!) {
@@ -38,7 +38,7 @@ export const GET_SAGA = gql`
       correlationId
     }
   }
-`
+`;
 
 export const SAGA_UPDATES_SUBSCRIPTION = gql`
   subscription SagaUpdates($sagaType: String) {
@@ -58,7 +58,7 @@ export const SAGA_UPDATES_SUBSCRIPTION = gql`
       correlationId
     }
   }
-`
+`;
 
 export const SYSTEM_STATISTICS = gql`
   query SystemStatistics {
@@ -72,4 +72,4 @@ export const SYSTEM_STATISTICS = gql`
       }
     }
   }
-`
+`;

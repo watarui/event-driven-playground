@@ -1,4 +1,4 @@
-import { gql } from "@apollo/client"
+import { gql } from "@apollo/client";
 
 // Order Mutations
 export const CREATE_ORDER = gql`
@@ -22,7 +22,7 @@ export const CREATE_ORDER = gql`
       createdAt
     }
   }
-`
+`;
 
 export const UPDATE_ORDER_STATUS = gql`
   mutation UpdateOrderStatus($id: ID!, $status: String!) {
@@ -32,7 +32,7 @@ export const UPDATE_ORDER_STATUS = gql`
       updatedAt
     }
   }
-`
+`;
 
 export const CANCEL_ORDER = gql`
   mutation CancelOrder($id: ID!) {
@@ -42,7 +42,7 @@ export const CANCEL_ORDER = gql`
       updatedAt
     }
   }
-`
+`;
 
 // Product Mutations
 export const CREATE_PRODUCT = gql`
@@ -71,7 +71,7 @@ export const CREATE_PRODUCT = gql`
       categoryId
     }
   }
-`
+`;
 
 export const UPDATE_PRODUCT = gql`
   mutation UpdateProduct(
@@ -99,7 +99,7 @@ export const UPDATE_PRODUCT = gql`
       updatedAt
     }
   }
-`
+`;
 
 // Category Mutations
 export const CREATE_CATEGORY = gql`
@@ -110,7 +110,7 @@ export const CREATE_CATEGORY = gql`
       description
     }
   }
-`
+`;
 
 export const UPDATE_CATEGORY = gql`
   mutation UpdateCategory($id: ID!, $name: String, $description: String) {
@@ -121,4 +121,4 @@ export const UPDATE_CATEGORY = gql`
       updatedAt
     }
   }
-`
+`;

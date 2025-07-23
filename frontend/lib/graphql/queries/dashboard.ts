@@ -1,4 +1,4 @@
-import { gql } from "@apollo/client"
+import { gql } from "@apollo/client";
 
 export const DASHBOARD_OVERVIEW = gql`
   query DashboardOverview {
@@ -80,7 +80,7 @@ export const DASHBOARD_OVERVIEW = gql`
       }
     }
   }
-`
+`;
 
 export const EVENT_STREAM_SUBSCRIPTION = gql`
   subscription EventStream {
@@ -96,7 +96,7 @@ export const EVENT_STREAM_SUBSCRIPTION = gql`
       insertedAt
     }
   }
-`
+`;
 
 export const DASHBOARD_STATS_SUBSCRIPTION = gql`
   subscription DashboardStatsStream {
@@ -111,4 +111,4 @@ export const DASHBOARD_STATS_SUBSCRIPTION = gql`
       averageLatencyMs
     }
   }
-`
+`;
