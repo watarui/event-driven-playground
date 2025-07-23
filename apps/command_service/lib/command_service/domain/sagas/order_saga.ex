@@ -5,7 +5,7 @@ defmodule CommandService.Domain.Sagas.OrderSaga do
   タイムアウト処理、詳細な監視、改善されたエラーハンドリングを含む。
   """
 
-  @behaviour Shared.Infrastructure.Saga.SagaDefinition
+  use Shared.Infrastructure.Saga.SagaDefinition
 
   alias Shared.Domain.Events.OrderEvents.OrderCreated
 
@@ -422,4 +422,12 @@ defmodule CommandService.Domain.Sagas.OrderSaga do
   end
 
   def get_step_resources(_, _), do: []
+
+  @impl true
+  def can_handle_event?("OrderCreated"), do: true
+  def can_handle_event?(_), do: false
+
+  @impl true
+  def should_start_on_event?(%OrderCreated{}), do: true
+  def should_start_on_event?(_), do: false
 end

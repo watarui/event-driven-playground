@@ -14,8 +14,10 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
     # TODO: 実際の統計情報を実装
     stats = %{
       total_events: 0,
-      events_by_type: [],  # [{event_type, count}] の形式
-      events_by_aggregate: [],  # [{aggregate_type, count}] の形式
+      # [{event_type, count}] の形式
+      events_by_type: [],
+      # [{aggregate_type, count}] の形式
+      events_by_aggregate: [],
       latest_sequence: nil
     }
 
@@ -65,7 +67,8 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
         {:ok, stats} ->
           %{
             total_records: stats.total_events,
-            last_updated: nil  # TODO: 実際の最終更新日時を実装
+            # TODO: 実際の最終更新日時を実装
+            last_updated: nil
           }
 
         _ ->
@@ -161,13 +164,15 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
     # PubSub トピックの統計情報をリスト形式で返す
     stats = [
       %{
-        topic: "events",  # topic_name → topic に変更
+        # topic_name → topic に変更
+        topic: "events",
         message_count: 0,
         messages_per_minute: 0.0,
         last_message_at: nil
       },
       %{
-        topic: "commands",  # topic_name → topic に変更
+        # topic_name → topic に変更
+        topic: "commands",
         message_count: 0,
         messages_per_minute: 0.0,
         last_message_at: nil
@@ -208,20 +213,28 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
     nodes = [node() | Node.list()]
 
     # リストを直接返す（topology オブジェクトでラップしない）
-    topology_nodes = Enum.map(nodes, fn n ->
-      node_services = get_node_services(n)
-      
-      %{
-        service_name: Enum.join(node_services, ", ") || "Unknown",  # 必須フィールド
-        node_name: to_string(n),  # 必須フィールド
-        status: if(n == node(), do: "self", else: "connected"),
-        uptime_seconds: nil,  # TODO: 実装
-        memory_usage_mb: nil,  # TODO: 実装
-        cpu_usage_percent: nil,  # TODO: 実装
-        message_queue_size: nil,  # TODO: 実装
-        connections: []  # 空の配列で初期化
-      }
-    end)
+    topology_nodes =
+      Enum.map(nodes, fn n ->
+        node_services = get_node_services(n)
+
+        %{
+          # 必須フィールド
+          service_name: Enum.join(node_services, ", ") || "Unknown",
+          # 必須フィールド
+          node_name: to_string(n),
+          status: if(n == node(), do: "self", else: "connected"),
+          # TODO: 実装
+          uptime_seconds: nil,
+          # TODO: 実装
+          memory_usage_mb: nil,
+          # TODO: 実装
+          cpu_usage_percent: nil,
+          # TODO: 実装
+          message_queue_size: nil,
+          # 空の配列で初期化
+          connections: []
+        }
+      end)
 
     {:ok, topology_nodes}
   end

@@ -41,7 +41,8 @@ defmodule Shared.MixProject do
       {:finch, "~> 0.18"},
       {:google_api_pub_sub, "~> 0.36"},
       {:google_api_firestore, "~> 0.26"},
-      {:goth, "~> 1.4"}
+      {:goth, "~> 1.4"},
+      {:gen_state_machine, "~> 3.0"}
     ]
   end
 end

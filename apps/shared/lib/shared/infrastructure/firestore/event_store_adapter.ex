@@ -118,10 +118,11 @@ defmodule Shared.Infrastructure.Firestore.EventStoreAdapter do
   def health_check do
     # Firestore の接続確認のみ行う（インデックスエラーを回避）
     case Shared.Infrastructure.Firestore.Client.get_connection(:event_store) do
-      {:ok, _conn} -> 
+      {:ok, _conn} ->
         # 接続が成功すれば Event Store は利用可能
         :ok
-      {:error, reason} -> 
+
+      {:error, reason} ->
         {:error, "Event store is not available: #{inspect(reason)}"}
     end
   end

@@ -15,12 +15,17 @@ defmodule CommandService.Application do
       # コマンドバス
       CommandService.Infrastructure.CommandBus,
       # コマンドリスナー（PubSub経由でコマンドを受信）
-      CommandService.Infrastructure.CommandListener
+      CommandService.Infrastructure.CommandListener,
+      # Saga Executor
+      Shared.Infrastructure.Saga.SagaExecutor,
+      # Saga Event Handler
+      Shared.Infrastructure.Saga.SagaEventHandler
     ]
 
     # テスト環境以外でHTTPエンドポイントを起動
     # 本番環境では Mix モジュールが利用できないため、環境変数から取得
     env = System.get_env("MIX_ENV", "prod")
+
     children =
       if env != "test" do
         children ++ [CommandServiceWeb.Endpoint]
