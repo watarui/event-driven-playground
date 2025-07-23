@@ -147,7 +147,7 @@ defmodule ClientService.GraphQL.AuthIntegrationTest do
     test "allows admin access to all mutations", %{admin_token: token} do
       mutation = """
       mutation {
-        deleteCategory(id: "#{Ecto.UUID.generate()}") {
+        deleteCategory(id: "#{:crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)}") {
           success
           message
         }

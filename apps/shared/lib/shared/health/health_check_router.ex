@@ -129,7 +129,7 @@ defmodule Shared.Health.HealthCheckRouter do
         Task.async(fn ->
           try do
             # Firestore の接続確認
-            case Shared.Infrastructure.Firestore.FirestoreAdapter.health_check() do
+            case Shared.Infrastructure.Firestore.EventStoreAdapter.health_check() do
               :ok -> {"firestore", :ok, %{connected: true}}
               {:error, reason} -> {"firestore", :error, inspect(reason)}
             end
@@ -171,7 +171,7 @@ defmodule Shared.Health.HealthCheckRouter do
     fn ->
       try do
         # Firestore Event Store の接続確認
-        case Shared.Infrastructure.EventStore.EventStore.health_check() do
+        case Shared.Infrastructure.Firestore.EventStoreAdapter.health_check() do
           {:ok, event_count} ->
             {"event_store", :ok, %{event_count: event_count}}
 

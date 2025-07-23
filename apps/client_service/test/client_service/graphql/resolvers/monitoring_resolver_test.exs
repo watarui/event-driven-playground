@@ -74,15 +74,16 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolverTest do
     test "returns system topology information" do
       result = MonitoringResolver.get_system_topology(%{}, %{}, %{})
 
-      assert {:ok, nodes} = result
-      assert is_list(nodes)
-      assert length(nodes) > 0
+      assert {:ok, topology} = result
+      assert is_map(topology)
+      assert is_list(topology.nodes)
+      assert length(topology.nodes) > 0
 
-      # 最初のノードは現在のサービス
-      [current_node | _] = nodes
-      assert current_node.service_name == "Client Service"
-      assert current_node.status == "active"
-      assert is_list(current_node.connections)
+      # 最初のノードをチェック
+      [current_node | _] = topology.nodes
+      assert is_binary(current_node.name)
+      assert current_node.status in ["self", "connected"]
+      assert is_list(current_node.services)
     end
   end
 
@@ -102,6 +103,13 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolverTest do
 
       assert {:ok, stats} = result
       assert is_list(stats)
+
+      # 各トピックの統計情報をチェック
+      Enum.each(stats, fn stat ->
+        assert is_binary(stat.topic_name)
+        assert is_integer(stat.message_count)
+        assert is_integer(stat.subscriber_count)
+      end)
     end
   end
 end

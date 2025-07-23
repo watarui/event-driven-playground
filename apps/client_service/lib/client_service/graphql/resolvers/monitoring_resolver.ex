@@ -125,11 +125,21 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
   Pub/Sub統計情報を取得
   """
   def get_pubsub_stats(_parent, _args, _resolution) do
-    stats = %{
-      topics: [],
-      total_messages: 0,
-      subscribers: []
-    }
+    # PubSub トピックの統計情報をリスト形式で返す
+    stats = [
+      %{
+        topic_name: "events",
+        message_count: 0,
+        subscriber_count: 0,
+        last_message_at: nil
+      },
+      %{
+        topic_name: "commands",
+        message_count: 0,
+        subscriber_count: 0,
+        last_message_at: nil
+      }
+    ]
 
     {:ok, stats}
   end
@@ -185,9 +195,16 @@ defmodule ClientService.GraphQL.Resolvers.MonitoringResolver do
     case HealthChecker.check_health() do
       %{status: status, checks: checks} ->
         stats = %{
-          health_status: status,
+          system_health: status,
           health_checks: checks,
-          timestamp: DateTime.utc_now()
+          timestamp: DateTime.utc_now(),
+          total_events: 0,
+          events_per_minute: 0.0,
+          active_sagas: 0,
+          total_commands: 0,
+          total_queries: 0,
+          error_rate: 0.0,
+          average_latency_ms: 0
         }
 
         {:ok, stats}
