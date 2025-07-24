@@ -14,8 +14,8 @@ defmodule Shared.Application do
     children = [
       # HTTPクライアント
       {Finch, name: Shared.Finch},
-      # PubSub (Cloud Run では必須)
-      {Phoenix.PubSub, name: :event_bus_pubsub}
+      # EventBus (環境に応じて PG2 または Google Cloud PubSub を使用)
+      Shared.Infrastructure.EventBus.child_spec([])
     ]
 
     # Goth (Google認証) - Firestore または Google Cloud PubSub 使用時
