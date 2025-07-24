@@ -129,6 +129,57 @@ end
 2. EventBus が正しく起動していない
 3. サービス間の PubSub 通信が機能していない
 
+## 実施した追加対策（2025-07-24）
+
+### 5. GraphQL コンテキストの問題修正 ✅
+**問題**: Router が GraphQL エンドポイントで `context: %{pubsub: ClientService.PubSub}` を設定し、認証情報を上書きしていた
+
+**解決策**: AbsintheContextPlug を作成
+```elixir
+defmodule ClientServiceWeb.Plugs.AbsintheContextPlug do
+  @behaviour Plug
+  
+  def call(conn, opts) do
+    pubsub = Keyword.get(opts, :pubsub, ClientService.PubSub)
+    
+    context = %{
+      pubsub: pubsub,
+      current_user: conn.assigns[:current_user],
+      is_authenticated: conn.assigns[:user_signed_in?] || false,
+      is_admin: admin?(conn.assigns[:current_user])
+    }
+    
+    Absinthe.Plug.put_options(conn, context: context)
+  end
+end
+```
+
+### 6. 本番環境での Mix.env() 使用問題 ✅
+**問題**: 本番ビルドで Mix モジュールが利用できず Signal 10 エラーが発生
+
+**修正箇所**:
+- `apps/shared/lib/shared/application.ex`: `Mix.env()` → `System.get_env("MIX_ENV")`
+- `apps/shared/lib/shared/infrastructure/pubsub/google_cloud_adapter.ex`: 同様の修正
+
+### 7. GOOGLE_CLOUD_PROJECT 環境変数の設定 ✅
+**問題**: GoogleCloudAdapter が初期化時に project_id を取得できず失敗
+
+**解決策**: Terraform で環境変数を追加
+```hcl
+env {
+  name  = "GOOGLE_CLOUD_PROJECT"
+  value = var.project_id
+}
+```
+
+### 8. EventBus と Goth の起動順序問題 ❌
+**試行錯誤**:
+1. EventBus.child_spec を使用 → `unknown registry: :event_bus_pubsub` エラー
+2. Goth を EventBus より前に起動 → 同じエラー
+3. 一時的に PG2 を使用 → Cloud Run の複数インスタンス間で通信不可（過去に失敗済み）
+
+**根本原因**: GoogleCloudAdapter が Phoenix.PubSub.Adapter として完全に実装されていない
+
 ## 今後の対応事項
 
 ### 1. 短期的な対応
@@ -138,8 +189,9 @@ end
    - Firebase プロジェクト ID の設定を修正 → runtime.exs で GOOGLE_CLOUD_PROJECT をフォールバックとして使用
 
 2. **GoogleCloudAdapter の問題を回避**
-   - 一時的に HTTP 通信に切り替える → 実装中
+   - 一時的に HTTP 通信に切り替える → 未実装
    - または、すべてのサービスを単一のサービスに統合する → マイクロサービスアーキテクチャを維持するため却下
+   - Phoenix.PubSub と Google Cloud Pub/Sub を併用する新しいアーキテクチャ → 検討中
 
 ### 2. 中長期的な対応
 1. **Goth ライブラリの設定確認**
@@ -183,6 +235,7 @@ end
 1. **Cloud Run での PubSub 使用は複雑**
    - サービスアカウント認証の設定が必要
    - Signal エラーはライブラリの初期化問題を示唆
+   - PG2 アダプターは Cloud Run の複数インスタンス間で通信できない
 
 2. **ログフォーマットの重要性**
    - JSON フォーマットは構造化ログには良いが、デバッグ時は問題になることがある
@@ -191,6 +244,22 @@ end
 3. **段階的な問題解決**
    - 認証の問題を解決しても、通信の問題が残る
    - 複数の問題が絡み合っている場合は、一つずつ切り分けることが重要
+
+4. **Phoenix.PubSub.Adapter の実装の複雑さ**
+   - 単純な GenServer では Phoenix.PubSub の要件を満たせない
+   - Registry 機能や分散ノード対応など、多くの機能が必要
+
+## 推奨される解決策
+
+### 1. Phoenix.PubSub と Google Cloud Pub/Sub の併用
+- ローカルのプロセス間通信には Phoenix.PubSub を使用
+- サービス間通信には Google Cloud Pub/Sub を直接使用
+- EventBus を2つの通信方式のファサードとして実装
+
+### 2. HTTP ベースの通信への移行
+- Cloud Run サービス間の通信を HTTP/REST に変更
+- 認証には IAM トークンを使用
+- 非同期処理は Cloud Tasks を活用
 
 ## 参考リンク
 
