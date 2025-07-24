@@ -14,7 +14,7 @@ defmodule ClientService.Infrastructure.RemoteCommandBus do
   require Logger
 
   @command_topic :"command-requests"
-  @response_timeout 5_000
+  @response_timeout 10_000
 
   # クライアント API
 

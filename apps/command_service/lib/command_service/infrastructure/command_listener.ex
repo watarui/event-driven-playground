@@ -70,12 +70,18 @@ defmodule CommandService.Infrastructure.CommandListener do
         {:ok, cmd} -> 
           # CommandBus のタイムアウトに合わせて、30秒のタイムアウトで呼び出す
           try do
-            CommandBus.dispatch(cmd)
+            Logger.info("Dispatching command to CommandBus: request_id=#{request_id}")
+            dispatch_result = CommandBus.dispatch(cmd)
+            Logger.info("CommandBus returned: request_id=#{request_id}, result=#{inspect(dispatch_result)}")
+            dispatch_result
           catch
             :exit, {:timeout, _} ->
+              Logger.error("Command execution timeout: request_id=#{request_id}")
               {:error, "Command execution timeout"}
           end
-        error -> error
+        error -> 
+          Logger.error("Command validation failed: request_id=#{request_id}, error=#{inspect(error)}")
+          error
       end
 
     # レスポンスを作成
@@ -86,7 +92,10 @@ defmodule CommandService.Infrastructure.CommandListener do
     }
 
     # レスポンスを返信（raw メソッドを使用）
-    event_bus.publish_raw(reply_to, response)
+    Logger.info("Sending response: request_id=#{request_id}, reply_to=#{reply_to}")
+    result = event_bus.publish_raw(reply_to, response)
+    Logger.info("Response sent: request_id=#{request_id}, result=#{inspect(result)}")
+    result
   rescue
     error ->
       Logger.error("Error processing command: #{inspect(error)}")
@@ -98,6 +107,7 @@ defmodule CommandService.Infrastructure.CommandListener do
         timestamp: DateTime.utc_now()
       }
 
+      Logger.info("Sending error response: request_id=#{request_id}, reply_to=#{reply_to}")
       event_bus.publish_raw(reply_to, response)
   end
 
