@@ -345,8 +345,17 @@ defmodule Shared.Infrastructure.PubSub.CloudPubSubClient do
   defp format_subscription_name(topic, project_id) do
     environment = System.get_env("MIX_ENV", "dev")
     service_name = System.get_env("SERVICE_NAME", "unknown")
-    # トピック名の @ を - に置換
-    sanitized_topic = topic |> to_string() |> String.replace("@", "-at-")
-    "projects/#{project_id}/subscriptions/#{sanitized_topic}-#{service_name}-#{environment}"
+    
+    # Terraform で定義されたサブスクリプション名の形式に合わせる
+    subscription_name = case {to_string(topic), service_name} do
+      {"command-requests", "command_service"} -> "command-service-requests-sub-#{environment}"
+      {"query-requests", "query_service"} -> "query-service-requests-sub-#{environment}"
+      _ ->
+        # その他のトピックの場合は従来の形式
+        sanitized_topic = topic |> to_string() |> String.replace("@", "-at-")
+        "#{sanitized_topic}-#{service_name}-#{environment}"
+    end
+    
+    "projects/#{project_id}/subscriptions/#{subscription_name}"
   end
 end
