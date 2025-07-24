@@ -1,30 +1,15 @@
 defmodule Shared.Infrastructure.EventBus do
   @moduledoc """
   統一されたイベントバス実装
-  環境に応じて PG2 または Google Cloud Pub/Sub を自動的に選択
+  ローカル通信には Phoenix.PubSub を使用
+  サービス間通信には Google Cloud Pub/Sub を使用
   """
 
   alias Shared.Telemetry.Tracing.MessagePropagator
+  alias Shared.Infrastructure.PubSub.CloudPubSubClient
   require Logger
 
   @pubsub_name :event_bus_pubsub
-
-  @doc """
-  イベントバスを開始する
-  """
-  def child_spec(opts \\ []) do
-    adapter = get_adapter()
-    Logger.info("EventBus.child_spec called with adapter: #{inspect(adapter)}")
-
-    # GoogleCloudAdapter の場合は独自の child_spec を使用
-    if adapter == Shared.Infrastructure.PubSub.GoogleCloudAdapter do
-      Logger.info("EventBus: Using GoogleCloudAdapter child_spec")
-      adapter.child_spec([{:name, @pubsub_name}] ++ opts)
-    else
-      Logger.info("EventBus: Using Phoenix.PubSub with adapter: #{inspect(adapter)}")
-      Phoenix.PubSub.child_spec([{:name, @pubsub_name}, {:adapter, adapter}] ++ opts)
-    end
-  end
 
   @doc """
   イベントを発行する
@@ -35,14 +20,15 @@ defmodule Shared.Infrastructure.EventBus do
       "EventBus publishing to topic: events:#{event_type}, event: #{inspect(event, limit: :infinity)}"
     )
 
-    # 環境に応じてlocal_broadcastかbroadcastを使い分ける
-    if use_local_broadcast?() do
-      Phoenix.PubSub.local_broadcast(@pubsub_name, "events:#{event_type}", {:event, event})
-      Phoenix.PubSub.local_broadcast(@pubsub_name, "events:all", {:event, event_type, event})
-    end
-
+    # ローカルの Phoenix.PubSub でブロードキャスト
     Phoenix.PubSub.broadcast(@pubsub_name, "events:#{event_type}", {:event, event})
     Phoenix.PubSub.broadcast(@pubsub_name, "events:all", {:event, event_type, event})
+    
+    # 本番環境では Google Cloud Pub/Sub にも発行
+    if use_cloud_pubsub?() do
+      CloudPubSubClient.publish("events-#{event_type}", event)
+    end
+    
     :ok
   end
 
@@ -88,7 +74,14 @@ defmodule Shared.Infrastructure.EventBus do
       "EventBus publishing raw to topic: #{topic}, message: #{inspect(message, limit: :infinity)}"
     )
 
+    # ローカルの Phoenix.PubSub でブロードキャスト
     Phoenix.PubSub.broadcast(@pubsub_name, to_string(topic), {:event, message})
+    
+    # 本番環境では Google Cloud Pub/Sub にも発行
+    if use_cloud_pubsub?() do
+      CloudPubSubClient.publish(to_string(topic), message)
+    end
+    
     :ok
   end
 
@@ -138,15 +131,9 @@ defmodule Shared.Infrastructure.EventBus do
 
   # Private functions
 
-  defp get_adapter do
-    # 一時的に全環境で PG2 を使用
-    # GoogleCloudAdapter の実装が完全でないため
-    Logger.info("EventBus: Using Phoenix.PubSub.PG2 (temporary fix)")
-    Phoenix.PubSub.PG2
-  end
-
-  defp use_local_broadcast? do
-    # PG2アダプターを使用している場合のみlocal_broadcastを使用
-    get_adapter() == Phoenix.PubSub.PG2
+  defp use_cloud_pubsub? do
+    System.get_env("MIX_ENV") == "prod" && 
+    System.get_env("GOOGLE_CLOUD_PROJECT") != nil &&
+    System.get_env("FORCE_LOCAL_PUBSUB") != "true"
   end
 end

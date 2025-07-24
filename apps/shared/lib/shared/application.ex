@@ -14,7 +14,7 @@ defmodule Shared.Application do
     children = [
       # HTTPクライアント
       {Finch, name: Shared.Finch},
-      # PubSub (一時的に PG2 を使用)
+      # Phoenix.PubSub (ローカル通信用)
       {Phoenix.PubSub, name: :event_bus_pubsub}
     ]
 
@@ -22,6 +22,14 @@ defmodule Shared.Application do
     children =
       if should_start_goth?() do
         children ++ [{Goth, name: Shared.Goth}]
+      else
+        children
+      end
+
+    # Google Cloud Pub/Sub クライアント（本番環境のみ）
+    children =
+      if should_start_cloud_pubsub?() do
+        children ++ [Shared.Infrastructure.PubSub.CloudPubSubClient]
       else
         children
       end
@@ -67,5 +75,12 @@ defmodule Shared.Application do
     test_env = System.get_env("MIX_ENV") == "test"
     
     !test_env && (firestore_needs_goth || pubsub_needs_goth)
+  end
+
+  # Cloud Pub/Sub クライアントを起動すべきか判定
+  defp should_start_cloud_pubsub? do
+    System.get_env("MIX_ENV") == "prod" && 
+    System.get_env("GOOGLE_CLOUD_PROJECT") != nil &&
+    System.get_env("FORCE_LOCAL_PUBSUB") != "true"
   end
 end

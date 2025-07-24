@@ -24,6 +24,11 @@ defmodule CommandService.Infrastructure.CommandListener do
     event_bus_module = Config.event_bus_module()
     event_bus_module.subscribe_raw(@command_topic)
 
+    # 本番環境では Cloud Pub/Sub も購読
+    if should_use_cloud_pubsub?() do
+      Shared.Infrastructure.PubSub.CloudPubSubClient.subscribe(@command_topic, __MODULE__)
+    end
+
     Logger.info(
       "CommandListener started and subscribed to commands using #{inspect(event_bus_module)}"
     )
@@ -307,5 +312,21 @@ defmodule CommandService.Infrastructure.CommandListener do
       type ->
         {:error, "Unknown command type: #{type}"}
     end
+  end
+
+  @doc """
+  Cloud Pub/Sub からのメッセージを処理
+  """
+  def handle_cloud_pubsub_message(topic, message) do
+    Logger.info("CommandListener received Cloud Pub/Sub message on #{topic}: #{inspect(message)}")
+    
+    # GenServer にメッセージを転送
+    send(__MODULE__, {:event, message})
+  end
+
+  defp should_use_cloud_pubsub? do
+    System.get_env("MIX_ENV") == "prod" && 
+    System.get_env("GOOGLE_CLOUD_PROJECT") != nil &&
+    System.get_env("FORCE_LOCAL_PUBSUB") != "true"
   end
 end

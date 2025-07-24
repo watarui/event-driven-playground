@@ -75,6 +75,11 @@ defmodule QueryService.Infrastructure.ProjectionManager do
     # EventBus に購読
     new_state = subscribe_to_events(state)
 
+    # 本番環境では Cloud Pub/Sub も購読
+    if should_use_cloud_pubsub?() do
+      subscribe_to_cloud_pubsub()
+    end
+
     Logger.info(
       "ProjectionManager subscribed to #{map_size(new_state.subscriptions)} event types using #{inspect(event_bus)}"
     )
@@ -404,6 +409,58 @@ defmodule QueryService.Infrastructure.ProjectionManager do
   defp update_projection_status(projections, projection_module, :error, reason) do
     Map.update!(projections, projection_module, fn status ->
       %{status | status: :error, last_error: inspect(reason)}
+    end)
+  end
+
+  @doc """
+  Cloud Pub/Sub からのメッセージを処理
+  """
+  def handle_cloud_pubsub_message(topic, event) do
+    Logger.info("ProjectionManager received Cloud Pub/Sub message on #{topic}")
+    
+    # イベントタイプを抽出
+    event_type_str = String.replace_prefix(topic, "events-", "")
+    event_type = String.to_atom(event_type_str)
+    
+    # GenServer にメッセージを転送
+    send(__MODULE__, {:event, event_type, event})
+  end
+
+  defp should_use_cloud_pubsub? do
+    System.get_env("MIX_ENV") == "prod" && 
+    System.get_env("GOOGLE_CLOUD_PROJECT") != nil &&
+    System.get_env("FORCE_LOCAL_PUBSUB") != "true"
+  end
+
+  defp subscribe_to_cloud_pubsub do
+    event_types = [
+      :"category.created",
+      :"category.updated",
+      :"category.deleted",
+      :"product.created",
+      :"product.updated",
+      :"product.price_changed",
+      :"product.deleted",
+      :"order.created",
+      :"order.payment_completed",
+      :"order.shipped",
+      :"order.delivered",
+      :"order.cancelled",
+      :"inventory.reserved",
+      :"inventory.reservation_failed",
+      :"payment.processed",
+      :"payment.failed",
+      :"shipping.arranged",
+      :"shipping.arrangement_failed",
+      :"order.confirmed"
+    ]
+
+    # Cloud Pub/Sub に購読
+    Enum.each(event_types, fn event_type ->
+      Shared.Infrastructure.PubSub.CloudPubSubClient.subscribe(
+        "events-#{event_type}", 
+        __MODULE__
+      )
     end)
   end
 end
