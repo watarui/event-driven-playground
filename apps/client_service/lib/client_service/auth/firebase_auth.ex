@@ -36,13 +36,17 @@ defmodule ClientService.Auth.FirebaseAuth do
     email = claims["email"]
     # JWT トークンから role を取得、なければ email から決定
     jwt_role = claims["role"]
-    determined_role = if jwt_role && jwt_role != "" do
-      String.to_atom(jwt_role)
-    else
-      Shared.Auth.Permissions.determine_role(email)
-    end
 
-    Logger.info("Building user info - email: #{email}, jwt_role: #{inspect(jwt_role)}, determined_role: #{inspect(determined_role)}")
+    determined_role =
+      if jwt_role && jwt_role != "" do
+        String.to_atom(jwt_role)
+      else
+        Shared.Auth.Permissions.determine_role(email)
+      end
+
+    Logger.info(
+      "Building user info - email: #{email}, jwt_role: #{inspect(jwt_role)}, determined_role: #{inspect(determined_role)}"
+    )
 
     %{
       user_id: claims["sub"],

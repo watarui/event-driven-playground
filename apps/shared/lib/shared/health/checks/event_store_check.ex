@@ -17,7 +17,7 @@ defmodule Shared.Health.Checks.EventStoreCheck do
         {:ok, %{status: :connected, operations: [:read, :write, :delete]}}
 
       {:error, reason} ->
-        {:error, "EventStore check failed: #{inspect(reason)}", 
+        {:error, "EventStore check failed: #{inspect(reason)}",
          %{
            error: inspect(reason),
            message: format_error_message(reason),

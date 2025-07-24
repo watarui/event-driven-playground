@@ -438,16 +438,20 @@ defmodule Shared.Infrastructure.Firestore.EventStore do
   """
   def save_events(aggregate_id, events, expected_version, _metadata \\ %{}) do
     # aggregate_type を取得（最初のイベントから推測）
-    aggregate_type = 
+    aggregate_type =
       case events do
-        [%{aggregate_type: type} | _] -> type
-        [%{__struct__: module} | _] -> 
-          module 
+        [%{aggregate_type: type} | _] ->
+          type
+
+        [%{__struct__: module} | _] ->
+          module
           |> Module.split()
           |> Enum.take(-2)
           |> List.first()
           |> to_string()
-        _ -> "Unknown"
+
+        _ ->
+          "Unknown"
       end
 
     save_events(aggregate_id, aggregate_type, events, expected_version)

@@ -84,7 +84,7 @@ defmodule Shared.Infrastructure.Saga.SagaExecutor do
     }
 
     # 未完了の Saga を復元（エラーが発生してもサービスは起動する）
-    restored_state = 
+    restored_state =
       try do
         restore_sagas(state)
       rescue
@@ -94,9 +94,11 @@ defmodule Shared.Infrastructure.Saga.SagaExecutor do
           Logger.info("SagaExecutor starting without restored sagas")
           state
       end
-    
-    Logger.info("SagaExecutor initialized with #{map_size(restored_state.saga_instances)} active sagas")
-    
+
+    Logger.info(
+      "SagaExecutor initialized with #{map_size(restored_state.saga_instances)} active sagas"
+    )
+
     {:ok, restored_state}
   end
 
@@ -357,14 +359,14 @@ defmodule Shared.Infrastructure.Saga.SagaExecutor do
     case SagaRepository.get_active_sagas() do
       {:ok, sagas} ->
         Logger.info("Restoring #{length(sagas)} active sagas")
-        
+
         Enum.reduce(sagas, state, fn saga_data, acc_state ->
           case restore_saga_instance(saga_data, acc_state) do
-            {:ok, new_state} -> 
+            {:ok, new_state} ->
               Logger.debug("Successfully restored saga: #{saga_data.saga_id}")
               new_state
-              
-            {:error, reason} -> 
+
+            {:error, reason} ->
               Logger.error("Failed to restore saga #{saga_data.saga_id}: #{inspect(reason)}")
               acc_state
           end

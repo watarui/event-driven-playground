@@ -18,12 +18,13 @@ defmodule ClientServiceWeb.Router do
   pipeline :graphiql do
     plug(:accepts, ["html", "json"])
     plug(ClientServiceWeb.Plugs.GraphiQLAuthPlug)
+    plug(ClientServiceWeb.Plugs.AbsintheContextPlug, pubsub: ClientService.PubSub)
   end
 
   pipeline :authenticated_api do
     plug(:accepts, ["json"])
     plug(ClientService.Auth.AdaptivePlug)
-    plug(ClientService.Auth.ContextPlug)
+    plug(ClientServiceWeb.Plugs.AbsintheContextPlug, pubsub: ClientService.PubSub)
     plug(ClientServiceWeb.Plugs.DataloaderPlug)
   end
 
@@ -38,10 +39,7 @@ defmodule ClientServiceWeb.Router do
   scope "/" do
     pipe_through(:authenticated_api)
 
-    forward("/graphql", Absinthe.Plug,
-      schema: ClientService.GraphQL.Schema,
-      context: %{pubsub: ClientService.PubSub}
-    )
+    forward("/graphql", Absinthe.Plug, schema: ClientService.GraphQL.Schema)
   end
 
   # GraphiQL エンドポイント（HTML と JSON を受け付ける）
@@ -52,15 +50,11 @@ defmodule ClientServiceWeb.Router do
     get("/graphiql", Absinthe.Plug.GraphiQL,
       schema: ClientService.GraphQL.Schema,
       interface: :simple,
-      socket: ClientServiceWeb.AbsintheSocket,
-      context: %{pubsub: ClientService.PubSub}
+      socket: ClientServiceWeb.AbsintheSocket
     )
 
     # POST リクエストは GraphQL クエリを処理
-    post("/graphiql", Absinthe.Plug,
-      schema: ClientService.GraphQL.Schema,
-      context: %{pubsub: ClientService.PubSub}
-    )
+    post("/graphiql", Absinthe.Plug, schema: ClientService.GraphQL.Schema)
   end
 
   # Prometheus メトリクスエンドポイント（一時的に無効化）

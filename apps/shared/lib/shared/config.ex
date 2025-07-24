@@ -143,7 +143,7 @@ defmodule Shared.Config do
 
     # Cloud Run ではIPv4を使用
     ip_tuple = if System.get_env("K_SERVICE"), do: {0, 0, 0, 0}, else: {0, 0, 0, 0}
-    
+
     base_config = [
       server: true,
       http: [

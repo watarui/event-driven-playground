@@ -48,20 +48,21 @@ defmodule Shared.Infrastructure.PubSub.GoogleCloudAdapter do
   @impl GenServer
   def init(opts) do
     Logger.info("GoogleCloudAdapter: Initializing with opts: #{inspect(opts)}")
-    
+
     project_id = get_project_id(opts)
     Logger.info("GoogleCloudAdapter: Using project_id: #{project_id}")
 
     # Google Cloud 認証情報を設定
-    connection = try do
-      conn = Connection.new()
-      Logger.info("GoogleCloudAdapter: Connection created successfully")
-      conn
-    rescue
-      e ->
-        Logger.error("GoogleCloudAdapter: Failed to create connection: #{inspect(e)}")
-        raise e
-    end
+    connection =
+      try do
+        conn = Connection.new()
+        Logger.info("GoogleCloudAdapter: Connection created successfully")
+        conn
+      rescue
+        e ->
+          Logger.error("GoogleCloudAdapter: Failed to create connection: #{inspect(e)}")
+          raise e
+      end
 
     state = %State{
       project_id: project_id,

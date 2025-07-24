@@ -16,7 +16,6 @@ defmodule ClientServiceWeb.Plugs.GraphiQLAuthPlug do
         # POST リクエストの場合は、Firebase 認証を適用
         conn
         |> ClientService.Auth.FirebasePlug.call([])
-        |> ClientService.Auth.ContextPlug.call([])
         |> ClientServiceWeb.Plugs.DataloaderPlug.call([])
 
       _ ->
