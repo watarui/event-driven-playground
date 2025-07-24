@@ -64,7 +64,7 @@ defmodule Shared.Application do
     pubsub_needs_goth = System.get_env("MIX_ENV") == "prod" && System.get_env("GOOGLE_CLOUD_PROJECT") != nil
     
     # テスト環境では Goth を無効化
-    test_env = Mix.env() == :test || System.get_env("MIX_ENV") == "test"
+    test_env = System.get_env("MIX_ENV") == "test"
     
     !test_env && (firestore_needs_goth || pubsub_needs_goth)
   end

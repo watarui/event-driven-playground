@@ -67,7 +67,7 @@ defmodule Shared.Infrastructure.PubSub.GoogleCloudAdapter do
           {:error, reason} ->
             Logger.error("GoogleCloudAdapter: Failed to fetch auth token: #{inspect(reason)}")
             # フォールバック：認証なしで接続（開発環境用）
-            if Mix.env() == :dev do
+            if System.get_env("MIX_ENV") == "dev" do
               Logger.warning("GoogleCloudAdapter: Creating connection without auth (dev mode)")
               Connection.new()
             else
