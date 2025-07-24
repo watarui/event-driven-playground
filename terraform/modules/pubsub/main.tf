@@ -100,3 +100,45 @@ resource "google_pubsub_subscription" "query_subscriptions" {
     max_delivery_attempts = 5
   }
 }
+
+# Command responses subscriptions for each service
+resource "google_pubsub_subscription" "command_response_subscriptions" {
+  for_each = toset(["client-service", "command-service", "query-service"])
+  
+  project = var.project_id
+  name  = "${each.value}-command-responses-sub-${var.environment}"
+  topic = google_pubsub_topic.command_topics["command-responses"].id
+  
+  ack_deadline_seconds = 30
+  
+  retry_policy {
+    minimum_backoff = "10s"
+    maximum_backoff = "300s"
+  }
+  
+  dead_letter_policy {
+    dead_letter_topic     = google_pubsub_topic.dead_letter.id
+    max_delivery_attempts = 5
+  }
+}
+
+# Query responses subscriptions for each service
+resource "google_pubsub_subscription" "query_response_subscriptions" {
+  for_each = toset(["client-service", "command-service", "query-service"])
+  
+  project = var.project_id
+  name  = "${each.value}-query-responses-sub-${var.environment}"
+  topic = google_pubsub_topic.query_topics["query-responses"].id
+  
+  ack_deadline_seconds = 30
+  
+  retry_policy {
+    minimum_backoff = "10s"
+    maximum_backoff = "300s"
+  }
+  
+  dead_letter_policy {
+    dead_letter_topic     = google_pubsub_topic.dead_letter.id
+    max_delivery_attempts = 5
+  }
+}

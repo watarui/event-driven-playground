@@ -20,7 +20,10 @@ resource "google_identity_platform_config" "default" {
   
   authorized_domains = [
     "${var.project_id}.firebaseapp.com",
-    "${var.project_id}.web.app"
+    "${var.project_id}.web.app",
+    "event-driven-playground.vercel.app",
+    "client-service-yfmozh2e7a-an.a.run.app",
+    "localhost"
   ]
   
   depends_on = [google_firebase_project.default]
