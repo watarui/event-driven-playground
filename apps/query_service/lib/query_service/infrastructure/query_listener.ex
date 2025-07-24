@@ -12,7 +12,7 @@ defmodule QueryService.Infrastructure.QueryListener do
 
   require Logger
 
-  @query_topic :queries
+  @query_topic :"query-requests"
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)

@@ -12,7 +12,7 @@ defmodule CommandService.Infrastructure.CommandListener do
 
   require Logger
 
-  @command_topic :commands
+  @command_topic :"command-requests"
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -26,7 +26,7 @@ defmodule CommandService.Infrastructure.CommandListener do
 
     # 本番環境では Cloud Pub/Sub も購読
     if should_use_cloud_pubsub?() do
-      Shared.Infrastructure.PubSub.CloudPubSubClient.subscribe(@command_topic, __MODULE__)
+      Shared.Infrastructure.PubSub.CloudPubSubClient.subscribe("command-requests", __MODULE__)
     end
 
     Logger.info(

@@ -12,7 +12,7 @@ defmodule ClientService.Infrastructure.RemoteQueryBus do
 
   require Logger
 
-  @query_topic :queries
+  @query_topic :"query-requests"
   @response_timeout 5_000
 
   # クライアント API
@@ -34,7 +34,9 @@ defmodule ClientService.Infrastructure.RemoteQueryBus do
   def init(_opts) do
     # レスポンス用のトピックを購読
     # raw メソッドを使用してプレフィックスなしで購読
-    response_topic = :"query_responses_#{node()}"
+    # Cloud Run では固定のサービス名を使用
+    service_name = System.get_env("SERVICE_NAME", "client_service")
+    response_topic = :"query-responses"
     event_bus = Config.event_bus_module()
     event_bus.subscribe_raw(response_topic)
 
