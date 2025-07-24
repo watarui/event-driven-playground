@@ -101,6 +101,7 @@ defmodule ClientService.Auth.FirebaseAuth do
 
   defp validate_issuer(%{"iss" => issuer}, project_id) do
     expected = "https://securetoken.google.com/#{project_id}"
+    Logger.debug("Validating issuer - Expected: #{expected}, Actual: #{issuer}")
     if issuer == expected, do: :ok, else: {:error, :invalid_issuer}
   end
 

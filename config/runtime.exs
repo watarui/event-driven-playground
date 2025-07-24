@@ -23,8 +23,13 @@ if config_env() == :prod do
     Shared.Config.endpoint_config(port: String.to_integer(System.get_env("PORT") || "8080"))
 
   # Firebase 設定
-  if System.get_env("FIREBASE_PROJECT_ID") do
-    config :client_service, :firebase_project_id, System.get_env("FIREBASE_PROJECT_ID")
+  firebase_project_id = System.get_env("FIREBASE_PROJECT_ID") || 
+                       System.get_env("GOOGLE_CLOUD_PROJECT") || 
+                       "event-driven-playground-prod"
+  
+  config :client_service, :firebase_project_id, firebase_project_id
+  
+  if System.get_env("FIREBASE_API_KEY") do
     config :client_service, :firebase_api_key, System.get_env("FIREBASE_API_KEY")
   end
 
