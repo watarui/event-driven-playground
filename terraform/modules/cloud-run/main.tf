@@ -50,6 +50,12 @@ resource "google_cloud_run_v2_service" "services" {
         value = each.key
       }
       
+      # Google Cloud Project ID for PubSub and other services
+      env {
+        name  = "GOOGLE_CLOUD_PROJECT"
+        value = var.project_id
+      }
+      
       # PORT は Cloud Run が自動的に設定するため、手動で設定しない
       # env {
       #   name  = "PORT"
