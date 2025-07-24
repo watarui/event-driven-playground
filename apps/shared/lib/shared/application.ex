@@ -13,18 +13,21 @@ defmodule Shared.Application do
     # 基本的な子プロセス
     children = [
       # HTTPクライアント
-      {Finch, name: Shared.Finch},
-      # EventBus (環境に応じて PG2 または Google Cloud PubSub を使用)
-      Shared.Infrastructure.EventBus.child_spec([])
+      {Finch, name: Shared.Finch}
     ]
 
     # Goth (Google認証) - Firestore または Google Cloud PubSub 使用時
+    # EventBus より前に起動する必要がある
     children =
       if should_start_goth?() do
         children ++ [{Goth, name: Shared.Goth}]
       else
         children
       end
+
+    # EventBus (環境に応じて PG2 または Google Cloud PubSub を使用)
+    # Goth の後に起動する必要がある
+    children = children ++ [Shared.Infrastructure.EventBus.child_spec([])]
 
     # Firestore 使用時は Ecto 関連のプロセスを起動しない
 
