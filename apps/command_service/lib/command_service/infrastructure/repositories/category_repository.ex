@@ -4,6 +4,7 @@ defmodule CommandService.Infrastructure.Repositories.CategoryRepository do
   """
 
   alias CommandService.Domain.Models.Category
+  alias CommandService.Domain.Aggregates.CategoryAggregate
   alias Shared.Infrastructure.Firestore.Repository
 
   @collection "categories"
@@ -25,22 +26,44 @@ defmodule CommandService.Infrastructure.Repositories.CategoryRepository do
       error -> error
     end
   end
+  
+  # CategoryAggregate も受け付ける
+  def save(%CategoryAggregate{} = aggregate) do
+    data = %{
+      id: aggregate.id.value,
+      name: aggregate.name.value,
+      description: aggregate.description,
+      created_at: aggregate.created_at,
+      updated_at: DateTime.utc_now()
+    }
+
+    case Repository.save(@collection, aggregate.id.value, data) do
+      {:ok, _} -> {:ok, aggregate}
+      error -> error
+    end
+  end
 
   @doc """
-  ID でカテゴリーを取得する
+  ID でカテゴリーを取得する（CategoryAggregate を返す）
   """
   def get(id) do
     case Repository.get(@collection, id) do
       {:ok, data} ->
-        category = %Category{
-          id: data["id"] || data[:id],
-          name: data["name"] || data[:name],
+        # データから CategoryAggregate を再構築
+        aggregate = %CategoryAggregate{
+          id: %Shared.Domain.ValueObjects.EntityId{value: data["id"] || data[:id]},
+          name: %Shared.Domain.ValueObjects.CategoryName{value: data["name"] || data[:name]},
           description: data["description"] || data[:description],
+          parent_id: nil,
+          active: true,
+          version: 0,
+          deleted: false,
           created_at: parse_datetime(data["created_at"] || data[:created_at]),
-          updated_at: parse_datetime(data["updated_at"] || data[:updated_at])
+          updated_at: parse_datetime(data["updated_at"] || data[:updated_at]),
+          uncommitted_events: []
         }
 
-        {:ok, category}
+        {:ok, aggregate}
 
       error ->
         error

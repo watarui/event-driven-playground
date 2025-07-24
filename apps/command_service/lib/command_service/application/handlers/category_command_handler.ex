@@ -8,6 +8,7 @@ defmodule CommandService.Application.Handlers.CategoryCommandHandler do
   alias CommandService.Domain.Aggregates.CategoryAggregate
   alias CommandService.Infrastructure.Repositories.CategoryRepository
   alias CommandService.Infrastructure.UnitOfWork
+  alias CommandService.Domain.Models.Category
   alias Shared.Infrastructure.EventBus
 
   alias CommandService.Application.Commands.CategoryCommands.{
