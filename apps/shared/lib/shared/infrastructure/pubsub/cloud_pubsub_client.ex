@@ -348,8 +348,8 @@ defmodule Shared.Infrastructure.PubSub.CloudPubSubClient do
     
     # Terraform で定義されたサブスクリプション名の形式に合わせる
     subscription_name = case {to_string(topic), service_name} do
-      {"command-requests", "command_service"} -> "command-service-requests-sub-#{environment}"
-      {"query-requests", "query_service"} -> "query-service-requests-sub-#{environment}"
+      {"command-requests", "command-service"} -> "command-service-requests-sub-#{environment}"
+      {"query-requests", "query-service"} -> "query-service-requests-sub-#{environment}"
       _ ->
         # その他のトピックの場合は従来の形式
         sanitized_topic = topic |> to_string() |> String.replace("@", "-at-")
