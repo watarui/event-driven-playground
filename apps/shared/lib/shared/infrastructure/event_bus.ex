@@ -139,24 +139,10 @@ defmodule Shared.Infrastructure.EventBus do
   # Private functions
 
   defp get_adapter do
-    cond do
-      # 一時的に本番環境でも PG2 を使用してテスト
-      System.get_env("FORCE_LOCAL_PUBSUB") == "true" ->
-        Logger.info("EventBus: Forcing Phoenix.PubSub.PG2 (FORCE_LOCAL_PUBSUB is set)")
-        Phoenix.PubSub.PG2
-
-      System.get_env("GOOGLE_CLOUD_PROJECT") && System.get_env("FORCE_LOCAL_PUBSUB") != "true" ->
-        Logger.info("EventBus: Using GoogleCloudAdapter (GOOGLE_CLOUD_PROJECT is set)")
-        Shared.Infrastructure.PubSub.GoogleCloudAdapter
-
-      System.get_env("MIX_ENV") == "prod" && System.get_env("FORCE_LOCAL_PUBSUB") != "true" ->
-        Logger.info("EventBus: Using GoogleCloudAdapter (MIX_ENV is prod)")
-        Shared.Infrastructure.PubSub.GoogleCloudAdapter
-
-      true ->
-        Logger.info("EventBus: Using Phoenix.PubSub.PG2 (local development)")
-        Phoenix.PubSub.PG2
-    end
+    # 一時的に全環境で PG2 を使用
+    # GoogleCloudAdapter の実装が完全でないため
+    Logger.info("EventBus: Using Phoenix.PubSub.PG2 (temporary fix)")
+    Phoenix.PubSub.PG2
   end
 
   defp use_local_broadcast? do
