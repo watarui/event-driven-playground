@@ -108,16 +108,10 @@ defmodule Shared.Infrastructure.EventBus do
   @spec publish_event(struct()) :: :ok
   def publish_event(event) do
     # トレーシングコンテキストを注入
-    case MessagePropagator.wrap_event_publish(event, topic: "events") do
-      {:ok, updated_event} ->
-        event_type = updated_event.__struct__.event_type()
-        publish(event_type, updated_event)
-
-      _ ->
-        # フォールバック
-        event_type = event.__struct__.event_type()
-        publish(event_type, event)
-    end
+    MessagePropagator.wrap_event_publish(event, fn ev ->
+      event_type = ev.__struct__.event_type()
+      publish(event_type, ev)
+    end)
   end
 
   @doc """
