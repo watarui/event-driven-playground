@@ -339,7 +339,31 @@ defmodule Shared.Infrastructure.PubSub.CloudPubSubClient do
     environment = System.get_env("MIX_ENV", "dev")
     # トピック名に @ が含まれる場合は - に置換（PubSub の制限）
     sanitized_topic = topic |> to_string() |> String.replace("@", "-at-")
-    "projects/#{project_id}/topics/#{sanitized_topic}-#{environment}"
+    
+    # トピック名をマッピング
+    domain_topic = case sanitized_topic do
+      "events-" <> event_type ->
+        # イベントタイプからドメインを抽出
+        cond do
+          String.contains?(event_type, "category") -> "category-events"
+          String.contains?(event_type, "product") -> "product-events"
+          String.contains?(event_type, "order") -> "order-events"
+          String.contains?(event_type, "saga") -> "saga-events"
+          true -> "all-events"
+        end
+      
+      # コマンド/クエリリクエストとレスポンストピック
+      "command-requests" -> "command-requests"
+      "query-requests" -> "query-requests"
+      "command-responses-" <> _ -> "command-responses"  # 全てのレスポンスを共通トピックに
+      "query-responses-" <> _ -> "query-responses"      # 全てのレスポンスを共通トピックに
+      
+      _ ->
+        # その他のトピックはそのまま使用
+        sanitized_topic
+    end
+    
+    "projects/#{project_id}/topics/#{domain_topic}-#{environment}"
   end
 
   defp format_subscription_name(topic, project_id) do
@@ -350,6 +374,8 @@ defmodule Shared.Infrastructure.PubSub.CloudPubSubClient do
     subscription_name = case {to_string(topic), service_name} do
       {"command-requests", "command-service"} -> "command-service-requests-sub-#{environment}"
       {"query-requests", "query-service"} -> "query-service-requests-sub-#{environment}"
+      {"command-responses", _} -> "#{service_name}-command-responses-sub-#{environment}"
+      {"query-responses", _} -> "#{service_name}-query-responses-sub-#{environment}"
       _ ->
         # その他のトピックの場合は従来の形式
         sanitized_topic = topic |> to_string() |> String.replace("@", "-at-")

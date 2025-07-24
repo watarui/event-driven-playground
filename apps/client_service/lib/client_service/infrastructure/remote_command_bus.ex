@@ -41,6 +41,11 @@ defmodule ClientService.Infrastructure.RemoteCommandBus do
     event_bus = Config.event_bus_module()
     event_bus.subscribe_raw(response_topic)
 
+    # 本番環境では Cloud Pub/Sub も購読
+    if should_use_cloud_pubsub?() do
+      Shared.Infrastructure.PubSub.CloudPubSubClient.subscribe("command-responses", __MODULE__)
+    end
+
     Logger.info(
       "RemoteCommandBus initialized with response_topic: #{response_topic}, using #{inspect(event_bus)}"
     )
@@ -67,7 +72,7 @@ defmodule ClientService.Infrastructure.RemoteCommandBus do
     message = %{
       request_id: request_id,
       command: command,
-      reply_to: state.response_topic,
+      reply_to: to_string(state.response_topic),
       timestamp: DateTime.utc_now()
     }
 
@@ -149,5 +154,21 @@ defmodule ClientService.Infrastructure.RemoteCommandBus do
     )
 
     {:noreply, state}
+  end
+
+  @doc """
+  Cloud Pub/Sub からのメッセージを処理
+  """
+  def handle_cloud_pubsub_message(topic, message) do
+    Logger.info("RemoteCommandBus received Cloud Pub/Sub message on #{topic}: #{inspect(message)}")
+    
+    # GenServer にメッセージを転送
+    send(__MODULE__, {:event, message})
+  end
+
+  defp should_use_cloud_pubsub? do
+    System.get_env("MIX_ENV") == "prod" && 
+    System.get_env("GOOGLE_CLOUD_PROJECT") != nil &&
+    System.get_env("FORCE_LOCAL_PUBSUB") != "true"
   end
 end

@@ -34,7 +34,8 @@ defmodule CommandService.Infrastructure.CommandBus do
   """
   @spec dispatch(command()) :: result()
   def dispatch(command) do
-    GenServer.call(__MODULE__, {:dispatch, command})
+    # Firestore への保存やイベント発行を含む処理のため、タイムアウトを延長
+    GenServer.call(__MODULE__, {:dispatch, command}, 30_000)
   end
 
   @doc """

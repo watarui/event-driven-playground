@@ -67,7 +67,14 @@ defmodule CommandService.Infrastructure.CommandListener do
     # コマンドを実行
     result =
       case validated_command do
-        {:ok, cmd} -> CommandBus.dispatch(cmd)
+        {:ok, cmd} -> 
+          # CommandBus のタイムアウトに合わせて、30秒のタイムアウトで呼び出す
+          try do
+            CommandBus.dispatch(cmd)
+          catch
+            :exit, {:timeout, _} ->
+              {:error, "Command execution timeout"}
+          end
         error -> error
       end
 
