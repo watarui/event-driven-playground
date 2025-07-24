@@ -67,12 +67,18 @@ export async function GET(request: NextRequest) {
     // 認証付き fetcher
     function createGraphQLFetcher() {
       return function graphQLFetcher(graphQLParams) {
+        // Cookie から auth-token を取得
+        const authToken = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('auth-token='))
+          ?.split('=')[1];
+        
         return fetch('/api/graphql', {
           method: 'post',
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
-            ${authToken ? `'Authorization': 'Bearer ${authToken}',` : ""}
+            ...(authToken ? {'Authorization': 'Bearer ' + authToken} : {})
           },
           body: JSON.stringify(graphQLParams),
           credentials: 'same-origin',
