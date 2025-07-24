@@ -18,9 +18,9 @@ defmodule Shared.Application do
       {Phoenix.PubSub, name: :event_bus_pubsub}
     ]
 
-    # Goth (Google認証) - Firestore 使用時のみ
+    # Goth (Google認証) - Firestore または Google Cloud PubSub 使用時
     children =
-      if Shared.Config.database_adapter() == :firestore && !using_firestore_emulator?() do
+      if should_start_goth?() do
         children ++ [{Goth, name: Shared.Goth}]
       else
         children
@@ -53,5 +53,19 @@ defmodule Shared.Application do
   defp using_firestore_emulator? do
     System.get_env("FIRESTORE_EMULATOR_HOST") != nil ||
       Application.get_env(:shared, :firestore_emulator_host) != nil
+  end
+
+  # Goth を起動すべきか判定
+  defp should_start_goth? do
+    # Firestore を使用していてエミュレータを使用していない場合
+    firestore_needs_goth = Shared.Config.database_adapter() == :firestore && !using_firestore_emulator?()
+    
+    # 本番環境で Google Cloud PubSub を使用する場合
+    pubsub_needs_goth = System.get_env("MIX_ENV") == "prod" && System.get_env("GOOGLE_CLOUD_PROJECT") != nil
+    
+    # テスト環境では Goth を無効化
+    test_env = Mix.env() == :test || System.get_env("MIX_ENV") == "test"
+    
+    !test_env && (firestore_needs_goth || pubsub_needs_goth)
   end
 end

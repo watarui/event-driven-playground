@@ -55,9 +55,25 @@ defmodule Shared.Infrastructure.PubSub.GoogleCloudAdapter do
     # Google Cloud 認証情報を設定
     connection =
       try do
-        conn = Connection.new()
-        Logger.info("GoogleCloudAdapter: Connection created successfully")
-        conn
+        # Goth を使用して認証トークンを取得
+        Logger.info("GoogleCloudAdapter: Fetching auth token from Goth")
+        case Goth.fetch(Shared.Goth) do
+          {:ok, %{token: token}} ->
+            Logger.info("GoogleCloudAdapter: Successfully fetched auth token")
+            conn = Connection.new(token)
+            Logger.info("GoogleCloudAdapter: Connection created successfully with auth")
+            conn
+
+          {:error, reason} ->
+            Logger.error("GoogleCloudAdapter: Failed to fetch auth token: #{inspect(reason)}")
+            # フォールバック：認証なしで接続（開発環境用）
+            if Mix.env() == :dev do
+              Logger.warning("GoogleCloudAdapter: Creating connection without auth (dev mode)")
+              Connection.new()
+            else
+              raise "Failed to fetch auth token from Goth: #{inspect(reason)}"
+            end
+        end
       rescue
         e ->
           Logger.error("GoogleCloudAdapter: Failed to create connection: #{inspect(e)}")
@@ -92,12 +108,11 @@ defmodule Shared.Infrastructure.PubSub.GoogleCloudAdapter do
     broadcast(adapter_name, topic, message, dispatcher)
   end
 
-  @impl Phoenix.PubSub.Adapter
-  def subscribe(adapter_name, pid, topic, opts \\ []) do
+  # PubSub のサブスクリプション管理（Phoenix.PubSub.Adapter の拡張）
+  def subscribe(adapter_name, pid, topic, _opts \\ []) do
     GenServer.call(adapter_name, {:subscribe, pid, topic})
   end
 
-  @impl Phoenix.PubSub.Adapter
   def unsubscribe(adapter_name, pid, topic) do
     GenServer.call(adapter_name, {:unsubscribe, pid, topic})
   end
